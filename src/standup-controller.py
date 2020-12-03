@@ -61,8 +61,8 @@ def make_move(target, joint_values, pub_list, mutex, rate):
         done = True
         mutex.acquire()
         for key in joint_values:
-            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or \
-                    joint_values[key].error < -0.1:
+            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or joint_values[
+                key].error < -0.1:
                 done = False
         mutex.release()
         if done:
@@ -84,116 +84,14 @@ def talker():
         rospy.loginfo("move thigh up:")
         if not make_move(-1.0, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
             finished = False
-        # timeout = time.time() + TIMEOUT
-        # thigh_f: Float64 = -1.0
-        # if not rospy.is_shutdown():
-        #     for x in thigh_pub_list:
-        #         x.publish(thigh_f)
-        # while not rospy.is_shutdown():
-        #     done = True
-        #     thigh_mutex.acquire()
-        #     for key in thigh_joint_values:
-        #         if abs(thigh_joint_values[key].set_point - thigh_f) >= 0.05 or 0.1 < thigh_joint_values[key].error or \
-        #                 thigh_joint_values[key].error < -0.1:
-        #             done = False
-        #     thigh_mutex.release()
-        #     if done:
-        #         rospy.loginfo("finish thigh up...")
-        #         break
-        #     if time.time() > timeout:
-        #         rospy.loginfo("timeout...")
-        #         finished = False
-        #         break
-        #     rate.sleep()
-
-        # if not done:
-        #    continue
-        # rate.sleep()
 
         rospy.loginfo("move tibia down:")
         if not make_move(-1.0, tibia_joint_values, tibia_pub_list, tibia_mutex, rate):
             finished = False
-        # timeout = time.time() + TIMEOUT
-        # tibia_f: Float64 = -1.0
-        # if not rospy.is_shutdown():
-        #     for y in tibia_pub_list:
-        #         y.publish(tibia_f)
-        # while not rospy.is_shutdown():
-        #     done = True
-        #     tibia_mutex.acquire()
-        #     for key in tibia_joint_values:
-        #         if abs(tibia_joint_values[key].set_point - tibia_f) >= 0.05 or 0.1 < tibia_joint_values[key].error or \
-        #                 tibia_joint_values[key].error < -0.1:
-        #             done = False
-        #     tibia_mutex.release()
-        #     if done:
-        #         rospy.loginfo("finish tibia down...")
-        #         break
-        #     if time.time() > timeout:
-        #         rospy.loginfo("timeout...")
-        #         finished = False
-        #         break
-        #     rate.sleep()
-
-        # if not done:
-        #    continue
-        # rate.sleep()
-
-        # timeout = time.time() + TIMEOUT
-        # thigh_f = 0.5
-        # if not rospy.is_shutdown():
-        #     for x in thigh_pub_list:
-        #         x.publish(thigh_f)
-        # while not rospy.is_shutdown():
-        #     done = True
-        #     thigh_mutex.acquire()
-        #     for key in thigh_joint_values:
-        #         if abs(thigh_joint_values[key].set_point - thigh_f) >= 0.05 or 0.1 < thigh_joint_values[key].error or \
-        #                 thigh_joint_values[key].error < -0.1:
-        #             done = False
-        #     thigh_mutex.release()
-        #     if done:
-        #         rospy.loginfo("finish thigh down...")
-        #         break
-        #     if time.time() > timeout:
-        #         rospy.loginfo("timeout...")
-        #         finished = False
-        #         break
-        #     rate.sleep()
-        #
-        # # if not done:
-        # #    continue
-        # rate.sleep()
 
         rospy.loginfo("straighten thigh:")
         if not make_move(0.0, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
             finished = False
-        # timeout = time.time() + TIMEOUT
-        # thigh_f: Float64 = 0.0
-        # if not rospy.is_shutdown():
-        #     for x in thigh_pub_list:
-        #         x.publish(thigh_f)
-        # while not rospy.is_shutdown():
-        #     done = True
-        #     thigh_mutex.acquire()
-        #     for key in thigh_joint_values:
-        #         if abs(thigh_joint_values[key].set_point - thigh_f) >= 0.05 or 0.1 < thigh_joint_values[key].error or \
-        #                 thigh_joint_values[key].error < -0.1:
-        #             rospy.loginfo(
-        #                 key + " set point: " + str(thigh_joint_values[key].set_point) + " is not thigh_f: " + str(
-        #                     thigh_f))
-        #             done = False
-        #     thigh_mutex.release()
-        #     if done:
-        #         rospy.loginfo("finish thigh neutral...")
-        #         break
-        #     if time.time() > timeout:
-        #         rospy.loginfo("timeout...")
-        #         finished = False
-        #         break
-        #     rate.sleep()
-        #
-        # rate.sleep()
 
 
 if __name__ == '__main__':
