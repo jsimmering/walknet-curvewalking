@@ -2,36 +2,77 @@
 
 import numpy
 import rospy
+import tf
 # from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
 from control_msgs.msg import JointControllerState
+from std_msgs.msg import Bool
 from walknet_curvewalking.phantomx.SingleLeg import SingleLeg
-
 from walknet_curvewalking.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 
 
 class SingleLegController:
     def __init__(self, name):
         self.name = name
-        self.leg = SingleLeg(name, self.compute_segment_length(), True)
+        self.leg = SingleLeg(name, [0.052, 0.065, 0.13], True, tf.TransformListener())
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
-            JointControllerState, self.c1_callback)
+            JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
-            JointControllerState, self.thigh_callback)
+            JointControllerState, self.leg.thigh_callback)
         self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
-            JointControllerState, self.tibia_callback)
+            JointControllerState, self.leg.tibia_callback)
+        self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
 
-    def c1_callback(self, data):
-        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.leg.set_c1(data)
+    # def kinematic_callback(self, data):
+    #     rospy.loginfo(rospy.get_caller_id() + "kinematic_callback heard that %s", data)
+    #     if data:
+    #         ee_pos = self.leg.ee_position()
+    #         rospy.loginfo("ee_pos: " + str(ee_pos))
+    #     rospy.loginfo("end of callbach")
 
-    def thigh_callback(self, data):
-        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.leg.set_thigh(data)
-
-    def tibia_callback(self, data):
-        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.leg.set_tibia(data)
+    def kinematic_callback(self, data):
+        rospy.loginfo(rospy.get_caller_id() + "kinematic_callback heard that %s", data)
+        if data:
+            # pos = self.leg.body_c1_transform(
+            #    self.leg.alpha_forward_kinematics(self.leg.beta_forward_kinematics([0, 0, 0.13, 1])))
+            # pos = self.leg.body_c1_transform(self.leg.alpha_forward_kinematics(self.leg.beta_forward_kinematics()))
+            # tf_pos = self.leg.body_c1_transform()
+            # pos = self.leg.body_c1_transformation(0)
+            # rospy.loginfo("tf c1 pos: " + str(tf_pos))
+            # rospy.loginfo("transformation matrix c1 pos: " + str(pos))
+            # tf_pos = self.leg.alpha_forward_kinematics()
+            # pos = self.leg.c1_thigh_transformation(0)
+            # rospy.loginfo("tf thigh pos: " + str(tf_pos))
+            # rospy.loginfo("transformation matrix thigh pos: " + str(pos))
+            # tf_pos = self.leg.beta_forward_kinematics()
+            # pos = self.leg.thigh_tibia_transformation(0)
+            # rospy.loginfo("tf tibia pos: " + str(tf_pos))
+            # rospy.loginfo("transformation matrix tibia pos: " + str(pos))
+            # pos = self.leg.tibia_ee_transformation()
+            # rospy.loginfo("transformation matrix ee pos: " + str(pos))
+            tf_pos = self.leg.body_c1_transform(self.leg.alpha_forward_kinematics())
+            pos = self.leg.body_c1_transformation(0.3, self.leg.c1_thigh_transformation(-1.0))
+            rospy.loginfo("tf                    thigh pos in body frame: " + str(tf_pos))
+            rospy.loginfo("transformation matrix thigh pos in body frame: " + str(pos))
+            tf_pos = self.leg.body_c1_transform(
+                self.leg.alpha_forward_kinematics(self.leg.beta_forward_kinematics()))
+            pos = self.leg.body_c1_transformation(0.3, self.leg.c1_thigh_transformation(-1.0,
+                self.leg.thigh_tibia_transformation(0.3)))
+            rospy.loginfo("tf                    tibia pos in body frame: " + str(tf_pos))
+            rospy.loginfo("transformation matrix tibia pos in body frame: " + str(pos))
+            tf_pos = self.leg.body_c1_transform(
+                self.leg.alpha_forward_kinematics(self.leg.beta_forward_kinematics([0, 0, 0.13, 1])))
+            pos = self.leg.body_c1_transformation(0.3, self.leg.c1_thigh_transformation(-1.0,
+                self.leg.thigh_tibia_transformation(0.3, self.leg.tibia_ee_transformation())))
+            rospy.loginfo("tf                    ee pos in body frame: " + str(tf_pos))
+            rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
+            tf_pos = self.leg.compute_forward_kinematics_tf()
+            pos = self.leg.compute_forward_kinematics()
+            rospy.loginfo("tf                    ee pos in body frame: " + str(tf_pos))
+            rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
+            # pos = self.leg.body_c1_transformation(0, self.leg.c1_thigh_transformation(0.3, self.leg.thigh_tibia_transformation(1, self.leg.tibia_ee_transformation())))
+            ##################################
+        rospy.loginfo("end of callback")
 
     def manage_swing(self):
         rate = rospy.Rate(100)  # 100Hz
@@ -56,28 +97,29 @@ class SingleLegController:
 
             # swing_net.move_to_next_point(0.5)
 
-    def compute_segment_length(self):
-        # TODO get from TF or URDF?
-        c1_pos = [0, 0.1034, 0.001116]
-        thigh_pos = [0, 0.1574, 0.001116]
-        tibia_pos = [0.0001, 0.22275, -0.00885]
-        ee_pos = [0.0015, 0.38631, -0.02038]
-        c1_length = numpy.sqrt(
-            thigh_pos[0] - c1_pos[0] * thigh_pos[0] - c1_pos[0] + thigh_pos[1] - c1_pos[1] * thigh_pos[1] - c1_pos[1] +
-            thigh_pos[2] - c1_pos[2] * thigh_pos[2] - c1_pos[2])
-        thigh_length = numpy.sqrt(
-            tibia_pos[0] - thigh_pos[0] * tibia_pos[0] - thigh_pos[0] + tibia_pos[1] - thigh_pos[1] * tibia_pos[1] -
-            thigh_pos[1] + tibia_pos[2] - thigh_pos[2] * tibia_pos[2] - thigh_pos[2])
-        tibia_length = numpy.sqrt(
-            ee_pos[0] - tibia_pos[0] * ee_pos[0] - tibia_pos[0] + ee_pos[1] - tibia_pos[1] * ee_pos[1] - tibia_pos[1] +
-            ee_pos[2] - tibia_pos[2] * ee_pos[2] - tibia_pos[2])
-        return [c1_length, thigh_length, tibia_length]
+    # def compute_segment_length(self):
+    # in meter
+    # c1_pos = [0, 0.1034, 0.001116]
+    # thigh_pos = [0, 0.1574, 0.001116]
+    # tibia_pos = [0.0001, 0.22275, -0.00885]
+    # ee_pos = [0.0015, 0.38631, -0.02038]
+    # c1_length = numpy.sqrt(
+    #    thigh_pos[0] - c1_pos[0] * thigh_pos[0] - c1_pos[0] + thigh_pos[1] - c1_pos[1] * thigh_pos[1] - c1_pos[1] +
+    #    thigh_pos[2] - c1_pos[2] * thigh_pos[2] - c1_pos[2])
+    # thigh_length = numpy.sqrt(
+    #    tibia_pos[0] - thigh_pos[0] * tibia_pos[0] - thigh_pos[0] + tibia_pos[1] - thigh_pos[1] * tibia_pos[1] -
+    #    thigh_pos[1] + tibia_pos[2] - thigh_pos[2] * tibia_pos[2] - thigh_pos[2])
+    # tibia_length = numpy.sqrt(
+    #    ee_pos[0] - tibia_pos[0] * ee_pos[0] - tibia_pos[0] + ee_pos[1] - tibia_pos[1] * ee_pos[1] - tibia_pos[1] +
+    #    ee_pos[2] - tibia_pos[2] * ee_pos[2] - tibia_pos[2])
+    # return [c1_length, thigh_length, tibia_length]
 
 
 if __name__ == '__main__':
     rospy.init_node('single_leg_controller', anonymous=True)
     legController = SingleLegController('lm')
-    try:
-        legController.manage_swing()
-    except rospy.ROSInterruptException:
-        pass
+    rospy.spin()
+    # try:
+    # legController.manage_swing()
+    # except rospy.ROSInterruptException:
+    #    pass

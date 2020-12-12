@@ -4,10 +4,13 @@ import rospy
 class SimpleSwingTrajectoryGen:
     def __init__(self, leg):
         self.leg = leg
+        self.start_point = [0, 0, 0]
+        self.target_point = [0, 0, 0]
         self.swing_height = 0.5
         self.trajectory = []
         self.point = 0
         self.inSwing = False
+        self.set_angles = None
 
     def set_start_point(self, start_point):
         self.start_point = start_point
@@ -35,6 +38,7 @@ class SimpleSwingTrajectoryGen:
             rospy.loginfo("haven't received Joint values yet! skipp")
             return
         if self.leg.get_current_targets() is None:
+            # TODO always true?
             rospy.loginfo("haven't started Swing")
             self.inSwing = True
         if self.check_if_current_target_is_set():
@@ -67,8 +71,9 @@ class SimpleSwingTrajectoryGen:
             current_pos[1] - current_target[1]) < 0.05 and abs(current_pos[2] - current_target[2]) < 0.05
 
     def check_if_current_target_is_set(self):
-        if self.set_angles is None:
+        set_targets = self.leg.get_current_targets()
+        if self.set_angles is None or set_targets is None:
             return False
-        set_targets = self.leg.get_current_targets
-        return self.set_angles[0] is set_targets[0] and self.set_angles[1] is set_targets[1] and self.set_angles[2] is \
-               set_targets[2]
+        rospy.loginfo("targets: " + str(type(set_targets)))
+        return self.set_angles.item(0) == set_targets[0] and self.set_angles.item(0) == set_targets[
+            1] and self.set_angles.item(0) == set_targets[2]

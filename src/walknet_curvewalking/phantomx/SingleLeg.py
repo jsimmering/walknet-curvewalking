@@ -2,17 +2,16 @@ import copy
 
 import numpy
 import rospy
+import tf.transformations as transformations
 from std_msgs.msg import Float64
-from control_msgs.msg import JointControllerState
-from math import sin, cos, atan2, pow, pi, acos
+from math import sin, cos, atan2, pow, pi, acos, radians
 
 
-# code based on https://github.com/malteschilling/cognitiveWalker/blob/master/Hector/LegF.py
 class SingleLeg:
 
-    def __init__(self, name, segment_lengths, rotation_dir):
+    def __init__(self, name, segment_lengths, rotation_dir, tf_listener):
         self.name = name
-
+        self.tf_listener = tf_listener
         self.alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
             queue_size=1)
         self.beta_pub = rospy.Publisher('/phantomx/j_thigh_' + self.name + '_position_controller/command', Float64,
@@ -27,8 +26,6 @@ class SingleLeg:
         self.alpha_reached = True
         self.beta_reached = True
         self.gamma_reached = True
-
-        self.joints = (self.alpha, self.beta, self.gamma)
 
         self.segment_lengths = segment_lengths
         self.rotation_dir = rotation_dir
@@ -48,25 +45,25 @@ class SingleLeg:
         else:
             return False
 
-    def set_c1(self, data):
-        #rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.alpha = data
+    def c1_callback(self, data):
+        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
+        self.alpha = data.process_value
         if data.error < 0.05:
             self.alpha_reached = True
         else:
             self.alpha_reached = False
 
-    def set_thigh(self, data):
-        #rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.beta = data
+    def thigh_callback(self, data):
+        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
+        self.beta = data.process_value
         if data.error < 0.05:
             self.beta_reached = True
         else:
             self.beta_reached = False
 
-    def set_tibia(self, data):
-        #rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
-        self.gamma = data
+    def tibia_callback(self, data):
+        # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
+        self.gamma = data.process_value
         if data.error < 0.05:
             self.gamma_reached = True
         else:
@@ -79,58 +76,124 @@ class SingleLeg:
     def update_ee_position(self):
         self.ee_pos = self.compute_forward_kinematics()
 
-    def compute_forward_kinematics(self):
-        if None in self.joints:
-            rospy.loginfo("have not recieved joint values yet. skipp")
-            return None
-        alpha = JointControllerState(self.alpha).process_value
-        beta = JointControllerState(self.beta).process_value
-        gamma = JointControllerState(self.gamma).process_value
+    # compute ee_position based on current joint values in c1 coordinate frame (= leg coordinate frame)
+    # code from https://www.programcreek.com/python/example/96799/tf.transformations
+    def compute_forward_kinematics_tf(self):
+        if not self.is_ready():
+            rospy.loginfo("haven't received Joint values yet! skipp")
+            return
+        (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'tibia_' + self.name, rospy.Time(0))
+        # (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'tibia_' + self.name, rospy.Time(0))
+        pos = numpy.array(transformations.quaternion_matrix(rot))
+        pos[0, 3] = trans[0]
+        pos[1, 3] = trans[1]
+        pos[2, 3] = trans[2]
+        return numpy.array(numpy.dot(pos, [0, 0, 0.13, 1]))
+        #return numpy.array(numpy.dot(pos, [0, 0, 0, 1]))
 
-        tmp_ee_pos = self.alpha_forward_kinematics(alpha,
-            self.beta_forward_kinematics(beta, self.gamma_forward_kinematics(gamma, numpy.array([0, 0, 0, 1]))))
-        alpha_check = -atan2(tmp_ee_pos[1], (tmp_ee_pos[0]))
-        if abs(alpha_check - alpha) >= 0.01:
-            raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
-                gamma) + ') are not valid for the forward/inverse kinematics.')
-        return tmp_ee_pos
+    # ee position in body frame
+    def compute_forward_kinematics(self, angles=None):
+        if angles is None:
+            alpha = self.alpha
+            beta = self.beta
+            gamma = self.gamma
+        else:
+            alpha = angles[0]
+            beta = angles[1]
+            gamma = angles[2]
 
-    # code from https://github.com/malteschilling/cognitiveWalker/blob/master/Hector/LegF.py
-    def alpha_forward_kinematics(self, alpha, point=numpy.array([0, 0, 0, 1])):
+        temp_tarsus_position = self.body_c1_transformation(alpha, self.c1_thigh_transformation(beta,
+            self.thigh_tibia_transformation(gamma, self.tibia_ee_transformation())))
+        # inverse kinematics alpha angle check
+        #alpha_check = -atan2(temp_tarsus_position[1], (temp_tarsus_position[0]))
+        #if abs(alpha_check - alpha) >= 0.01:
+        #    raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
+        #        gamma) + ') are not valid for the forward/inverse kinematics.')
+        return temp_tarsus_position
+
+    def body_c1_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
-        alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
+        # TODO ist alpha reversed?
+        # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
+        cos_alpha = cos(alpha + radians(180))
+        sin_alpha = sin(alpha + radians(180))
+        cos90 = cos(radians(-90))
+        sin90 = sin(radians(-90))
+        trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
+            (0, cos_alpha, 0 - sin_alpha, 0.1034),
+            (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0.001116),
+            (0, 0, 0, 1)])
+        # print('trans: ', trans)
+        return trans.dot(point)
+
+    def c1_thigh_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
+        # point=numpy.append(point,1)
+        # TODO ist alpha reversed?
+        # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
         cos_alpha = cos(alpha)
         sin_alpha = sin(alpha)
-        alpha_trans = numpy.array([(cos_alpha, 0, sin_alpha, (self.segment_lengths[0] * cos_alpha)),
-                                   (sin_alpha, 0, -cos_alpha, self.segment_lengths[0] * sin_alpha), (0, 1, 0, 0,),
-                                   (0, 0, 0, 1)])
-        # print('alpha_trans: ', alpha_trans)
-        return alpha_trans.dot(point)  # [0:3]
+        cos90 = cos(radians(90))
+        sin90 = sin(radians(90))
+        trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
+            (0, cos_alpha, 0 - sin_alpha, -0.054),
+            (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0),
+            (0, 0, 0, 1)])
+        # print('trans: ', trans)
+        return trans.dot(point)
 
-    # code from https://github.com/malteschilling/cognitiveWalker/blob/master/Hector/LegF.py
-    def beta_forward_kinematics(self, beta, point=numpy.array([0, 0, 0, 1])):
+    def thigh_tibia_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
-        if self.rotation_dir is False:
-            beta *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-        cos_beta = cos(beta)
-        sin_beta = sin(beta)
-        beta_trans = numpy.array([(cos_beta, -sin_beta, 0, self.segment_lengths[1] * cos_beta),
-                                  (sin_beta, cos_beta, 0, self.segment_lengths[1] * sin_beta), (0, 0, 1, 0,),
-                                  (0, 0, 0, 1)])
-        return beta_trans.dot(point)  # [0:3]
+        # TODO ist alpha reversed?
+        # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
+        cos_alpha = cos(alpha)
+        sin_alpha = sin(alpha)
+        cos90 = cos(radians(180))
+        sin90 = sin(radians(180))
+        trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
+            (0, cos_alpha, 0 - sin_alpha, -0.0645),
+            (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, -0.0145),
+            (0, 0, 0, 1)])
+        # print('trans: ', trans)
+        return trans.dot(point)
 
-    # code from https://github.com/malteschilling/cognitiveWalker/blob/master/Hector/LegF.py
-    def gamma_forward_kinematics(self, gamma, point=numpy.array([0, 0, 0, 1])):
+    def tibia_ee_transformation(self, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
-        if self.rotation_dir is True:
-            gamma *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-        gamma = gamma - pi / 2
-        cos_gamma = cos(gamma)
-        sin_gamma = sin(gamma)
-        gamma_trans = numpy.array([(cos_gamma, -sin_gamma, 0, self.segment_lengths[2] * cos_gamma),
-                                   (sin_gamma, cos_gamma, 0, self.segment_lengths[2] * sin_gamma), (0, 0, 1, 0),
-                                   (0, 0, 0, 1)])
-        return gamma_trans.dot(point)  # [0:3]  # return self._phi_psi_trans.dot(temp_tarsus_position)[0:3]
+        # TODO ist alpha reversed?
+        # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
+        trans = numpy.array([(1, 0, 0, 0),
+            (0, 1, 0, -0.13),
+            (0, 0, 1, 0),
+            (0, 0, 0, 1)])
+        # print('trans: ', trans)
+        return trans.dot(point)
+
+    def body_c1_transform(self, point=[0, 0, 0, 1]):
+        # (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'thigh_' + self.name, rospy.Time(0))
+        (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'c1_' + self.name, rospy.Time(0))
+        pos = numpy.array(transformations.quaternion_matrix(rot))
+        pos[0, 3] = trans[0]
+        pos[1, 3] = trans[1]
+        pos[2, 3] = trans[2]
+        return numpy.array(numpy.dot(pos, point))
+
+    # code from https://www.programcreek.com/python/example/96799/tf.transformations
+    def alpha_forward_kinematics(self, point=[0, 0, 0, 1]):
+        # (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'thigh_' + self.name, rospy.Time(0))
+        (trans, rot) = self.tf_listener.lookupTransform('c1_' + self.name, 'thigh_' + self.name, rospy.Time(0))
+        pos = numpy.array(transformations.quaternion_matrix(rot))
+        pos[0, 3] = trans[0]
+        pos[1, 3] = trans[1]
+        pos[2, 3] = trans[2]
+        return numpy.array(numpy.dot(pos, point))
+
+    # code from https://www.programcreek.com/python/example/96799/tf.transformations
+    def beta_forward_kinematics(self, point=[0, 0, 0, 1]):
+        (trans, rot) = self.tf_listener.lookupTransform('thigh_' + self.name, 'tibia_' + self.name, rospy.Time(0))
+        pos = numpy.array(transformations.quaternion_matrix(rot))
+        pos[0, 3] = trans[0]
+        pos[1, 3] = trans[1]
+        pos[2, 3] = trans[2]
+        return numpy.array(numpy.dot(pos, point))
 
     #  Calculation of inverse kinematics for a leg:
     #   Given a position in 3D space a joint configuration is calculated.
@@ -181,14 +244,14 @@ class SingleLeg:
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
     def get_current_angles(self):
-        if None in self.joints:
+        if self.alpha is None or self.beta is None or self.gamma is None:
             return None
-        return [JointControllerState(joint).process_value for joint in self.joints]
+        return [self.alpha, self.beta, self.gamma]
 
     def get_current_targets(self):
-        if None in self.joints:
+        if self.alpha is None or self.beta is None or self.gamma is None:
             return None
-        return [JointControllerState(joint).set_point for joint in self.joints]
+        return [self.alpha.set_point, self.beta.set_point, self.gamma.set_point]
 
     def set_command(self, next_angles):
         # TODO check joint ranges
