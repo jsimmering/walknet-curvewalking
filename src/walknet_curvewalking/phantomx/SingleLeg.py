@@ -9,7 +9,7 @@ from math import sin, cos, atan2, pow, pi, acos, radians
 
 class SingleLeg:
 
-    def __init__(self, name, segment_lengths, rotation_dir, tf_listener):
+    def __init__(self, name, segment_lengths, tf_listener):
         self.name = name
         self.tf_listener = tf_listener
         self.alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
@@ -32,7 +32,7 @@ class SingleLeg:
         self.gamma_reached = True
 
         self.segment_lengths = segment_lengths
-        self.rotation_dir = rotation_dir
+        # self.rotation_dir = rotation_dir
 
         self.ee_pos = None
 

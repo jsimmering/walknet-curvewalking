@@ -1,4 +1,3 @@
-import numpy
 import rospy
 
 
@@ -40,6 +39,6 @@ class StanceMovementSimple:
         cur_target = self.target_point
         cur_ee = self.leg.ee_position()
         rospy.loginfo('cur_target is ' + str(cur_target) + ' cur_ee is ' + str(cur_ee))
-        if abs(cur_target[0] - cur_ee[0]) < 0.02 and abs(cur_target[1] - cur_ee[1]) < 0.01 and abs(
-                cur_target[2] - cur_ee[2]) < 0.01:
+        if abs(cur_target[0] - cur_ee[0]) < 0.02 and abs(cur_target[1] - cur_ee[1]) < 0.02 and abs(
+                cur_target[2] - cur_ee[2]) < 0.02:
             return True
