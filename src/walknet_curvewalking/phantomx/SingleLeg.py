@@ -44,7 +44,7 @@ class SingleLeg:
         if self.gamma is None:
             rospy.loginfo(" gamma: " + str(self.gamma))
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
-            rospy.loginfo("ready")
+            # rospy.loginfo("ready")
             return True
         else:
             return False
@@ -53,6 +53,7 @@ class SingleLeg:
         # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
         self.alpha = data.process_value
         self.alpha_target = data.set_point
+        # rospy.loginfo('set current alpha_target as: ' + str(self.alpha_target))
         if data.error < 0.01:
             self.alpha_reached = True
         else:
@@ -62,6 +63,7 @@ class SingleLeg:
         # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
         self.beta = data.process_value
         self.beta_target = data.set_point
+        # rospy.loginfo('set current beta_target as: ' + str(self.beta_target))
         if data.error < 0.01:
             self.beta_reached = True
         else:
@@ -71,6 +73,7 @@ class SingleLeg:
         # rospy.loginfo(rospy.get_caller_id() + "I heard that %s", data)
         self.gamma = data.process_value
         self.gamma_target = data.set_point
+        # rospy.loginfo('set current gamma_target as: ' + str(self.gamma_target))
         if data.error < 0.01:
             self.gamma_reached = True
         else:
@@ -217,8 +220,8 @@ class SingleLeg:
         # TODO ist alpha reversed?
         # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
         trans = numpy.array([(1, 0, 0, 0),
-            (0, 1, 0, -0.13),
-            (0, 0, 1, 0),
+            (0, 1, 0, -0.16),
+            (0, 0, 1, 0.02),
             (0, 0, 0, 1)])
         # print('trans: ', trans)
         return trans.dot(point)
@@ -255,8 +258,6 @@ class SingleLeg:
     #   Given a position in 3D space a joint configuration is calculated.
     #   When no position is provided the current position of the current leg is used
     #   to calculate the complementing angles.
-    #   PhiPsi Inverse Transformation is applied (meaning the position is with respect
-    #   to the leg coordinate system aligned with/equal to the body coordinate system)
     #   @param p point in body coordinate system
     def compute_inverse_kinematics(self, p=None):
         if isinstance(p, (type(None))):
@@ -264,42 +265,71 @@ class SingleLeg:
         if len(p) == 3:
             p = numpy.append(p, [1])
         p_temp = copy.copy(p)
-        # p = self._phi_psi_trans_inv.dot(p)
+        #rospy.loginfo('ee_pos target = ' + str(p))
+
+        c1_pos = self.body_c1_transformation(self.alpha)
         # alpha_angle: float = -atan2(p[1], (p[0]))
         # TODO probably only works for lm leg find general solution!
-        c1_pos = self.body_c1_transformation(self.alpha)
-        alpha_angle = -atan2(p[0] - c1_pos[0], p[1] - c1_pos[1])  # switched x and y coordination because the leg points
-        #             in the direction of the y axis of the MP_BODY frame
-        beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(self.beta))  # 0 or self.beta?
+        #rospy.loginfo('c1_pos = ' + str(c1_pos))
+        # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
+        alpha_angle = -atan2(p[0] - c1_pos[0], p[1] - c1_pos[1])
+        beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(0))
         lct = numpy.linalg.norm(p[0:3] - beta_pos[0:3])
+        #rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
+
+        default_gamma_pos = self.body_c1_transformation(alpha_angle,
+            self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
+        thigh_tibia_angle = -atan2(default_gamma_pos[2] - beta_pos[2], default_gamma_pos[1] - beta_pos[1])
+        #rospy.loginfo('thigh_tibia_angle = ' + str(thigh_tibia_angle))
+        tibia_z_angle = pi - atan2(0.02, -0.16)
+        #rospy.loginfo('tibia_z_angle = ' + str(tibia_z_angle))
         # if (self.name=='rm'):
         #    print(p)
         try:
-            gamma_angle = (acos((pow(self.segment_lengths[2], 2) + pow(self.segment_lengths[1], 2) - pow(lct, 2)) / (
-                    2 * self.segment_lengths[1] * self.segment_lengths[2]))) - pi / 2
+            gamma_inner = (acos((pow(self.segment_lengths[2], 2) + pow(self.segment_lengths[1], 2) - pow(lct, 2)) / (
+                    2 * self.segment_lengths[1] * self.segment_lengths[2])))  # - pi / 2
+            # gamma_angle = pi - gamma_inner
+            gamma_angle = gamma_inner - pi - tibia_z_angle
+            #rospy.loginfo(
+            #    'gamma_angle = ' + str(gamma_angle) + ' gamma_inner = ' + str(gamma_inner) + ' pi = ' + str(pi))
+            # TODO gamma not exactly correct but not exactly wrong
             h1 = (acos((pow(self.segment_lengths[1], 2) + pow(lct, 2) - pow(self.segment_lengths[2], 2)) / (
                     2 * self.segment_lengths[1] * lct)))
+            #rospy.loginfo('beta_inner = ' + str(h1))
+            ee_angle = -atan2(p[2] - beta_pos[2], p[1] - beta_pos[1])
+            #rospy.loginfo('ee_angle = ' + str(ee_angle))
+            #rospy.loginfo('beta atan = ' + str(ee_angle - h1))
             # Avoid running in numerical rounding error
-            if ((pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(numpy.linalg.norm(p[0:3]), 2)) / (
-                    2 * self.segment_lengths[0] * lct) < -1.):
+            #rospy.loginfo('c1 to ee vector = ' + str(numpy.linalg.norm(p[0:3] - c1_pos[0:3])))
+            vector_c1_ee = numpy.linalg.norm(p[0:3] - c1_pos[0:3])
+            #rospy.loginfo(
+            #    'lct =  ' + str(lct) + ' c1_link length = ' + str(self.segment_lengths[0]) + ' c1->ee_vector = ' + str(
+            #        vector_c1_ee))
+            cos_beta = (pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
+                    2 * lct * self.segment_lengths[0])
+            #rospy.loginfo('cos_beta = ' + str(cos_beta))
+            if (cos_beta < -1.):
+                rospy.loginfo('----------------PI----------')
                 h2 = pi
             else:
-                h2 = (acos((pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(numpy.linalg.norm(p[0:3]), 2)) / (
-                        2 * self.segment_lengths[0] * lct)))
-                # h2 = (acos((pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(  #   #   #   #  #
-                # numpy.linalg.norm(p[0:3]), 2)) /  #       (2 * self.segment_lengths[0] * lct)))
+                h2 = (acos(cos_beta))
+            #rospy.loginfo('beta_outer = ' + str(h2))
         except ValueError:
             raise ValueError('The provided position (' + str(p_temp[0]) + ', ' + str(p_temp[1]) + ', ' + str(
                 p_temp[2]) + ') is not valid for the given geometry for leg ' + self.name)
         if p[2] < 0:
-            beta_angle = (h1 + h2) - pi
+            # beta_angle = (h1 + h2 + thigh_tibia_angle) - pi  # with rotation_dir
+            beta_angle = pi - (h1 + h2 + thigh_tibia_angle)
+            #rospy.loginfo('ee lower than body')
         else:
-            beta_angle = (pi - h2) + h1
+            #rospy.loginfo('ee higher than body')
+            # beta_angle = h1 - h2 + pi + thigh_tibia_angle  # with rotation_dir
+            beta_angle = h1 - h2 - pi - thigh_tibia_angle
 
-        if self.rotation_dir is True:
-            gamma_angle *= -1
-        else:
-            beta_angle *= -1
+        #if self.rotation_dir is True:
+        #    gamma_angle *= -1
+        #else:
+        #    beta_angle *= -1
 
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
@@ -309,6 +339,8 @@ class SingleLeg:
         return [self.alpha, self.beta, self.gamma]
 
     def get_current_targets(self):
+        rospy.loginfo('in get_current_targets; targets are: ' + str(self.alpha_target) + ', ' + str(
+            self.beta_target) + ', ' + str(self.gamma_target))
         if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
             return None
         return [self.alpha_target, self.beta_target, self.gamma_target]

@@ -1,20 +1,26 @@
 #!/usr/bin/env python
 
-import numpy
 import rospy
 import tf
-# from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
 from walknet_curvewalking.phantomx.SingleLeg import SingleLeg
+# from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
 from walknet_curvewalking.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
+from walknet_curvewalking.motion_primitives.stance_movment_simple import StanceMovementSimple
 
 
 class SingleLegController:
-    def __init__(self, name):
+    def __init__(self, name, swing):
         self.name = name
-        self.leg = SingleLeg(name, [0.052, 0.065, 0.13], True, tf.TransformListener())
+        self.movement_dir = 1
+        if 'l' in self.name:
+            rospy.loginfo("leg on left side movement_dir -1")
+            self.movement_dir = -1
+        self.leg = SingleLeg(name, [0.054, 0.066, 0.16], False, tf.TransformListener())
+        self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
+        self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
             JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
@@ -22,13 +28,6 @@ class SingleLegController:
         self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
             JointControllerState, self.leg.tibia_callback)
         self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
-
-    # def kinematic_callback(self, data):
-    #     rospy.loginfo(rospy.get_caller_id() + "kinematic_callback heard that %s", data)
-    #     if data:
-    #         ee_pos = self.leg.ee_position()
-    #         rospy.loginfo("ee_pos: " + str(ee_pos))
-    #     rospy.loginfo("end of callbach")
 
     def kinematic_callback(self, data):
         rospy.loginfo(rospy.get_caller_id() + "kinematic_callback heard that %s", data)
@@ -55,42 +54,59 @@ class SingleLegController:
             # rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
             ##################################
             cur_angles = self.leg.compute_inverse_kinematics()
-            rospy.loginfo('current alpha = ' + str(cur_angles[0]) +
+            rospy.loginfo('inverse kinematic angles for current ee_pos current alpha = ' + str(cur_angles[0]) +
                           ' current beta = ' + str(cur_angles[1]) + ' current gamma = ' + str(cur_angles[2]))
+            actual_angles = self.leg.get_current_angles()
+            rospy.loginfo('actually set angles: ' + str(actual_angles))
             ee_pos = self.leg.ee_position()
-            rospy.loginfo('current ee_pos = ' + str(ee_pos))
-            angles = self.leg.compute_inverse_kinematics(numpy.array([-0.1, 0.277, -0.11, 1]))
-            rospy.loginfo('angles to reach position [0.1, 0.277, -0.115, 1]: alpha = ' + str(angles[0]) +
-                          ' beta = ' + str(angles[1]) + ' gamma = ' + str(angles[2]))
-            self.leg.set_command(angles)
-            rate = rospy.Rate(10)
-            rate.sleep()
-            pos = self.leg.compute_forward_kinematics(angles)
-            rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
-            ee_pos = self.leg.ee_position()
-            rospy.loginfo('ee_pos = ' + str(ee_pos))
-
-            tf_pos = self.leg.compute_forward_kinematics_tf()
-            pos = self.leg.compute_forward_kinematics()
-            rospy.loginfo("tf                    ee pos in body frame: " + str(tf_pos))
-            rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
+            rospy.loginfo('current ee_pos (forward kinematic) = ' + str(ee_pos))
+            ee_pos = self.leg.compute_forward_kinematics(cur_angles)
+            rospy.loginfo('ee_pos (inverse kinematic angles) = ' + str(ee_pos))
+            # angles = self.leg.compute_inverse_kinematics(numpy.array([-0.1, 0.277, -0.11, 1]))
+            # rospy.loginfo('angles to reach position [0.1, 0.277, -0.115, 1]: alpha = ' + str(angles[0]) +
+            #               ' beta = ' + str(angles[1]) + ' gamma = ' + str(angles[2]))
+            # self.leg.set_command(angles)
+            # rate = rospy.Rate(10)
+            # rate.sleep()
+            # pos = self.leg.compute_forward_kinematics(angles)
+            # rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
+            # ee_pos = self.leg.ee_position()
+            # rospy.loginfo('ee_pos = ' + str(ee_pos))
+            #
+            # tf_pos = self.leg.compute_forward_kinematics_tf()
+            # pos = self.leg.compute_forward_kinematics()
+            # rospy.loginfo("tf                    ee pos in body frame: " + str(tf_pos))
+            # rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
         rospy.loginfo("end of callback")
 
-
-    def manage_swing(self):
-        rate = rospy.Rate(100)  # 100Hz
+    def manage_walk(self):
+        rate = rospy.Rate(10)  # 100Hz
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         rospy.loginfo("leg connected start swing")
-        swing = True
-        self.swing_trajectory_gen.set_start_point = self.leg.ee_position()
-        self.swing_trajectory_gen.set_target_point = [0.1, 0.277, -0.11, 1]  # + TODO
-        self.swing_trajectory_gen.compute_trajectory_points()
+        cur_ee = self.leg.ee_position()
+        self.swing_trajectory_gen.set_start_point(cur_ee)
+        mid_point = self.leg.compute_forward_kinematics([0, -0.75, -0.9])
+        self.swing_trajectory_gen.set_mid_point(mid_point)
+        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -0.9])
+        self.swing_trajectory_gen.set_target_point(end_point)
+        if not self.swing_trajectory_gen.compute_trajectory_points():
+            return None
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
-        #while not rospy.is_shutdown():
-        #    self.swing_trajectory_gen.move_to_next_point()
-        #    rate.sleep()  # swing_net.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing  #
+        rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
+        start_angles = self.leg.compute_inverse_kinematics(cur_ee)
+        mid_angles = self.leg.compute_inverse_kinematics(mid_point)
+        end_angles = self.leg.compute_inverse_kinematics(end_point)
+        rospy.loginfo('should be (IK) ' + str(start_angles))
+        rospy.loginfo('mid point angles: [0, -1, -0.9] set to (IK) ' + str(mid_angles))
+        rospy.loginfo('end point angles: [-0.59, 0, -0.9, 1] set to (IK) ' + str(end_angles))
+        while not rospy.is_shutdown() and not self.swing_trajectory_gen.is_finished():
+            if self.swing:
+                self.swing_trajectory_gen.move_to_next_point()
+                rate.sleep()
+                rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
+            # swing_net.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing  #
             # phase starts  # swing_net.swing_target_point = numpy.array([1., 0., 0.])  # the point where the swing
             # phase should end  # at which position of the interval between the start and the end point the middle  #
             # point should be placed  # swing_net.apex_point_ratio = 0.5  # the offset that is added to the middle  #
@@ -98,33 +114,24 @@ class SingleLegController:
             # apex_point_ratio concept.  # swing_net.apex_point_offset = numpy.array([0, 0,  # 0.4])  #
             # swing_net.collision_point = numpy.array([0.8, 0, 0.256])  # bezier_points =  #
             # swing_net.compute_bezier_points()  # rospy.loginfo(str(bezier_points))
-
             # swing_net.move_to_next_point(0.5)
-
-
-# def compute_segment_length(self):
-# in meter
-# c1_pos = [0, 0.1034, 0.001116]
-# thigh_pos = [0, 0.1574, 0.001116]
-# tibia_pos = [0.0001, 0.22275, -0.00885]
-# ee_pos = [0.0015, 0.38631, -0.02038]
-# c1_length = numpy.sqrt(
-#    thigh_pos[0] - c1_pos[0] * thigh_pos[0] - c1_pos[0] + thigh_pos[1] - c1_pos[1] * thigh_pos[1] - c1_pos[1] +
-#    thigh_pos[2] - c1_pos[2] * thigh_pos[2] - c1_pos[2])
-# thigh_length = numpy.sqrt(
-#    tibia_pos[0] - thigh_pos[0] * tibia_pos[0] - thigh_pos[0] + tibia_pos[1] - thigh_pos[1] * tibia_pos[1] -
-#    thigh_pos[1] + tibia_pos[2] - thigh_pos[2] * tibia_pos[2] - thigh_pos[2])
-# tibia_length = numpy.sqrt(
-#    ee_pos[0] - tibia_pos[0] * ee_pos[0] - tibia_pos[0] + ee_pos[1] - tibia_pos[1] * ee_pos[1] - tibia_pos[1] +
-#    ee_pos[2] - tibia_pos[2] * ee_pos[2] - tibia_pos[2])
-# return [c1_length, thigh_length, tibia_length]
+        cur_ee = self.leg.ee_position()
+        self.stance_trajectory_gen.set_start_point(cur_ee)
+        alpha = 0.59
+        if self.movement_dir is 1:
+            alpha = -0.59
+        end_point = self.leg.compute_forward_kinematics([alpha, 0, -0.9])
+        self.stance_trajectory_gen.set_target_point(end_point)
+        while not rospy.is_shutdown() and not self.stance_trajectory_gen.is_finished():
+            self.stance_trajectory_gen.stance()
+            rate.sleep()
 
 
 if __name__ == '__main__':
     rospy.init_node('single_leg_controller', anonymous=True)
-    legController = SingleLegController('lm')
+    legController = SingleLegController('lf', True)
     #rospy.spin()
     try:
-        legController.manage_swing()
+        legController.manage_walk()
     except rospy.ROSInterruptException:
         pass
