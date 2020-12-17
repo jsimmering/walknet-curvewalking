@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 import tf
@@ -11,7 +11,9 @@ from walknet_curvewalking.motion_primitives.stance_movment_simple import StanceM
 
 
 class SingleLegController:
-    def __init__(self, name, swing):
+    def __init__(self, name, note_handle, swing):
+        # rospy.init_node('single_leg_controller', anonymous=True)
+        self.nh = note_handle
         self.name = name
         self.movement_dir = 1
         if 'l' in self.name:
@@ -85,9 +87,9 @@ class SingleLegController:
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         rospy.loginfo("leg connected start swing")
-        mid_point = self.leg.compute_forward_kinematics([0, -0.75, -0.9])
+        mid_point = self.leg.compute_forward_kinematics([0, -0.75, -1.0])
         self.swing_trajectory_gen.set_mid_point(mid_point)
-        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -0.9])
+        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])
         self.swing_trajectory_gen.set_target_point(end_point)
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
         rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
@@ -101,7 +103,7 @@ class SingleLegController:
         alpha = 0.59
         if self.movement_dir == 1:
             alpha = -0.59
-        end_point = self.leg.compute_forward_kinematics([alpha, 0, -0.9])
+        end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown():
             if self.swing:
