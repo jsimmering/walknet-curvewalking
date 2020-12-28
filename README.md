@@ -19,3 +19,11 @@ To change the leg which should execute the movement the name of the leg with whi
 `legController = SingleLegController('lm', nh, True)`
 
 Here lm stands for left middle leg, lf would stand for left front leg, lr for left rear leg and rm, rf and rr for the corresponding right legs (middle, front, rear).
+
+## Running the scripts
+This Project is a catkin-project. It needs to be cloned into the src directory of a catkin workspace and installed by running `catkin_make` in the root directory of that workspace.
+The single_leg_controller listens to the `/phantomx/j_<joint-name_leg-name>_position_controller/state`-topics and sends joint angles as commands to the `/phantomx/j_<joint-name_leg-name>_position_controller/command`-topics. 
+In order to run the programm successfully the real robot or the phantom_gazebo simulation must be connected to the roscore and publish and listen to the topics mentioned above.
+The single_leg_controller.py can then be executed by running:
+
+`rosrun walknet-curvewalking stand_up_controller.py `
