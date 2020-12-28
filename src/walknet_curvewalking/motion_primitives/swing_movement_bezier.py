@@ -3,6 +3,7 @@ https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/
 modified for PhantomX Robot"""
 import copy
 import numpy
+import rospy
 
 DEFAULT_SWING_VELOCITY = 0.28
 DEFAULT_APEX_POINT_OFFSET = numpy.array([0, 0, 0.2])
@@ -48,7 +49,7 @@ class TrajectoryGenerator:
         self.bezier_points = None  # The points that are used for the piecewise bezier
         self.order = 2  # the order to the bezier curve
 
-        self.frozen = True
+        # self.frozen = True
 
     def reset(self):
         self.last_target_position = None
@@ -206,12 +207,13 @@ class SwingMovementBezier:
 
     def notify_of_collision(self, weight=1):
         if weight >= 1:
-            self.collision_point = self.mleg.wleg.leg.input_foot_position
+            self.collision_point = self.mleg.ee_position()
             bezier_points = self.compute_bezier_points()
             self.trajectory_generator.reset()
             self.trajectory_generator.bezier_points = bezier_points
 
     def compute_bezier_points(self):  # ForNormalSwingMovement(self):
+        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -282,35 +284,35 @@ class SwingMovementBezier:
                      control_point_3, self.swing_target_point])
 
     def move_to_next_point(self, activation):
-        if not self.mleg.wleg.leg.leg_enabled:
-            return
+        #if not self.mleg.leg_enabled:
+        #    return
 
         if activation >= 0.5:
             if self.last_activation < 0.5:
                 self.trajectory_generator.reset()
-                self.swing_start_point = self.mleg.wleg.leg.input_foot_position
+                self.swing_start_point = self.mleg.ee_position()
                 self.swing_target_point = None
                 self.collision_point = None
 
-            if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
-                self.swing_target_point = self.mleg.aep_shifted
-                bezier_points = self.compute_bezier_points()
-                self.trajectory_generator.bezier_points = bezier_points
+            #if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
+            #    self.swing_target_point = self.mleg.aep_shifted
+            #    bezier_points = self.compute_bezier_points()
+            #    self.trajectory_generator.bezier_points = bezier_points
             target_position = self.trajectory_generator.compute_next_target(
                 desired_distance=self.swing_velocity / CONTROLLER_FREQUENCY,
-                current_position=self.mleg.wleg.leg.input_foot_position)
+                current_position=self.mleg.ee_position())
             # now it's just a matter of moving the leg to the next position
             # get  the current input angles
-            current_input_angles = self.mleg.wleg.leg.getInputPosition()
+            current_input_angles = self.mleg.get_current_angles()
             # compute the values should for the next iteration
-            next_angles = self.mleg.wleg.leg.compute_inverse_kinematics(target_position)
+            next_angles = self.mleg.compute_inverse_kinematics(target_position)
             # compute the difference
             delta_angles = next_angles - numpy.array(current_input_angles)
             # compute the required speed in order to reach those angles
             angle_vel = delta_angles * CONTROLLER_FREQUENCY
 
-            if self.mleg.wleg.leg.leg_enabled:
-                self.mleg.wleg.addControlVelocities(angle_vel)
+            # if self.mleg.wleg.leg.leg_enabled:
+            #    self.mleg.wleg.addControlVelocities(angle_vel)
         self.last_activation = activation
 
     def end_swing_phase(self):

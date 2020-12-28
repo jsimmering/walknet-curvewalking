@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
+import numpy
 import rospy
 import tf
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
 from walknet_curvewalking.phantomx.SingleLeg import SingleLeg
-# from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
+from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
 from walknet_curvewalking.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking.motion_primitives.stance_movment_simple import StanceMovementSimple
 
@@ -81,6 +81,28 @@ class SingleLegController:
             # rospy.loginfo("transformation matrix ee pos in body frame: " + str(pos))
         rospy.loginfo("end of callback")
 
+    def bezier_swing(self):
+        rate = rospy.Rate(10)  # 100Hz
+        while not self.leg.is_ready():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        temp = SwingMovementBezier(self.leg)
+        # temp.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing phase starts
+        temp.swing_start_point = self.leg.ee_position()[0:3]
+        # temp.swing_target_point = numpy.array([1., 0., 0.])  # the point where the swing phase should end
+        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
+        # at which position of the interval between the start and the end point the middle point should be placed
+        temp.apex_point_ratio = 0.05
+        # the offset that is added to the middle point that was computed on the connecting line between start and
+        # end point using the apex_point_ratio concept.
+        temp.apex_point_offset = numpy.array([0, 0, 0.4])
+        temp.collision_point = numpy.array([0.8, 0, 0.256])
+        bezier_points = temp.compute_bezier_points()
+        print(bezier_points)
+        while not rospy.is_shutdown():
+            temp.move_to_next_point(1)
+            rate.sleep()
+
     def manage_walk(self):
         rate = rospy.Rate(10)  # 100Hz
         while not self.leg.is_ready():
@@ -93,12 +115,12 @@ class SingleLegController:
         self.swing_trajectory_gen.set_target_point(end_point)
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
         rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
-        #start_angles = self.leg.compute_inverse_kinematics(cur_ee)
-        #mid_angles = self.leg.compute_inverse_kinematics(mid_point)
-        #end_angles = self.leg.compute_inverse_kinematics(end_point)
-        #rospy.loginfo('should be (IK) ' + str(start_angles))
-        #rospy.loginfo('mid point angles: [0, -1, -0.9] set to (IK) ' + str(mid_angles))
-        #rospy.loginfo('end point angles: [-0.59, 0, -0.9, 1] set to (IK) ' + str(end_angles))
+        # start_angles = self.leg.compute_inverse_kinematics(cur_ee)
+        # mid_angles = self.leg.compute_inverse_kinematics(mid_point)
+        # end_angles = self.leg.compute_inverse_kinematics(end_point)
+        # rospy.loginfo('should be (IK) ' + str(start_angles))
+        # rospy.loginfo('mid point angles: [0, -1, -0.9] set to (IK) ' + str(mid_angles))
+        # rospy.loginfo('end point angles: [-0.59, 0, -0.9, 1] set to (IK) ' + str(end_angles))
 
         alpha = 0.59
         if self.movement_dir == 1:
@@ -136,10 +158,11 @@ class SingleLegController:
 
 
 if __name__ == '__main__':
-    rospy.init_node('single_leg_controller', anonymous=True)
-    legController = SingleLegController('lm', True)
-    #rospy.spin()
+    nh = rospy.init_node('single_leg_controller', anonymous=True)
+    legController = SingleLegController('lm', nh, True)
+    # rospy.spin()
     try:
         legController.manage_walk()
+        # legController.bezier_swing()
     except rospy.ROSInterruptException:
         pass
