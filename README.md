@@ -1,6 +1,19 @@
 # walknet-curvewalking
 Ongoing reimplementation of the Walknet decentralized architecture for six-legged robots with the goal of adjusting it for curve-walking.
 
+## References
+The simulation with which this code was developed can be found here:
+<https://github.com/kkonen/phantomx_gazebo>.
+
+It requires the robot description which can be found here:
+<https://github.com/kkonen/phantomx_description>.
+
+And to control the robot the ROS controller from HumanRobotics:
+<https://github.com/HumaRobotics/phantomx_control>.
+
+The walknet implementation which this code is related to and where parts of the code are taken from can be found here:
+<https://github.com/malteschilling/cognitiveWalker>.
+
 ## Excecuting movements
 In order to execute a single swing, a single stance movement or a walking behavior the appropriate function must be selected in the controller/singl_leg_controller.py in the main function (lines 154 to 157):
 
