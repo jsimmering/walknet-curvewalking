@@ -1,41 +1,47 @@
-"""Took code from:
-https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/SwingMovementBezier.py
-modified for PhantomX Robot"""
+# Took code from:
+# https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/SwingMovementBezier.py
+# modified for PhantomX Robot
 import copy
 import numpy
 import rospy
-
-DEFAULT_SWING_VELOCITY = 0.28
-DEFAULT_APEX_POINT_OFFSET = numpy.array([0, 0, 0.2])
-CONTROLLER_FREQUENCY = 100
-
+import walknet_curvewalking.support.constants as CONST
 
 # Function that computes a point that lies on a bezier curve
 # The curve is defined by the parameters in points (knots and control points) and the order.
 # The "parameter" defines the position of the point on the curve
 # Also for multiple pieces, the curve starts at parameter=0 and ends at parameter=1!
 # For parameters outside the interval [0,1], the curve will be extrapolated.
+# points: knots and control points that define the curve
+# parameter: position of the point on the curve
+# order: order of the curve
 def bezier(points, parameter, order=2):
+    print("in bezier")
     num_of_segments = (points.shape[0] - 1) / order  # number of pieces, the piecewise bezier curve consists of
+    print("points.shape[0] = " + str(points.shape[0]) + " order = " + str(order) + " num_of_segments = " + str(
+        num_of_segments))
     assert num_of_segments % 1 == 0
 
-    segment_number = None
+    segment_number = None  # the number of the currently relevant segment
     if 0 <= parameter <= 1:
-        segment_number = numpy.floor(parameter * num_of_segments)  # the number of the currently relevant segment
+        segment_number = numpy.floor(parameter * num_of_segments)
     elif parameter < 0:
         segment_number = 0
     elif 1 < parameter:
         segment_number = num_of_segments - 1
+    segment_number = int(segment_number)
+    print("number of currently relevant segment = " + str(segment_number))
 
     relative_parameter = (parameter * num_of_segments) - segment_number  # this is the parameter for the
     # current segment. It is mapped to the interval [0,1]
+    print("relative parameter = " + str(relative_parameter))
     relevant_points = copy.copy(
         points[segment_number * order:(segment_number + 1) * order + 1, :])  # the bezier points of the current segment
+    # print("bezier points of the current segment = " + str(relevant_points))
     # compute the point
     while relevant_points.shape[0] > 1:
         deltas = numpy.diff(relevant_points, n=1, axis=0)
-        relevant_points = relevant_points[0:-1] + deltas * relative_parameter
-    return relevant_points[0, :]
+        relevant_points = relevant_points[0:-1] + deltas * relative_parameter  # [0:-1] = [:-1] all elements except last
+    return relevant_points[0]  # [0, :]  # everything in row 0 (first row)
 
 
 class TrajectoryGenerator:
@@ -60,38 +66,40 @@ class TrajectoryGenerator:
     # value of delta_parameter.
     # If this fails, binary search is used to find the next target point. In order to use this algorithm, first of all,
     # a point is needed that is located at less than desired_distance from the current_position. Additionally,
-    # a point is needed that is further than
-    # desired_distance away from the current_position.
+    # a point is needed that is further than desired_distance away from the current_position.
     def compute_next_target(self, desired_distance=None, current_position=None):
         if self.last_target_parameter is None:  # if the last target parameter is unknown, probably, this is the
             # first iteration for a new trajectory.
             self.last_target_parameter = 0
             # the last target position is set to the first point of the bezier points
-            self.last_target_position = self.bezier_points[0, :]
-            num_of_segments = (self.bezier_points.shape[
-                                   0] - 1) / self.order  # This is the number of segments the piecewise bezier curve
-            # consists of.
+            # print("last_target_position = " + str(self.last_target_position))
+            # print("bezier_points = " + str(self.bezier_points))
+            self.last_target_position = self.bezier_points[0]  # [0, :]  # everything in row 0
+            # print("new last_target_position = " + str(self.last_target_position))
+            # The number of segments the piecewise bezier curve consists of:
+            num_of_segments = (self.bezier_points.shape[0] - 1) / self.order
             # A good estimation of the delta_paramet is necessary in order to reduce the number of iterations
             self.norm_delta_parameter = 1 / num_of_segments * desired_distance / numpy.linalg.norm(
-                numpy.diff(self.bezier_points[0:2, :]))
+                numpy.diff(self.bezier_points[0:2, :]))  # [0:2, :]  array containing row 0 and 1 of array
 
         # if no current_position is given by parameter, the last_target_position is assumed
         if current_position is None:
             current_position = self.last_target_position
         else:  # if the current_position is more than desired_distance away from the last_target_position,
             # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
+            print("last_target_pos = " + str(self.last_target_position) + " current_pos = " + str(current_position))
             delta_position = self.last_target_position - current_position
             if numpy.linalg.norm(delta_position) >= desired_distance:
                 return current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
             del delta_position
-        delta_parameter = self.norm_delta_parameter * desired_distance
         # Try to adapt the delta_parameter to the desired_distance
+        delta_parameter = self.norm_delta_parameter * desired_distance
         parameter_position_list = [(self.last_target_parameter, self.last_target_position)]
         slightly_further_parameter = None
         slightly_closer_parameter = None
         slightly_further_position = None
-        for _ in range(
-                6):  # do this six times - this should be enough, usually, it takes two or three iterations to reach
+        for _ in range(6):
+            # do this six times - this should be enough, usually, it takes two or three iterations to reach
             # an accuracy of 0.01.
             # This is just a temporary target position that is used to estimate the amount by which the
             # delta_parameter should be changed.
@@ -113,6 +121,7 @@ class TrajectoryGenerator:
             delta_parameter = delta_parameter / (
                     numpy.linalg.norm(test_target_position - current_position) / desired_distance)
 
+            # TODO can be done only once after for??
             # variables containing a parameter, position and the corresponding distance that is slightly smaller than
             # the desired_distance
             slightly_closer_parameter = self.last_target_parameter
@@ -184,17 +193,17 @@ class TrajectoryGenerator:
 
 
 class SwingMovementBezier:
-    def __init__(self, mleg=None):
-        self.mleg = mleg
+    def __init__(self, leg=None):
+        self.leg = leg
         self.trajectory_generator = TrajectoryGenerator()
         self.last_activation = 0
-        self.swing_velocity = DEFAULT_SWING_VELOCITY
+        self.swing_velocity = CONST.DEFAULT_SWING_VELOCITY
 
         self.swing_start_point = None  # the point where the swing phase starts
         self.swing_target_point = None  # the point where the swing phase should end
         self.apex_point_ratio = 0.5  # at which position of the interval between the start and the end point the
         # middle point should be placed
-        self.apex_point_offset = DEFAULT_APEX_POINT_OFFSET  # the offset that is added to the middle point that was
+        self.apex_point_offset = CONST.DEFAULT_APEX_POINT_OFFSET  # the offset that is added to the middle point that was
         # computed on the connecting line between start and end point using the apex_point_ratio concept.
 
         self.collision_point = None
@@ -202,18 +211,17 @@ class SwingMovementBezier:
         self.evasion_distance = 0.06
         self.retraction_distance = 0.10
         self.max_evasion_distance = 0.25
-
-        self.frozen = True
+        # self.frozen = True
 
     def notify_of_collision(self, weight=1):
         if weight >= 1:
-            self.collision_point = self.mleg.ee_position()
+            self.collision_point = self.leg.ee_position()
             bezier_points = self.compute_bezier_points()
             self.trajectory_generator.reset()
             self.trajectory_generator.bezier_points = bezier_points
 
     def compute_bezier_points(self):  # ForNormalSwingMovement(self):
-        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        print("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -227,7 +235,7 @@ class SwingMovementBezier:
                 [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
         else:  # in case of a collision
             collision_ratio = numpy.dot((self.collision_point - self.swing_start_point),
-                                        start_to_end_direction) / start_to_end_distance  # where during the swing
+                start_to_end_direction) / start_to_end_distance  # where during the swing
             # phase the collision happened
             start_to_end_vector_to_collision_point_distance = numpy.linalg.norm(
                 (self.collision_point - self.swing_start_point) - collision_ratio * start_to_end_vector)
@@ -238,7 +246,7 @@ class SwingMovementBezier:
                     # the evasion movement will be below the apex point
                     evasion_to_apex_vector = apex_point - evasion_point
                     control_point_3 = apex_point - numpy.dot(0.5 * evasion_to_apex_vector,
-                                                             start_to_end_direction) * start_to_end_direction
+                        start_to_end_direction) * start_to_end_direction
                     evasion_to_control_point_3_vector = control_point_3 - evasion_point
                     evasion_to_control_point_3_distance = numpy.linalg.norm(evasion_to_control_point_3_vector)
                     evasion_to_control_point_3_direction = evasion_to_control_point_3_vector / \
@@ -251,7 +259,7 @@ class SwingMovementBezier:
                     control_point_4 = apex_point + 0.5 * self.apex_point_ratio * start_to_end_vector
                     return numpy.array(
                         [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                         control_point_3, apex_point, control_point_4, self.swing_target_point])
+                            control_point_3, apex_point, control_point_4, self.swing_target_point])
                 else:  # the evasion movement will be above the standard apex point
                     if start_to_end_vector_to_collision_point_distance + self.evasion_distance > \
                             self.max_evasion_distance:
@@ -268,11 +276,11 @@ class SwingMovementBezier:
                     control_point_4 = apex_point + 0.5 * (1 - self.apex_point_ratio) * start_to_end_vector
                     return numpy.array(
                         [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                         control_point_3, apex_point, control_point_4, self.swing_target_point])
+                            control_point_3, apex_point, control_point_4, self.swing_target_point])
             else:  # the collision happened after the leg reached the apex
                 if collision_ratio > 0.9:
                     return numpy.array([self.collision_point, self.collision_point - apex_point_direction / 2,
-                                        self.collision_point - apex_point_direction])
+                        self.collision_point - apex_point_direction])
                 if start_to_end_vector_to_collision_point_distance + self.evasion_distance > self.max_evasion_distance:
                     evasion_point = self.swing_start_point + collision_ratio * start_to_end_vector + \
                                     self.max_evasion_distance * apex_point_direction
@@ -281,35 +289,37 @@ class SwingMovementBezier:
                 control_point_3 = evasion_point + (1 - collision_ratio) * start_to_end_vector
                 return numpy.array(
                     [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                     control_point_3, self.swing_target_point])
+                        control_point_3, self.swing_target_point])
 
     def move_to_next_point(self, activation):
-        #if not self.mleg.leg_enabled:
+        # if not self.mleg.leg_enabled:
         #    return
 
         if activation >= 0.5:
             if self.last_activation < 0.5:
                 self.trajectory_generator.reset()
-                self.swing_start_point = self.mleg.ee_position()
+                self.swing_start_point = self.leg.ee_position()
                 self.swing_target_point = None
                 self.collision_point = None
 
-            #if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
+            # TODO this needs to happen? What is happening here?
+            # if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
             #    self.swing_target_point = self.mleg.aep_shifted
             #    bezier_points = self.compute_bezier_points()
             #    self.trajectory_generator.bezier_points = bezier_points
             target_position = self.trajectory_generator.compute_next_target(
-                desired_distance=self.swing_velocity / CONTROLLER_FREQUENCY,
-                current_position=self.mleg.ee_position())
+                desired_distance=self.swing_velocity / CONST.CONTROLLER_FREQUENCY,
+                current_position=self.leg.ee_position()[0:3])
             # now it's just a matter of moving the leg to the next position
             # get  the current input angles
-            current_input_angles = self.mleg.get_current_angles()
+            current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
-            next_angles = self.mleg.compute_inverse_kinematics(target_position)
+            next_angles = self.leg.compute_inverse_kinematics(target_position)
+            self.leg.set_command(next_angles)
             # compute the difference
             delta_angles = next_angles - numpy.array(current_input_angles)
             # compute the required speed in order to reach those angles
-            angle_vel = delta_angles * CONTROLLER_FREQUENCY
+            angle_vel = delta_angles * CONST.CONTROLLER_FREQUENCY
 
             # if self.mleg.wleg.leg.leg_enabled:
             #    self.mleg.wleg.addControlVelocities(angle_vel)
@@ -320,6 +330,8 @@ class SwingMovementBezier:
 
 
 if __name__ == '__main__':
+    # print("here0")
+    # rospy.init_node('bezier_swing_controller', anonymous=True)
     temp = SwingMovementBezier()
     temp.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing phase starts
     temp.swing_target_point = numpy.array([1., 0., 0.])  # the point where the swing phase should end
@@ -331,3 +343,4 @@ if __name__ == '__main__':
     temp.collision_point = numpy.array([0.8, 0, 0.256])
     bezier_points = temp.compute_bezier_points()
     print(bezier_points)
+    # temp.move_to_next_point(1)

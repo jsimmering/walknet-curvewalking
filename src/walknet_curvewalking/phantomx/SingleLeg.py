@@ -260,29 +260,30 @@ class SingleLeg:
     #   to calculate the complementing angles.
     #   @param p point in body coordinate system
     def compute_inverse_kinematics(self, p=None):
+        rospy.loginfo("in compute inverse kinematics")
         if isinstance(p, (type(None))):
             p = self.ee_position()
         if len(p) == 3:
             p = numpy.append(p, [1])
         p_temp = copy.copy(p)
-        #rospy.loginfo('ee_pos target = ' + str(p))
+        # rospy.loginfo('ee_pos target = ' + str(p))
 
         c1_pos = self.body_c1_transformation(self.alpha)
         # alpha_angle: float = -atan2(p[1], (p[0]))
         # TODO probably only works for lm leg find general solution!
-        #rospy.loginfo('c1_pos = ' + str(c1_pos))
+        # rospy.loginfo('c1_pos = ' + str(c1_pos))
         # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
         alpha_angle = -atan2(p[0] - c1_pos[0], p[1] - c1_pos[1])
         beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(0))
         lct = numpy.linalg.norm(p[0:3] - beta_pos[0:3])
-        #rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
+        # rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
 
         default_gamma_pos = self.body_c1_transformation(alpha_angle,
             self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
         thigh_tibia_angle = -atan2(default_gamma_pos[2] - beta_pos[2], default_gamma_pos[1] - beta_pos[1])
-        #rospy.loginfo('thigh_tibia_angle = ' + str(thigh_tibia_angle))
+        # rospy.loginfo('thigh_tibia_angle = ' + str(thigh_tibia_angle))
         tibia_z_angle = pi - atan2(0.02, -0.16)
-        #rospy.loginfo('tibia_z_angle = ' + str(tibia_z_angle))
+        # rospy.loginfo('tibia_z_angle = ' + str(tibia_z_angle))
         # if (self.name=='rm'):
         #    print(p)
         try:
@@ -290,47 +291,48 @@ class SingleLeg:
                     2 * self.segment_lengths[1] * self.segment_lengths[2])))  # - pi / 2
             # gamma_angle = pi - gamma_inner
             gamma_angle = gamma_inner - pi - tibia_z_angle
-            #rospy.loginfo(
+            # rospy.loginfo(
             #    'gamma_angle = ' + str(gamma_angle) + ' gamma_inner = ' + str(gamma_inner) + ' pi = ' + str(pi))
             # TODO gamma not exactly correct but not exactly wrong
             h1 = (acos((pow(self.segment_lengths[1], 2) + pow(lct, 2) - pow(self.segment_lengths[2], 2)) / (
                     2 * self.segment_lengths[1] * lct)))
-            #rospy.loginfo('beta_inner = ' + str(h1))
+            # rospy.loginfo('beta_inner = ' + str(h1))
             ee_angle = -atan2(p[2] - beta_pos[2], p[1] - beta_pos[1])
-            #rospy.loginfo('ee_angle = ' + str(ee_angle))
-            #rospy.loginfo('beta atan = ' + str(ee_angle - h1))
+            # rospy.loginfo('ee_angle = ' + str(ee_angle))
+            # rospy.loginfo('beta atan = ' + str(ee_angle - h1))
             # Avoid running in numerical rounding error
-            #rospy.loginfo('c1 to ee vector = ' + str(numpy.linalg.norm(p[0:3] - c1_pos[0:3])))
+            # rospy.loginfo('c1 to ee vector = ' + str(numpy.linalg.norm(p[0:3] - c1_pos[0:3])))
             vector_c1_ee = numpy.linalg.norm(p[0:3] - c1_pos[0:3])
-            #rospy.loginfo(
+            # rospy.loginfo(
             #    'lct =  ' + str(lct) + ' c1_link length = ' + str(self.segment_lengths[0]) + ' c1->ee_vector = ' + str(
             #        vector_c1_ee))
             cos_beta = (pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
                     2 * lct * self.segment_lengths[0])
-            #rospy.loginfo('cos_beta = ' + str(cos_beta))
+            # rospy.loginfo('cos_beta = ' + str(cos_beta))
             if (cos_beta < -1.):
                 rospy.loginfo('----------------PI----------')
                 h2 = pi
             else:
                 h2 = (acos(cos_beta))
-            #rospy.loginfo('beta_outer = ' + str(h2))
+            # rospy.loginfo('beta_outer = ' + str(h2))
         except ValueError:
             raise ValueError('The provided position (' + str(p_temp[0]) + ', ' + str(p_temp[1]) + ', ' + str(
                 p_temp[2]) + ') is not valid for the given geometry for leg ' + self.name)
         if p[2] < 0:
             # beta_angle = (h1 + h2 + thigh_tibia_angle) - pi  # with rotation_dir
             beta_angle = pi - (h1 + h2 + thigh_tibia_angle)
-            #rospy.loginfo('ee lower than body')
+            # rospy.loginfo('ee lower than body')
         else:
-            #rospy.loginfo('ee higher than body')
+            # rospy.loginfo('ee higher than body')
             # beta_angle = h1 - h2 + pi + thigh_tibia_angle  # with rotation_dir
             beta_angle = h1 - h2 - pi - thigh_tibia_angle
 
-        #if self.rotation_dir is True:
+        # if self.rotation_dir is True:
         #    gamma_angle *= -1
-        #else:
+        # else:
         #    beta_angle *= -1
-
+        rospy.loginfo(
+            "return angles alpha = " + str(alpha_angle) + " beta = " + str(beta_angle) + " gamme = " + str(gamma_angle))
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
     def get_current_angles(self):
@@ -347,6 +349,8 @@ class SingleLeg:
 
     def set_command(self, next_angles):
         # TODO check joint ranges
+        rospy.loginfo(
+            "set command. angles = " + str(next_angles) + " current angles = " + str(self.get_current_angles()))
         self.alpha_pub.publish(next_angles[0])
         self.beta_pub.publish(next_angles[1])
         self.gamma_pub.publish(next_angles[2])

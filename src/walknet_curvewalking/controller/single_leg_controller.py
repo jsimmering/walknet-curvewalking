@@ -61,9 +61,10 @@ class SingleLegController:
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
         temp.apex_point_offset = numpy.array([0, 0, 0.4])
-        temp.collision_point = numpy.array([0.8, 0, 0.256])
-        bezier_points = temp.compute_bezier_points()
-        print(bezier_points)
+        # temp.collision_point = numpy.array([0.8, 0, 0.256])
+        # bezier_points = temp.compute_bezier_points()
+        temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
+        print(temp.trajectory_generator.bezier_points)
         while not rospy.is_shutdown():
             temp.move_to_next_point(1)
             rate.sleep()
@@ -123,9 +124,10 @@ class SingleLegController:
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
         rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
 
-        while not rospy.is_shutdown() and not self.swing_trajectory_gen.is_finished():
-            self.swing_trajectory_gen.move_to_next_point()
-            rate.sleep()
+        self.swing_trajectory_gen.move_to_next_point()
+        #while not rospy.is_shutdown() and not self.swing_trajectory_gen.is_finished():
+            #self.swing_trajectory_gen.move_to_next_point()
+            #rate.sleep()
             # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
 
     # function for executing a single stance movement.
