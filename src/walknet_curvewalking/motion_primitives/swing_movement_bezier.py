@@ -6,6 +6,7 @@ import numpy
 import rospy
 import walknet_curvewalking.support.constants as CONST
 
+
 # Function that computes a point that lies on a bezier curve
 # The curve is defined by the parameters in points (knots and control points) and the order.
 # The "parameter" defines the position of the point on the curve
@@ -15,10 +16,8 @@ import walknet_curvewalking.support.constants as CONST
 # parameter: position of the point on the curve
 # order: order of the curve
 def bezier(points, parameter, order=2):
-    print("in bezier")
     num_of_segments = (points.shape[0] - 1) / order  # number of pieces, the piecewise bezier curve consists of
-    print("points.shape[0] = " + str(points.shape[0]) + " order = " + str(order) + " num_of_segments = " + str(
-        num_of_segments))
+    # rospy.loginfo("points.shape[0] = " + str(points.shape[0]) + " order = " + str(order) + " num_of_segments = " + str(num_of_segments))
     assert num_of_segments % 1 == 0
 
     segment_number = None  # the number of the currently relevant segment
@@ -29,11 +28,10 @@ def bezier(points, parameter, order=2):
     elif 1 < parameter:
         segment_number = num_of_segments - 1
     segment_number = int(segment_number)
-    print("number of currently relevant segment = " + str(segment_number))
+    # rospy.loginfo"number of currently relevant segment = " + str(segment_number))
 
     relative_parameter = (parameter * num_of_segments) - segment_number  # this is the parameter for the
     # current segment. It is mapped to the interval [0,1]
-    print("relative parameter = " + str(relative_parameter))
     relevant_points = copy.copy(
         points[segment_number * order:(segment_number + 1) * order + 1, :])  # the bezier points of the current segment
     # print("bezier points of the current segment = " + str(relevant_points))
@@ -41,6 +39,7 @@ def bezier(points, parameter, order=2):
     while relevant_points.shape[0] > 1:
         deltas = numpy.diff(relevant_points, n=1, axis=0)
         relevant_points = relevant_points[0:-1] + deltas * relative_parameter  # [0:-1] = [:-1] all elements except last
+    rospy.loginfo("return bezier point: " + str(relevant_points[0]))
     return relevant_points[0]  # [0, :]  # everything in row 0 (first row)
 
 
@@ -87,9 +86,12 @@ class TrajectoryGenerator:
             current_position = self.last_target_position
         else:  # if the current_position is more than desired_distance away from the last_target_position,
             # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
-            print("last_target_pos = " + str(self.last_target_position) + " current_pos = " + str(current_position))
             delta_position = self.last_target_position - current_position
             if numpy.linalg.norm(delta_position) >= desired_distance:
+                rospy.loginfo("---ELSE: current distance " + str(numpy.linalg.norm(delta_position)) +
+                              " is more than desired_distance away from the last_target_position, last_target_pos = " +
+                              str(self.last_target_position) + " current_pos = " + str(current_position) +
+                              " desired distance = " + str(desired_distance))
                 return current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
             del delta_position
         # Try to adapt the delta_parameter to the desired_distance
@@ -109,8 +111,8 @@ class TrajectoryGenerator:
 
             # If a delta_parameter was found that produces a point which has a distance to the current_position that
             # is close enough to the desired_distance, stop this algorithm.
-            if abs(numpy.linalg.norm(
-                    test_target_position - current_position) - desired_distance) / desired_distance < self.accuracy:
+            current_distance = numpy.linalg.norm(test_target_position - current_position)
+            if abs(current_distance - desired_distance) / desired_distance < self.accuracy:
                 self.last_target_parameter += delta_parameter
                 self.last_target_position = current_position + (
                         test_target_position - current_position) / numpy.linalg.norm(
@@ -221,7 +223,7 @@ class SwingMovementBezier:
             self.trajectory_generator.bezier_points = bezier_points
 
     def compute_bezier_points(self):  # ForNormalSwingMovement(self):
-        print("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -307,14 +309,18 @@ class SwingMovementBezier:
             #    self.swing_target_point = self.mleg.aep_shifted
             #    bezier_points = self.compute_bezier_points()
             #    self.trajectory_generator.bezier_points = bezier_points
+            # target_position = self.trajectory_generator.compute_next_target(
+            #   desired_distance=self.swing_velocity / CONST.CONTROLLER_FREQUENCY)
             target_position = self.trajectory_generator.compute_next_target(
                 desired_distance=self.swing_velocity / CONST.CONTROLLER_FREQUENCY,
                 current_position=self.leg.ee_position()[0:3])
             # now it's just a matter of moving the leg to the next position
-            # get  the current input angles
             current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
             next_angles = self.leg.compute_inverse_kinematics(target_position)
+            rospy.loginfo("target position is: " + str(target_position))
+            rospy.loginfo("computed next angles as: " + str(next_angles))
+            rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
             self.leg.set_command(next_angles)
             # compute the difference
             delta_angles = next_angles - numpy.array(current_input_angles)

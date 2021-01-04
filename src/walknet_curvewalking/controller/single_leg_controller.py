@@ -5,7 +5,7 @@ import tf
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
 from walknet_curvewalking.phantomx.SingleLeg import SingleLeg
-from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier
+from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
 from walknet_curvewalking.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking.motion_primitives.stance_movment_simple import StanceMovementSimple
 
@@ -46,21 +46,69 @@ class SingleLegController:
             rospy.loginfo('ee_pos (inverse kinematic angles) = ' + str(ee_pos))
         rospy.loginfo("end of callback")
 
+    def bezier_swing_test_no_vel(self):
+        rate = rospy.Rate(10)  # 100Hz
+        while not self.leg.is_ready():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        temp = SwingMovementBezier(self.leg)
+        temp.swing_start_point = self.leg.ee_position()[0:3]
+        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
+        # at which position of the interval between the start and the end point the middle point should be placed
+        temp.apex_point_ratio = 0.05
+        #temp.apex_point_offset = numpy.array([0, 0, 0.4])
+        # temp.collision_point = numpy.array([0.8, 0, 0.256])
+        temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
+        print(temp.trajectory_generator.bezier_points)
+        target_position = bezier(temp.trajectory_generator.bezier_points, 0)
+        next_angles = self.leg.compute_inverse_kinematics(target_position)
+        rospy.loginfo("target position is: " + str(target_position))
+        rospy.loginfo("computed next angles as: " + str(next_angles))
+        rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+        self.leg.set_command(next_angles)
+        rate.sleep()
+        target_position = bezier(temp.trajectory_generator.bezier_points, 0.25)
+        next_angles = self.leg.compute_inverse_kinematics(target_position)
+        rospy.loginfo("target position is: " + str(target_position))
+        rospy.loginfo("computed next angles as: " + str(next_angles))
+        rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+        self.leg.set_command(next_angles)
+        rate.sleep()
+        target_position = bezier(temp.trajectory_generator.bezier_points, 0.5)
+        next_angles = self.leg.compute_inverse_kinematics(target_position)
+        rospy.loginfo("target position is: " + str(target_position))
+        rospy.loginfo("computed next angles as: " + str(next_angles))
+        rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+        self.leg.set_command(next_angles)
+        rate.sleep()
+        target_position = bezier(temp.trajectory_generator.bezier_points, 0.75)
+        next_angles = self.leg.compute_inverse_kinematics(target_position)
+        rospy.loginfo("target position is: " + str(target_position))
+        rospy.loginfo("computed next angles as: " + str(next_angles))
+        rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+        self.leg.set_command(next_angles)
+        rate.sleep()
+        target_position = bezier(temp.trajectory_generator.bezier_points, 1)
+        next_angles = self.leg.compute_inverse_kinematics(target_position)
+        rospy.loginfo("target position is: " + str(target_position))
+        rospy.loginfo("computed next angles as: " + str(next_angles))
+        rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+        self.leg.set_command(next_angles)
+        rate.sleep()
+
     def bezier_swing(self):
         rate = rospy.Rate(10)  # 100Hz
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         temp = SwingMovementBezier(self.leg)
-        # temp.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing phase starts
         temp.swing_start_point = self.leg.ee_position()[0:3]
-        # temp.swing_target_point = numpy.array([1., 0., 0.])  # the point where the swing phase should end
         temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
         # at which position of the interval between the start and the end point the middle point should be placed
         temp.apex_point_ratio = 0.05
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
-        temp.apex_point_offset = numpy.array([0, 0, 0.4])
+        #temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
         # bezier_points = temp.compute_bezier_points()
         temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
