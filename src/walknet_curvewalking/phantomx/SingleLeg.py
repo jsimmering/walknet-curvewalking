@@ -2,6 +2,7 @@ import copy
 
 import numpy
 import rospy
+import walknet_curvewalking.phantomx.RobotSettings as RSTATIC
 import tf.transformations as transformations
 from std_msgs.msg import Float64
 from math import sin, cos, atan2, pow, pi, acos, radians
@@ -88,6 +89,30 @@ class SingleLeg:
 
     def target_reached(self):
         return self.alpha_reached and self.beta_reached and self.gamma_reached
+
+    ##
+    #   Estimate ground ground_contact:
+    #   Predict current leg position (using fw kinematics) and
+    #   simply decide if the leg should touch ground
+    #   (very stable, but works only on flat terrain).
+    def predictedGroundContact(self):
+        if self.name == "lf" or self.name == "rf":
+            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
+                    and abs(self.ee_position()[0]-RSTATIC.front_initial_aep[0]) < 0.025:
+                rospy.loginfo("predict ground contact for front leg")
+                return 1
+        if self.name == "lm" or self.name == "rm":
+            if (self.ee_position()[2] < (RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
+                    and abs(self.ee_position()[0]-RSTATIC.middle_initial_aep[0]) < 0.025:
+                rospy.loginfo("predict ground contact for middle leg")
+                return 1
+        if self.name == "lr" or self.name == "rr":
+            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
+                    and abs(self.ee_position()[0]-RSTATIC.hind_initial_aep[0]) < 0.025:
+                rospy.loginfo("predict ground contact for rear leg")
+                return 1
+
+        return 0
 
     # compute ee_position based on current joint values in c1 coordinate frame (= leg coordinate frame)
     # code from https://www.programcreek.com/python/example/96799/tf.transformations
@@ -332,7 +357,7 @@ class SingleLeg:
         # else:
         #    beta_angle *= -1
         rospy.loginfo(
-            "return angles alpha = " + str(alpha_angle) + " beta = " + str(beta_angle) + " gamme = " + str(gamma_angle))
+            "return angles alpha = " + str(alpha_angle) + " beta = " + str(beta_angle) + " gamma = " + str(gamma_angle))
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
     def get_current_angles(self):
