@@ -218,6 +218,7 @@ class SwingMovementBezier:
     def notify_of_collision(self, weight=1):
         if weight >= 1:
             self.collision_point = self.leg.ee_position()
+            rospy.loginfo("in notify_of_collision: calculate bezier points based on positions!")
             bezier_points = self.compute_bezier_points()
             self.trajectory_generator.reset()
             self.trajectory_generator.bezier_points = bezier_points
@@ -293,6 +294,23 @@ class SwingMovementBezier:
                     [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
                         control_point_3, self.swing_target_point])
 
+    def compute_bezier_points_with_joint_angles(self):  # ForNormalSwingMovement(self):
+        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        start_to_end_vector = (self.swing_target_point - self.swing_start_point)[0:3]
+        start_angles = self.leg.compute_inverse_kinematics(self.swing_start_point)
+        target_angles = self.leg.compute_inverse_kinematics(self.swing_target_point)
+        apex_point = self.leg.compute_forward_kinematics([(start_angles[0] + target_angles[0]) / 2,
+            (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
+            (start_angles[2] + target_angles[2]) / 2])[0:3]
+        if self.collision_point is None:  # if no collision happened
+            control_point_1 = apex_point - 0.5 * self.apex_point_ratio * start_to_end_vector
+            control_point_2 = apex_point + 0.5 * (1 - self.apex_point_ratio) * start_to_end_vector
+            return numpy.array(
+                [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
+        else:  # in case of a collision
+            rospy.logerr("a collision occured! calculate bezier points based on positions instead of joint angles!")
+            self.compute_bezier_points()
+
     def move_to_next_point(self, activation):
         # if not self.mleg.leg_enabled:
         #    return
@@ -304,7 +322,6 @@ class SwingMovementBezier:
                 self.swing_target_point = None
                 self.collision_point = None
 
-            # TODO this needs to happen? What is happening here?
             # if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
             #    self.swing_target_point = self.mleg.aep_shifted
             #    bezier_points = self.compute_bezier_points()
@@ -347,6 +364,7 @@ if __name__ == '__main__':
     # end point using the apex_point_ratio concept.
     temp.apex_point_offset = numpy.array([0, 0, 0.4])
     temp.collision_point = numpy.array([0.8, 0, 0.256])
-    bezier_points = temp.compute_bezier_points()
+    # bezier_points = temp.compute_bezier_points()
+    bezier_points = temp.compute_bezier_points_with_joint_angles()
     print(bezier_points)
     # temp.move_to_next_point(1)

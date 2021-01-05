@@ -20,6 +20,7 @@ class SingleLegController:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener())
+        self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
@@ -58,7 +59,8 @@ class SingleLegController:
         temp.apex_point_ratio = 0.05
         #temp.apex_point_offset = numpy.array([0, 0, 0.4])
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
-        temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
+        # temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
+        temp.trajectory_generator.bezier_points = temp.compute_bezier_points_with_joint_angles()
         print(temp.trajectory_generator.bezier_points)
         target_position = bezier(temp.trajectory_generator.bezier_points, 0)
         next_angles = self.leg.compute_inverse_kinematics(target_position)
@@ -101,21 +103,64 @@ class SingleLegController:
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
-        temp = SwingMovementBezier(self.leg)
-        temp.swing_start_point = self.leg.ee_position()[0:3]
-        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
+        self.temp.swing_start_point = self.leg.ee_position()[0:3]
+        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
         # at which position of the interval between the start and the end point the middle point should be placed
-        temp.apex_point_ratio = 0.05
+        self.temp.apex_point_ratio = 0.05
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
         #temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
         # bezier_points = temp.compute_bezier_points()
-        temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
-        print(temp.trajectory_generator.bezier_points)
-        while not rospy.is_shutdown():
-            temp.move_to_next_point(1)
+        # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+        self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+        print(self.temp.trajectory_generator.bezier_points)
+        while not rospy.is_shutdown() and not self.leg.predictedGroundContact():
+            self.temp.move_to_next_point(1)
             rate.sleep()
+        self.temp.move_to_next_point(0)
+        rate.sleep()
+        self.swing = False
+
+    # function for moving a leg alternating between swing and stance.
+    def manage_walk_bezier(self):
+        rate = rospy.Rate(10)  # 100Hz
+        while not self.leg.is_ready():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        rospy.loginfo("leg connected start walking")
+
+        alpha = 0.59
+        if self.movement_dir == 1:
+            alpha = -0.59
+        end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
+        self.stance_trajectory_gen.set_target_point(end_point)
+        while not rospy.is_shutdown():
+            if self.swing:
+                if self.temp.swing_start_point is None:
+                    rospy.loginfo("##############################reset swing")
+                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_target_point = self.leg.compute_forward_kinematics(
+                        [self.movement_dir * 0.59, 0, -1.0])[0:3]
+                    self.temp.apex_point_ratio = 0.05
+                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+                self.temp.move_to_next_point(1)
+                rate.sleep()
+                if self.leg.predictedGroundContact():
+                    self.temp.move_to_next_point(0)
+                    self.temp.swing_start_point = None
+                    rate.sleep()
+                    self.swing = False
+                # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
+            else:
+                if self.stance_trajectory_gen.start_point is None:
+                    self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
+                self.stance_trajectory_gen.stance()
+                rate.sleep()
+                if self.stance_trajectory_gen.is_finished():
+                    self.swing = True
+                    self.stance_trajectory_gen.set_start_point(None)
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk(self):
@@ -201,7 +246,8 @@ if __name__ == '__main__':
     legController = SingleLegController('lm', nh, True)
     # rospy.spin()
     try:
-        legController.manage_walk()
+        # legController.manage_walk()
+        legController.manage_walk_bezier()
         # legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()
