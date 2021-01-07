@@ -10,7 +10,7 @@ from math import sin, cos, atan2, pow, pi, acos, radians
 
 class SingleLeg:
 
-    def __init__(self, name, segment_lengths, tf_listener):
+    def __init__(self, name, segment_lengths, tf_listener, movement_dir):
         self.name = name
         self.tf_listener = tf_listener
         self.alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
@@ -33,6 +33,7 @@ class SingleLeg:
         self.gamma_reached = True
 
         self.segment_lengths = segment_lengths
+        self.movement_dir = movement_dir
         # self.rotation_dir = rotation_dir
 
         self.ee_pos = None
@@ -97,18 +98,19 @@ class SingleLeg:
     #   (very stable, but works only on flat terrain).
     def predictedGroundContact(self):
         if self.name == "lf" or self.name == "rf":
-            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
-                    and abs(self.ee_position()[0]-RSTATIC.front_initial_aep[0]) < 0.025:
+            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
+                    and abs(self.ee_position()[0] + self.movement_dir * RSTATIC.front_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
-            if (self.ee_position()[2] < (RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
-                    and abs(self.ee_position()[0]-RSTATIC.middle_initial_aep[0]) < 0.025:
+            if (self.ee_position()[2] < (
+                    RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
+                    and abs(self.ee_position()[0] + self.movement_dir * RSTATIC.middle_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
-            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
-                    and abs(self.ee_position()[0]-RSTATIC.hind_initial_aep[0]) < 0.025:
+            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
+                    and abs(self.ee_position()[0] + self.movement_dir * RSTATIC.hind_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for rear leg")
                 return 1
 

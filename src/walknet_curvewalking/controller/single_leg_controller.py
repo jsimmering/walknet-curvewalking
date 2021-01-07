@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import numpy
+
 import rospy
 import tf
 from control_msgs.msg import JointControllerState
@@ -19,7 +19,7 @@ class SingleLegController:
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener())
+        self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener(), self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
@@ -54,7 +54,7 @@ class SingleLegController:
             rate.sleep()
         temp = SwingMovementBezier(self.leg)
         temp.swing_start_point = self.leg.ee_position()[0:3]
-        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
+        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
         # at which position of the interval between the start and the end point the middle point should be placed
         temp.apex_point_ratio = 0.05
         #temp.apex_point_offset = numpy.array([0, 0, 0.4])
@@ -104,7 +104,7 @@ class SingleLegController:
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         self.temp.swing_start_point = self.leg.ee_position()[0:3]
-        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])[0:3]
+        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
         # at which position of the interval between the start and the end point the middle point should be placed
         self.temp.apex_point_ratio = 0.05
         # the offset that is added to the middle point that was computed on the connecting line between start and
@@ -130,9 +130,9 @@ class SingleLegController:
             rate.sleep()
         rospy.loginfo("leg connected start walking")
 
-        alpha = 0.59
+        alpha = 0.3
         if self.movement_dir == 1:
-            alpha = -0.59
+            alpha = -0.3
         end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown():
@@ -141,7 +141,7 @@ class SingleLegController:
                     rospy.loginfo("##############################reset swing")
                     self.temp.swing_start_point = self.leg.ee_position()[0:3]
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                        [self.movement_dir * 0.59, 0, -1.0])[0:3]
+                        [self.movement_dir * 0.3, 0, -1.0])[0:3]
                     self.temp.apex_point_ratio = 0.05
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
@@ -171,14 +171,14 @@ class SingleLegController:
         rospy.loginfo("leg connected start swing")
         mid_point = self.leg.compute_forward_kinematics([0, -0.75, -1.0])
         self.swing_trajectory_gen.set_mid_point(mid_point)
-        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])
+        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
         self.swing_trajectory_gen.set_target_point(end_point)
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
         rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
 
-        alpha = 0.59
+        alpha = 0.3
         if self.movement_dir == 1:
-            alpha = -0.59
+            alpha = -0.3
         end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown():
@@ -211,7 +211,7 @@ class SingleLegController:
         self.swing_trajectory_gen.set_start_point(self.leg.ee_position())
         mid_point = self.leg.compute_forward_kinematics([0, -0.75, -1.0])
         self.swing_trajectory_gen.set_mid_point(mid_point)
-        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.59, 0, -1.0])
+        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
         self.swing_trajectory_gen.set_target_point(end_point)
         self.swing_trajectory_gen.compute_trajectory_points()
         rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
@@ -231,9 +231,9 @@ class SingleLegController:
             rate.sleep()
         rospy.loginfo("leg connected start swing")
         self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
-        alpha = 0.59
+        alpha = 0.3
         if self.movement_dir == 1:
-            alpha = -0.59
+            alpha = -0.3
         end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown() and not self.stance_trajectory_gen.is_finished():
