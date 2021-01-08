@@ -19,7 +19,7 @@ joint_angle_limits = ((-0.6, 0.6), (-1.0, 0.3), (-1.0, 1.0))
 # ========== walknet settings ==========
 default_stance_distance = 0.09
 stance_height = -0.15
-default_stance_width = 0.25
+default_stance_width = 0.2525
 
 front_initial_aep = numpy.array([0.05, 0.2, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
