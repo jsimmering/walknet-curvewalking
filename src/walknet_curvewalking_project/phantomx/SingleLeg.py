@@ -2,7 +2,7 @@ import copy
 
 import numpy
 import rospy
-import walknet_curvewalking.phantomx.RobotSettings as RSTATIC
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import tf.transformations as transformations
 from std_msgs.msg import Float64
 from math import sin, cos, atan2, pow, pi, acos, radians
@@ -83,7 +83,7 @@ class SingleLeg:
 
     def ee_position(self):
         self.update_ee_position()
-        return self.ee_pos
+        return self.ee_pos[0:3]
 
     def update_ee_position(self):
         self.ee_pos = self.compute_forward_kinematics()
@@ -169,7 +169,7 @@ class SingleLeg:
         if abs(alpha_check - alpha) >= 0.01:
             raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
                 gamma) + ') are not valid for the forward/inverse kinematics.')
-        return temp_tarsus_position
+        return temp_tarsus_position [0:3]
 
     def body_c1_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)

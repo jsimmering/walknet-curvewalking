@@ -4,7 +4,7 @@
 import copy
 import numpy
 import rospy
-import walknet_curvewalking.support.constants as CONST
+import walknet_curvewalking_project.support.constants as CONST
 
 
 # Function that computes a point that lies on a bezier curve

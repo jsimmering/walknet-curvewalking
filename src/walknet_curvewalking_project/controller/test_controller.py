@@ -4,14 +4,17 @@ import rospy
 import tf
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
-from walknet_curvewalking.phantomx.SingleLeg import SingleLeg
-from walknet_curvewalking.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
-from walknet_curvewalking.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
-from walknet_curvewalking.motion_primitives.stance_movment_simple import StanceMovementSimple
+
+from walknet_curvewalking_project.motion_primitives.stance_movement_body_model import StanceMovementBodyModel
+from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
+from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
+from walknet_curvewalking_project.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
+from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
 
 
-class SingleLegController:
-    def __init__(self, name, note_handle, swing):
+class TestController:
+    def __init__(self, name, note_handle, swing, robot):
+        self.robot = robot
         # rospy.init_node('single_leg_controller', anonymous=True)
         self.nh = note_handle
         self.name = name
@@ -24,6 +27,7 @@ class SingleLegController:
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
+        # self.stance_net = StanceMovementBodyModel(self)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
             JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
@@ -242,8 +246,8 @@ class SingleLegController:
 
 
 if __name__ == '__main__':
-    nh = rospy.init_node('single_leg_controller', anonymous=True)
-    legController = SingleLegController('lm', nh, True)
+    nh = rospy.init_node('test_controller', anonymous=True)
+    legController = TestController('rr', nh, True)
     # rospy.spin()
     try:
         # legController.manage_walk()

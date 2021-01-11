@@ -1,0 +1,2 @@
+float32 pull_angle
+float32 speed_fact
