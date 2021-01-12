@@ -5,6 +5,7 @@ from threading import Lock
 import rospy
 from std_msgs.msg import Float64
 from control_msgs.msg import JointControllerState
+from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 TIMEOUT = 15
 tibia_mutex = Lock()
@@ -77,7 +78,7 @@ def make_move(target, joint_values, pub_list, mutex, rate):
 
 def talker():
     finished = False
-    rate = rospy.Rate(100)  # 100Hz
+    rate = rospy.Rate(CONTROLLER_FREQUENCY)
     while not rospy.is_shutdown() and not finished:
         finished = True
 

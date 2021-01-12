@@ -4,6 +4,7 @@ import rospy
 import threading
 
 from walknet_curvewalking.msg import robot_control
+from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
@@ -64,7 +65,7 @@ class RobotController:
         self.body_model.mmc_iteration_step()
 
     def walk(self):
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         for leg in self.legs:
             while not leg.leg.is_ready():
                 rospy.loginfo("leg not connected yet! wait...")
@@ -84,6 +85,12 @@ class RobotController:
             thread.daemon = True
             thread.start()
 
+    def move_body(self):
+        for leg in self.legs:
+            thread = threading.Thread(target=leg.manage_stance)
+            thread.daemon = True
+            thread.start()
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('robot_controller', anonymous=True)
@@ -92,6 +99,7 @@ if __name__ == '__main__':
     try:
         # robot_controller.walk()
         # robot_controller.start_walk()
+        robot_controller.move_body()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

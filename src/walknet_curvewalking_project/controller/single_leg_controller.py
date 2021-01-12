@@ -10,6 +10,7 @@ from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
 from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
 from walknet_curvewalking_project.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
+from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 
 class SingleLegController:
@@ -36,7 +37,7 @@ class SingleLegController:
             JointControllerState, self.leg.tibia_callback)
 
     def bezier_swing(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -61,7 +62,7 @@ class SingleLegController:
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier_body_model(self):
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         # while not self.leg.is_ready():
         #     rospy.loginfo("leg not connected yet! wait...")
         #     rate.sleep()
@@ -95,7 +96,7 @@ class SingleLegController:
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -136,8 +137,8 @@ class SingleLegController:
                     self.stance_trajectory_gen.set_start_point(None)
 
     # function for executing a single stance movement.
-    def manage_stance(self):
-        rate = rospy.Rate(10)  # 100Hz
+    def manage_simple_stance(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -152,6 +153,21 @@ class SingleLegController:
             self.stance_trajectory_gen.stance()
             rate.sleep()
 
+    # function for executing a single stance movement.
+    def manage_stance(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        # while not self.leg.is_ready():
+        #     rospy.loginfo("leg not connected yet! wait...")
+        #     rate.sleep()
+        # rospy.loginfo("leg connected start walking")
+        while not self.robot.walk_motivation and not rospy.is_shutdown():
+            rospy.loginfo("no moving motivation...")
+            rate.sleep()
+        rospy.loginfo("leg connected start walking")
+        input("press any key to performe the next step")
+        self.robot.updateStanceBodyModel()
+        self.stance_net.modulated_routine_function_call()
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
@@ -162,6 +178,6 @@ if __name__ == '__main__':
         legController.manage_walk_bezier()
         # legController.bezier_swing()
         # legController.manage_swing()
-        # legController.manage_stance()
+        # legController.manage_simple_stance()
     except rospy.ROSInterruptException:
         pass

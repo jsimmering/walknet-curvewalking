@@ -3,6 +3,7 @@
 # Took Code from
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/StanceMovementBodyModel.py
 # modified for phantomX
+import rospy
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import numpy
@@ -63,9 +64,17 @@ class StanceMovementBodyModel():
             #     stance_foot_pos[0] = self.leg_controller.pep_shifted[0] + 0.02
             self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.ee_position())
             self.init_stance_footpoint = True
-        next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(
-            self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name))
-        self.leg_controller.leg.set_command(next_angles)
+        try:
+            next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(
+                self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name))
+            self.leg_controller.leg.set_command(next_angles)
+        except ValueError:
+            rospy.logerr("ValueError in " + str(
+                self.leg_controller.leg.name) + " during inverse kinematics computation.\n Tried to reach position " +
+                str(self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name)) + "\ncurrent position is: " +
+                str(self.leg_controller.leg.ee_position()) + "\ncurrent angles are: " + str(
+                self.leg_controller.leg.get_current_angles()) + "\nMaintaining current angles.")
+            self.leg_controller.leg.set_command(self.leg_controller.leg.get_current_angles())
 
         # current_angles = numpy.array(self.leg_controller.leg.ee_position())
         # new_joint_velocities = (next_angles - current_angles.T) / (1 / RSTATIC.controller_frequency)

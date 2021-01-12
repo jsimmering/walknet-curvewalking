@@ -10,6 +10,7 @@ from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
 from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
 from walknet_curvewalking_project.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
+from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 
 class TestController:
@@ -52,7 +53,7 @@ class TestController:
         rospy.loginfo("end of callback")
 
     def bezier_swing_test_no_vel(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -103,7 +104,7 @@ class TestController:
         rate.sleep()
 
     def bezier_swing(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -128,7 +129,7 @@ class TestController:
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -168,7 +169,7 @@ class TestController:
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -207,7 +208,7 @@ class TestController:
 
     # function for executing a single swing movement.
     def manage_swing(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
@@ -229,7 +230,7 @@ class TestController:
 
     # function for executing a single stance movement.
     def manage_stance(self):
-        rate = rospy.Rate(10)  # 100Hz
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()

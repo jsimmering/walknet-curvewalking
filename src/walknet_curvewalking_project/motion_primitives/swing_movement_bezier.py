@@ -334,11 +334,18 @@ class SwingMovementBezier:
             # now it's just a matter of moving the leg to the next position
             current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
-            next_angles = self.leg.compute_inverse_kinematics(target_position)
-            rospy.loginfo("target position is: " + str(target_position))
-            rospy.loginfo("computed next angles as: " + str(next_angles))
-            rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
-            self.leg.set_command(next_angles)
+            next_angles = None
+            try:
+                next_angles = self.leg.compute_inverse_kinematics(target_position)
+                rospy.loginfo("target position is: " + str(target_position))
+                rospy.loginfo("computed next angles as: " + str(next_angles))
+                rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+                self.leg.set_command(next_angles)
+            except ValueError:
+                rospy.logerr("ValueError in " + str(self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(
+                    target_position) + "\ncurrent angles are: " + str(self.leg.get_current_angles()) +
+                    "\nMaintaining current angles.")
+                self.leg.set_command(self.leg.get_current_angles())
             # compute the difference
             delta_angles = next_angles - numpy.array(current_input_angles)
             # compute the required speed in order to reach those angles
