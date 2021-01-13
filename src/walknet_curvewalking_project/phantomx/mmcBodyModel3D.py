@@ -181,10 +181,12 @@ class mmcBodyModelStance:
             for j in range(0, i):
                 self.footdiag[i][j] = self.set_up_foot_diag(i, j)
         # The explicit disturbance vectors of the network
-        self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
-        self.delta_back = [[numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])]]
+        # self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
+        # self.delta_back = [[numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])]]
+        self.delta_front = numpy.array([0, 0, 0])
+        self.delta_back = numpy.array([0, 0, 0])
         # These are operated through a pull at the front
-        self.pull_front = numpy.array([0.0, 0.00, 0.0])
+        self.pull_front = numpy.array([0.0, 0.0, 0.0])
         self.pull_back = numpy.array([0.0, 0.0, 0.0])
         self.step = 0
         self.damping = 5
@@ -260,7 +262,7 @@ class mmcBodyModelStance:
         list.color.a = 1.0
 
     def pub_vecs(self, start, vecs, markers):
-        rospy.loginfo("#############################################in pub vecs")
+        # rospy.loginfo("#############################################in pub vecs")
         start_point = Point()
         start_point.x = start[0]
         start_point.y = start[1]
@@ -276,15 +278,15 @@ class mmcBodyModelStance:
             markers.points.append(pos)
 
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
-        for i in range(0, 2):
+        for i in range(0, 5):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)
             rate.sleep()
 
     def pub_relative_vecs(self, start_points, vecs, markers):
-        rospy.loginfo("#############################################in pub relative vecs")
-        rospy.loginfo("start_points = " + str(start_points))
-        rospy.loginfo("vectors      = " + str(vecs))
+        # rospy.loginfo("#############################################in pub relative vecs")
+        # rospy.loginfo("start_points = " + str(start_points))
+        # rospy.loginfo("vectors      = " + str(vecs))
         for idx in range(0, len(vecs)):
             start_point = Point()
             start = start_points[idx]
@@ -306,7 +308,7 @@ class mmcBodyModelStance:
             markers.points.append(pos)
 
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
-        for i in range(0, 10):
+        for i in range(0, 5):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)
             rate.sleep()
@@ -318,44 +320,8 @@ class mmcBodyModelStance:
     #	When a leg is put on the ground a new connecting vector has to be established.
     #	This is calculated as the difference between the leg vectors.
     def set_up_foot_diag(self, start, target):
-        diag_vec = self.leg_vect[target] - self.leg_vect[start] + \
-                   self.get_segm_vectors_between_legs(start, target)
+        diag_vec = self.leg_vect[target] - self.leg_vect[start]  # + self.get_segm_vectors_between_legs(start, target)
         return diag_vec
-
-    ##	Providing the segment vectors connecting two legs.
-    #	An equation is described by a series of vectors forming a closed kinematic
-    #	chain (two leg vectors, the footdiag and -possibly- segment vectors in
-    #	between). This function is calculating the segment vectors between the
-    #	given legs.
-    def get_segm_vectors_between_legs(self, start_leg, end_leg):
-        leg_diff = (end_leg // 2 - start_leg // 2)
-        if leg_diff == 0:
-            return (self.segm_leg_post[start_leg] - self.segm_leg_post[end_leg])
-        elif leg_diff == 1:
-            return (self.segm_leg_post[start_leg] - self.segm_leg_ant[end_leg])
-        elif leg_diff == -1:
-            return (self.segm_leg_ant[start_leg] - self.segm_leg_post[end_leg])
-        elif leg_diff == 2:
-            # return (self.segm_leg_post[start_leg] - self.segm_post_ant[1] - self.segm_leg_ant[end_leg]) -- for 3 segments
-            return (self.segm_leg_post[start_leg] - self.segm_post_ant - self.segm_leg_ant[end_leg])
-        elif leg_diff == -2:
-            # return (self.segm_leg_ant[start_leg] + self.segm_post_ant[1] - self.segm_leg_post[end_leg]) -- for 3 segments
-            return (self.segm_leg_ant[start_leg] + self.segm_post_ant - self.segm_leg_post[end_leg])
-
-    ##	Providing the segment vectors connecting two front (the additional) vectors.
-    #	An equation is described by a series of vectors forming a closed kinematic
-    #	chain (two front vectors, the footdiag and -possibly- segment vectors in
-    #	between). This function is calculating the segment vectors between the
-    #	given legs.
-    def get_segm_vectors_between_front(self, start_leg, end_leg):
-        leg_diff = (end_leg // 2 - start_leg // 2)
-        if leg_diff == 0:
-            return numpy.array([0., 0., 0.])
-        elif abs(leg_diff) == 1:
-            # return numpy.array(-1 * leg_diff * self.segm_post_ant[min(start_leg, end_leg) // 2]) # 3 segments
-            return numpy.array(-1 * leg_diff * self.segm_post_ant)
-        elif abs(leg_diff) == 2:
-            return (-0.5 * leg_diff * (self.segm_post_ant))  # + self.segm_post_ant[1])) # 3 segments
 
     ##	Sets ground contact to false and removes this leg from the body
     #	model computations. As the leg is not part of the closed kinematic chains
@@ -414,14 +380,14 @@ class mmcBodyModelStance:
         equation_counter = 1
         # segm_leg_vect = -self.delta_back[leg_nr // 2] + self.segm_leg_post[leg_nr] + self.segm_post_ant[leg_nr // 2] + \
         #                self.front_vect[leg_nr]  # 3 segments
-        segm_leg_vect = -self.delta_back[leg_nr // 2] + self.segm_leg_post[leg_nr] + self.segm_post_ant + \
+        segm_leg_vect = -self.delta_back + self.segm_leg_post[leg_nr] + self.segm_post_ant + \
                         self.front_vect[leg_nr]
         segm_leg_vect += self.damping * self.leg_vect[leg_nr]
         equation_counter += self.damping
         for target_leg in range(0, len(self.gc)):
             if self.gc[target_leg] and target_leg != leg_nr:
-                part_vec = numpy.array(self.leg_vect[target_leg]) \
-                           + self.get_segm_vectors_between_legs(leg_nr, target_leg)
+                part_vec = numpy.array(
+                    self.leg_vect[target_leg])  # + self.get_segm_vectors_between_legs(leg_nr, target_leg)
                 if target_leg < leg_nr:
                     part_vec -= self.footdiag[leg_nr][target_leg]
                 elif target_leg > leg_nr:
@@ -437,16 +403,16 @@ class mmcBodyModelStance:
         equation_counter = 1
         # new_front_vect = -self.delta_front[leg_nr // 2] - self.segm_post_ant[leg_nr // 2] + self.leg_vect[leg_nr] - \
         #                 self.segm_leg_post[leg_nr]  # 3 segments
-        new_front_vect = -self.delta_front[leg_nr // 2] - self.segm_post_ant + self.leg_vect[leg_nr] - \
+        new_front_vect = -self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - \
                          self.segm_leg_post[leg_nr]
-        new_front_vect += self.damping * self.front_vect[leg_nr]  # NEW
-        equation_counter += self.damping  # NEW
+        new_front_vect += self.damping * self.front_vect[leg_nr]
+        equation_counter += self.damping
         # Computations of connections between legs in ground contacts
-        # Compute equations to all other standing legs using the footdiag - has been in compute_leg!
+        # Compute equations to all other standing legs using the footdiag
         for target_leg in range(0, len(self.gc)):
             if self.gc[target_leg] and target_leg != leg_nr:
-                part_vec = numpy.array(self.front_vect[target_leg]) \
-                           + self.get_segm_vectors_between_front(leg_nr, target_leg)
+                part_vec = numpy.array(
+                    self.front_vect[target_leg])  # + self.get_segm_vectors_between_front(leg_nr, target_leg)
                 if target_leg < leg_nr:
                     part_vec -= self.footdiag[leg_nr][target_leg]
                 elif target_leg > leg_nr:
@@ -489,12 +455,14 @@ class mmcBodyModelStance:
     def compute_segm_post_ant_computations_and_integrate(self, seg_nr):
         if seg_nr != 0:
             rospy.logerr("segment nr is " + str(seg_nr) + " but only 1 segment exists")
-        equation_counter = 3
-        new_segm_post_ant = self.segm_post_ant + self.delta_front[seg_nr] - self.delta_back[seg_nr]
-        new_segm_post_ant += -self.segm_leg_post[2 * seg_nr] + self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[
-            1 + seg_nr * 2]
-        new_segm_post_ant += -self.segm_leg_post[1 + 2 * seg_nr] - self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[
-            seg_nr * 2]
+        equation_counter = 7
+        new_segm_post_ant = self.segm_post_ant + self.delta_front - self.delta_back
+        new_segm_post_ant += -self.segm_leg_post[0] + self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[1]
+        new_segm_post_ant += -self.segm_leg_post[1] - self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[0]
+        new_segm_post_ant += -self.segm_leg_post[2] + self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[3]
+        new_segm_post_ant += -self.segm_leg_post[3] - self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[2]
+        new_segm_post_ant += -self.segm_leg_post[4] + self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[5]
+        new_segm_post_ant += -self.segm_leg_post[5] - self.segm_diag_to_right[seg_nr] + self.segm_leg_ant[4]
 
         new_segm_post_ant += self.damping * self.segm_post_ant
         equation_counter += self.damping
@@ -506,18 +474,18 @@ class mmcBodyModelStance:
     #	Using equations including the two legs connected to the segment,
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
-    def compute_segm_diag_computations_and_integrate(self, seg_nr):
-        if seg_nr != 0:
-            rospy.logerr("segment nr is " + str(seg_nr) + " but only 1 segment exists")
+    def compute_segm_diag_computations_and_integrate(self, joint_nr):
+        if joint_nr != 0:
+            rospy.logerr("segment nr is " + str(joint_nr) + " but only 1 segment exists")
         equation_counter = 2
 
-        new_segm_diag = self.segm_leg_post[2 * seg_nr] + self.segm_post_ant - self.segm_leg_ant[1 + seg_nr * 2]
-        new_segm_diag -= self.segm_leg_post[1 + 2 * seg_nr] + self.segm_post_ant - self.segm_leg_ant[seg_nr * 2]
+        new_segm_diag = self.segm_leg_post[2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[1 + joint_nr * 2]
+        new_segm_diag -= self.segm_leg_post[1 + 2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[joint_nr * 2]
 
-        new_segm_diag += self.damping * self.segm_diag_to_right[seg_nr]
+        new_segm_diag += self.damping * self.segm_diag_to_right[joint_nr]
         equation_counter += self.damping
         new_segm_diag = new_segm_diag / equation_counter
-        return ((self.segm_diag_norm[seg_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag)
+        return ((self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag)
 
     ##	The MMC Method:
     #	- the multiple computations are computed for each variable
@@ -527,27 +495,23 @@ class mmcBodyModelStance:
     #	different equations.
     ##
     def mmc_iteration_step(self):
-        if self.pull_front is None:
-            rospy.logerr("pull front is None ")
-        self.delta_front[0] = self.pull_front
-        self.delta_front[1] = (self.leg_vect[0] - self.segm_leg_post[0] - self.front_vect[0] - self.segm_post_ant)
+        self.delta_front = self.pull_front
+        # self.delta_front[1] = (self.leg_vect[0] - self.segm_leg_post[0] - self.front_vect[0] - self.segm_post_ant)
         # for 3 segments
         # self.delta_front[2] = (self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant[1])
         #
         # self.delta_back[2] = self.pull_back
         # self.delta_back[1] = -(self.leg_vect[4] - self.segm_leg_post[4] - self.front_vect[4] - self.segm_post_ant[2])
         # self.delta_back[0] = -(self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant[1])
-        self.delta_front[2] = (self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
-        rospy.loginfo("delta_front[0] = " + str(self.delta_front[0]) + " delta_front[1] = " + str(
-            self.delta_front[1]) + "delta_front[2] = " + str(self.delta_front[2]))
-        rospy.loginfo("delta_front[0] = " + str(self.delta_front[0]) + " delta_front[1] = " + str(
-            self.delta_front[1]) + "delta_front[2] = " + str(self.delta_front[2]))
+        # self.delta_front[2] = (self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
 
-        self.delta_back[2] = self.pull_back
-        self.delta_back[1] = -(self.leg_vect[4] - self.segm_leg_post[4] - self.front_vect[4] - self.segm_post_ant)
-        self.delta_back[0] = -(self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
+        self.delta_back = self.pull_back
+        # self.delta_back[2] = self.pull_back
+        # self.delta_back[1] = -(self.leg_vect[4] - self.segm_leg_post[4] - self.front_vect[4] - self.segm_post_ant)
+        # self.delta_back[0] = -(self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
 
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
+        # TODO leg vec calculation wrong?!
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
@@ -557,7 +521,7 @@ class mmcBodyModelStance:
         # segm_post_ant[1] = ((self.segm_post_ant_norm[1]/numpy.linalg.norm(segm_post_ant[0]))*segm_post_ant[0])
         # segm_post_ant[2] = ((self.segm_post_ant_norm[2]/numpy.linalg.norm(segm_post_ant[0]))*segm_post_ant[0])
         # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-        segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(0)]
+        segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
