@@ -245,14 +245,23 @@ class TestController:
             self.stance_trajectory_gen.stance()
             rate.sleep()
 
+    def test_kinematic(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        while not self.leg.is_ready():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        self.leg.pub_global()
+        self.leg.pub_local()
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('rr', nh, True)
+    legController = TestController('lm', nh, True, None)
     # rospy.spin()
     try:
+        legController.test_kinematic()
         # legController.manage_walk()
-        legController.manage_walk_bezier()
+        #legController.manage_walk_bezier()
         # legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()

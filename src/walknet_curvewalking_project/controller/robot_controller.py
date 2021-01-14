@@ -26,7 +26,7 @@ class RobotController:
                 leg_c = SingleLegController(name, self.nh, swing, self)
                 self.legs.append(leg_c)
             if name == 'lm' or name == 'rf' or name == 'rr':
-                swing = True
+                # swing = True
                 leg_c = SingleLegController(name, self.nh, swing, self)
                 #leg_c.manage_stance()
                 self.legs.append(leg_c)
@@ -91,6 +91,13 @@ class RobotController:
             thread.daemon = True
             thread.start()
 
+    def move_body_cohesive(self):
+        while not rospy.is_shutdown():
+            self.updateStanceBodyModel()
+            for leg in self.legs:
+                # input("press any key to performe the next step.")
+                leg.manage_stance()
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('robot_controller', anonymous=True)
@@ -99,7 +106,7 @@ if __name__ == '__main__':
     try:
         # robot_controller.walk()
         # robot_controller.start_walk()
-        robot_controller.move_body()
+        robot_controller.move_body_cohesive()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass

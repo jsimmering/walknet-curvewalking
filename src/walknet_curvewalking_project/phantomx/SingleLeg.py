@@ -4,8 +4,12 @@ import numpy
 import rospy
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import tf.transformations as transformations
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 from std_msgs.msg import Float64
 from math import sin, cos, atan2, pow, pi, acos, radians
+
+from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 
 class SingleLeg:
@@ -37,6 +41,114 @@ class SingleLeg:
         # self.rotation_dir = rotation_dir
 
         self.ee_pos = None
+
+        self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
+        self.c1_ee_points = Marker()
+        self.global_ee_points = Marker()
+        self.c1_leg_vec_lines = Marker()
+        self.global_leg_vec_lines = Marker()
+        self.set_up_visualization()
+
+    def set_up_visualization(self):
+        self.global_ee_points.header.frame_id = self.global_leg_vec_lines.header.frame_id = "MP_BODY"
+        self.c1_ee_points.header.frame_id = self.c1_leg_vec_lines.header.frame_id = "c1_" + self.name
+        self.c1_ee_points.header.stamp = self.global_ee_points.header.stamp = self.global_leg_vec_lines.header.stamp = \
+            self.c1_leg_vec_lines.header.stamp = rospy.Time.now()
+        self.c1_ee_points.ns = self.global_ee_points.ns = self.global_leg_vec_lines.ns = self.c1_leg_vec_lines.ns = \
+            "points_and_lines"
+        self.c1_ee_points.action = self.global_ee_points.action = self.global_leg_vec_lines.action = \
+            self.c1_leg_vec_lines.action = Marker.ADD
+        self.c1_ee_points.pose.orientation.w = self.global_ee_points.pose.orientation.w = self.global_leg_vec_lines.pose.orientation.w = \
+            self.c1_leg_vec_lines.pose.orientation.w = 1.0
+
+        self.global_ee_points.id = 0
+        self.c1_ee_points.id = 1
+        self.global_leg_vec_lines.id = 2
+        self.c1_leg_vec_lines.id = 3
+
+        self.global_ee_points.type = Marker.POINTS
+        self.c1_ee_points.type = Marker.POINTS
+        self.global_leg_vec_lines.type = Marker.LINE_LIST
+        self.c1_leg_vec_lines.type = Marker.LINE_LIST
+
+        self.global_ee_points.scale.x = 0.005
+        self.global_ee_points.scale.y = 0.005
+        self.c1_ee_points.scale.x = 0.005
+        self.c1_ee_points.scale.y = 0.005
+
+        self.global_leg_vec_lines.scale.x = 0.0025
+        self.c1_leg_vec_lines.scale.x = 0.0025
+
+        self.global_ee_points.color.r = 1.0
+        self.global_ee_points.color.a = 1.0
+        self.c1_ee_points.color.b = 1.0
+        self.c1_ee_points.color.a = 1.0
+        self.global_leg_vec_lines.color.a = 1.0
+        self.c1_leg_vec_lines.color.a = 1.0
+        self.global_leg_vec_lines.color.r = 1.0
+        self.c1_leg_vec_lines.color.b = 1.0
+
+    def pub_local(self):
+        # rospy.loginfo("#############################################in pub relative vecs")
+        # rospy.loginfo("start_points = " + str(start_points))
+        # rospy.loginfo("vectors      = " + str(vecs))
+        start_point = Point()
+        start = self.body_c1Static_transformation()
+        start_point.x = start[0]
+        start_point.y = start[1]
+        start_point.z = start[2]
+        rospy.loginfo("local start = " + start_point)
+        # rospy.loginfo("append start point: " + str(start_point))
+        self.c1_ee_points.points.append(start_point)
+        vecs = self.compute_forward_kinematics_c1Static_frame()
+        pos = Point()
+        pos.x = start_point.x + vecs[0]
+        pos.y = start_point.y + vecs[1]
+        pos.z = start_point.z + vecs[2]
+        rospy.loginfo("local target = " + pos)
+        # rospy.loginfo("type of vecs is: " + str(type(vecs)))
+        # rospy.loginfo("target point x: " + str(pos.x) + " = start.point.x (" + str(
+        #    start_point.x) + ") + vecs[idx][0] (" + str(vecs[idx][0]) + ")")
+        # rospy.loginfo("append target point: " + str(pos))
+        self.c1_ee_points.points.append(pos)
+        self.c1_leg_vec_lines.points.append(start_point)
+        self.c1_leg_vec_lines.points.append(pos)
+
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        for i in range(0, 5):
+            self.visualization_pub.publish(self.c1_ee_points)
+            self.visualization_pub.publish(self.c1_leg_vec_lines)
+            rate.sleep()
+
+    def pub_global(self):
+        # rospy.loginfo("#############################################in pub relative vecs")
+        # rospy.loginfo("start_points = " + str(start_points))
+        # rospy.loginfo("vectors      = " + str(vecs))
+        start_point = Point()
+        start = [0, 0, 0]
+        start_point.x = start[0]
+        start_point.y = start[1]
+        start_point.z = start[2]
+        # rospy.loginfo("append start point: " + str(start_point))
+        self.global_ee_points.points.append(start_point)
+        vecs = self.compute_forward_kinematics()
+        pos = Point()
+        pos.x = start_point.x + vecs[0]
+        pos.y = start_point.y + vecs[1]
+        pos.z = start_point.z + vecs[2]
+        # rospy.loginfo("type of vecs is: " + str(type(vecs)))
+        # rospy.loginfo("target point x: " + str(pos.x) + " = start.point.x (" + str(
+        #    start_point.x) + ") + vecs[idx][0] (" + str(vecs[idx][0]) + ")")
+        # rospy.loginfo("append target point: " + str(pos))
+        self.global_ee_points.points.append(pos)
+        self.global_leg_vec_lines.points.append(start_point)
+        self.global_leg_vec_lines.points.append(pos)
+
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        for i in range(0, 5):
+            self.visualization_pub.publish(self.global_ee_points)
+            self.visualization_pub.publish(self.global_leg_vec_lines)
+            rate.sleep()
 
     def is_ready(self):
         if self.alpha is None:
@@ -320,7 +432,6 @@ class SingleLeg:
             gamma_angle = gamma_inner - pi - tibia_z_angle
             # rospy.loginfo(
             #    'gamma_angle = ' + str(gamma_angle) + ' gamma_inner = ' + str(gamma_inner) + ' pi = ' + str(pi))
-            # TODO gamma not exactly correct but not exactly wrong
             h1 = (acos((pow(self.segment_lengths[1], 2) + pow(lct, 2) - pow(self.segment_lengths[2], 2)) / (
                     2 * self.segment_lengths[1] * lct)))
             # rospy.loginfo('beta_inner = ' + str(h1))

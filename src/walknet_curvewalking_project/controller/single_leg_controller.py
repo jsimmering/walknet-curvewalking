@@ -165,8 +165,17 @@ class SingleLegController:
             rate.sleep()
         rospy.loginfo("leg connected start walking")
         while not rospy.is_shutdown():
-            input("press any key to performe the next step")
-            self.robot.updateStanceBodyModel()
+            # input("press any key to performe the next step for " + str(self.name) + " leg.")
+            # self.robot.updateStanceBodyModel()
+            self.stance_net.modulated_routine_function_call()
+
+    # function for executing a single step in a stance movement.
+    def manage_stance(self):
+        if not self.robot.walk_motivation or rospy.is_shutdown():
+            rospy.loginfo("no moving motivation or shutdown...")
+            return
+        else:
+            rospy.loginfo("leg connected start walking")
             self.stance_net.modulated_routine_function_call()
 
 
