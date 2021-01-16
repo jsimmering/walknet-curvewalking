@@ -27,6 +27,11 @@ class SingleLeg:
         self.alpha = None
         self.beta = None
         self.gamma = None
+        # self.c1_static_transform = self.get_c1_static_transform()
+        # rospy.loginfo("c1_static_transform = " + str(self.c1_static_transform))
+        self.c1_static_transform = RSTATIC.body_c1_tf[RSTATIC.leg_names.index(self.name)]
+        rospy.loginfo("idx = " + str(RSTATIC.leg_names.index(self.name)))
+        rospy.loginfo("c1_static_transform = " + str(self.c1_static_transform))
 
         self.alpha_target = None
         self.beta_target = None
@@ -52,6 +57,7 @@ class SingleLeg:
     def set_up_visualization(self):
         self.global_ee_points.header.frame_id = self.global_leg_vec_lines.header.frame_id = "MP_BODY"
         self.c1_ee_points.header.frame_id = self.c1_leg_vec_lines.header.frame_id = "c1_" + self.name
+        # self.c1_ee_points.header.frame_id = self.c1_leg_vec_lines.header.frame_id = "MP_BODY"
         self.c1_ee_points.header.stamp = self.global_ee_points.header.stamp = self.global_leg_vec_lines.header.stamp = \
             self.c1_leg_vec_lines.header.stamp = rospy.Time.now()
         self.c1_ee_points.ns = self.global_ee_points.ns = self.global_leg_vec_lines.ns = self.c1_leg_vec_lines.ns = \
@@ -93,23 +99,27 @@ class SingleLeg:
         # rospy.loginfo("start_points = " + str(start_points))
         # rospy.loginfo("vectors      = " + str(vecs))
         start_point = Point()
-        start = self.body_c1Static_transformation()
+        # start = self.body_c1_transform()
+        # start = self.apply_c1_static_transform()
+        start = [0, 0, 0]
         start_point.x = start[0]
         start_point.y = start[1]
         start_point.z = start[2]
-        rospy.loginfo("local start = " + start_point)
+        rospy.loginfo("local start = " + str(start_point))
         # rospy.loginfo("append start point: " + str(start_point))
-        self.c1_ee_points.points.append(start_point)
-        vecs = self.compute_forward_kinematics_c1Static_frame()
+        # vecs = self.c1_rotation(self.alpha, self.c1_thigh_transformation(self.beta,
+        #    self.thigh_tibia_transformation(self.gamma, self.tibia_ee_transformation())))
+        vecs = self.compute_forward_kinematics_c1()
         pos = Point()
         pos.x = start_point.x + vecs[0]
         pos.y = start_point.y + vecs[1]
         pos.z = start_point.z + vecs[2]
-        rospy.loginfo("local target = " + pos)
+        rospy.loginfo("local target = " + str(pos))
         # rospy.loginfo("type of vecs is: " + str(type(vecs)))
         # rospy.loginfo("target point x: " + str(pos.x) + " = start.point.x (" + str(
         #    start_point.x) + ") + vecs[idx][0] (" + str(vecs[idx][0]) + ")")
         # rospy.loginfo("append target point: " + str(pos))
+        self.c1_ee_points.points.append(start_point)
         self.c1_ee_points.points.append(pos)
         self.c1_leg_vec_lines.points.append(start_point)
         self.c1_leg_vec_lines.points.append(pos)
@@ -247,8 +257,12 @@ class SingleLeg:
         return angles[0] >= -0.6 or angles[0] <= 0.6 or angles[1] >= -1.0 or angles[1] <= 0.3 or angles[2] >= -1.0 or \
                angles[2] <= 1.0
 
+
     # ee position in body frame
     def compute_forward_kinematics(self, angles=None):
+        return self.apply_c1_static_transform(self.compute_forward_kinematics_c1(angles))
+
+    def compute_forward_kinematics_c1(self, angles=None):
         if angles is None:
             alpha = self.alpha
             beta = self.beta
@@ -262,38 +276,54 @@ class SingleLeg:
                 'The provided angles for ' + self.name + '(' + str(angles[0]) + ', ' + str(angles[1]) + ', ' + str(
                     angles[2]) + ') are not valid for the forward/inverse kinematics.')
 
-        c1_pos = self.body_c1_transformation(alpha)
-        temp_tarsus_position = self.body_c1_transformation(alpha, self.c1_thigh_transformation(beta,
+        temp_tarsus_position = self.c1_rotation(alpha, self.c1_thigh_transformation(beta,
             self.thigh_tibia_transformation(gamma, self.tibia_ee_transformation())))
         # calculate shoulder angle as angle of vector from c1 pos to ee pos in body frame
-        # rospy.loginfo('temp_tarsus_position_y = ' + str(temp_tarsus_position[1]) + ' temp_tarsus_position_x =
-        #               ' + str(temp_tarsus_position[0]))
-        # rospy.loginfo(
-        #    'c1_pos_y = ' + str(c1_pos[1]) + ' c1_pos_x = ' + str(c1_pos[0]))
-        x_pos = temp_tarsus_position[0] - c1_pos[0]
-        y_pos = temp_tarsus_position[1] - c1_pos[1]
-        # TODO probably only works for lm leg find general solution!
-        alpha_check = -atan2(x_pos,
-            y_pos)  # switched x and y coordination because the leg points in the direction of the y axis of the
-        #             MP_BODY frame
-        # rospy.loginfo('ee_y = ' + str(y_pos) + ' ee_x = ' + str(x_pos) + ' alpha_check= ' + str(alpha_check) +
-        #               ' alpha = ' + str(alpha))
+        # x_pos = temp_tarsus_position[0] - c1_pos[0]
+        # y_pos = temp_tarsus_position[1] - c1_pos[1]
+        x_pos = -temp_tarsus_position[1]
+        y_pos = temp_tarsus_position[2]
+        rospy.loginfo("x_pos = -temp_tarsus_position_c1[1] (" + str(x_pos) + ")")
+        rospy.loginfo("y_pos = temp_tarsus_position[2] (" + str(y_pos) + ")")
+
+        alpha_check = -atan2(y_pos, x_pos)
+        rospy.loginfo('ee_y = ' + str(y_pos) + ' ee_x = ' + str(x_pos) + ' alpha_check= ' + str(alpha_check) +
+                      ' alpha = ' + str(alpha))
         if abs(alpha_check - alpha) >= 0.01:
             raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
                 gamma) + ') are not valid for the forward/inverse kinematics.')
-        return temp_tarsus_position [0:3]
+        return temp_tarsus_position
 
-    def body_c1_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
+    # def body_c1_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
+    #     # point=numpy.append(point,1)
+    #     # TODO ist alpha reversed?
+    #     # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
+    #     cos_alpha = cos(alpha + radians(180))
+    #     sin_alpha = sin(alpha + radians(180))
+    #     cos90 = cos(radians(-90))
+    #     sin90 = sin(radians(-90))
+    #     trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
+    #         (0, cos_alpha, 0 - sin_alpha, 0.1034),
+    #         (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0.001116),
+    #         (0, 0, 0, 1)])
+    #     # print('trans: ', trans)
+    #     return trans.dot(point)
+
+    def c1_rotation(self, alpha, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
         # TODO ist alpha reversed?
         # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-        cos_alpha = cos(alpha + radians(180))
-        sin_alpha = sin(alpha + radians(180))
-        cos90 = cos(radians(-90))
-        sin90 = sin(radians(-90))
+        # left legs:
+        cos_alpha = cos(alpha)
+        sin_alpha = sin(alpha)
+        # if self.movement_dir == -1:
+        #    cos_alpha = cos(alpha + radians(180))
+        #    sin_alpha = sin(alpha + radians(180))
+        cos90 = cos(radians(0))
+        sin90 = sin(radians(0))
         trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
-            (0, cos_alpha, 0 - sin_alpha, 0.1034),
-            (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0.001116),
+            (0, cos_alpha, 0 - sin_alpha, 0),
+            (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0),
             (0, 0, 0, 1)])
         # print('trans: ', trans)
         return trans.dot(point)
@@ -330,10 +360,11 @@ class SingleLeg:
         # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
         cos_alpha = cos(alpha)
         sin_alpha = sin(alpha)
+        # TODO rotate by 90 degrees only for left legs?
         cos90 = cos(radians(90))
         sin90 = sin(radians(90))
         trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
-            (0, cos_alpha, 0 - sin_alpha, -0.054),
+            (0, cos_alpha, 0 - sin_alpha, -0.054),  # TODO - only for left legs?
             (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0),
             (0, 0, 0, 1)])
         # print('trans: ', trans)
@@ -372,7 +403,31 @@ class SingleLeg:
         pos[0, 3] = trans[0]
         pos[1, 3] = trans[1]
         pos[2, 3] = trans[2]
-        return numpy.array(numpy.dot(pos, point))
+        return numpy.array(numpy.dot(pos, self.c1_rotation(-self.alpha, point)))
+        # return numpy.array(numpy.dot(pos, point))
+
+    def get_c1_static_transform(self):
+        # (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'thigh_' + self.name, rospy.Time(0))
+        self.tf_listener.waitForTransform('MP_BODY', 'c1_' + self.name, rospy.Time(), rospy.Duration(4.0))
+        while not rospy.is_shutdown():
+            try:
+                now = rospy.Time.now()
+                self.tf_listener.waitForTransform('MP_BODY', 'c1_' + self.name, now, rospy.Duration(4.0))
+                (trans, rot) = self.tf_listener.lookupTransform('MP_BODY', 'c1_' + self.name, rospy.Time(0))
+                pos = numpy.array(transformations.quaternion_matrix(rot))
+                pos[0, 3] = trans[0]
+                pos[1, 3] = trans[1]
+                pos[2, 3] = trans[2]
+                rospy.loginfo("trans = " + str(trans))
+                rospy.loginfo("rot = " + str(rot))
+                rospy.loginfo("pos = " + str(pos))
+                # return numpy.array(numpy.dot(pos, point))
+                return pos
+            except Exception:
+                pass
+
+    def apply_c1_static_transform(self, point=[0, 0, 0, 1]):
+        return numpy.array(numpy.dot(self.c1_static_transform, point))
 
     # code from https://www.programcreek.com/python/example/96799/tf.transformations
     def alpha_forward_kinematics(self, point=[0, 0, 0, 1]):
@@ -407,18 +462,22 @@ class SingleLeg:
         p_temp = copy.copy(p)
         # rospy.loginfo('ee_pos target = ' + str(p))
 
-        c1_pos = self.body_c1_transformation(self.alpha)
+        # c1_pos = self.body_c1_transformation(self.alpha)
+        c1_pos = self.body_c1_transform(self.alpha)
         # alpha_angle: float = -atan2(p[1], (p[0]))
         # TODO probably only works for lm leg find general solution!
         # rospy.loginfo('c1_pos = ' + str(c1_pos))
         # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
         alpha_angle = -atan2(p[0] - c1_pos[0], p[1] - c1_pos[1])
-        beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(0))
+        # beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(0))
+        beta_pos = self.body_c1_transform(self.c1_rotation(alpha_angle, self.c1_thigh_transformation(0)))
         lct = numpy.linalg.norm(p[0:3] - beta_pos[0:3])
         # rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
 
-        default_gamma_pos = self.body_c1_transformation(alpha_angle,
-            self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
+        # default_gamma_pos = self.body_c1_transformation(alpha_angle,
+        #    self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
+        default_gamma_pos = self.body_c1_transform(self.c1_rotation(alpha_angle,
+            self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0))))
         thigh_tibia_angle = -atan2(default_gamma_pos[2] - beta_pos[2], default_gamma_pos[1] - beta_pos[1])
         # rospy.loginfo('thigh_tibia_angle = ' + str(thigh_tibia_angle))
         tibia_z_angle = pi - atan2(0.02, -0.16)
