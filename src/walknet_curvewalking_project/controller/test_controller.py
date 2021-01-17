@@ -252,11 +252,21 @@ class TestController:
             rate.sleep()
         self.leg.pub_global()
         self.leg.pub_local()
+        rospy.loginfo("##########################################################################################")
+        cur_angles = self.leg.compute_inverse_kinematics()
+        rospy.loginfo('inverse kinematic angles for current ee_pos: ' + str(cur_angles))
+        actual_angles = self.leg.get_current_angles()
+        rospy.loginfo('actually set angles: ' + str(actual_angles))
+        ee_pos = self.leg.ee_position()
+        rospy.loginfo('current ee_pos (forward kinematic) = ' + str(ee_pos))
+        ee_pos = self.leg.compute_forward_kinematics(cur_angles)
+        rospy.loginfo('ee_pos (inverse kinematic angles) = ' + str(ee_pos))
+        rospy.loginfo("##########################################################################################")
 
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('lm', nh, True, None)
+    legController = TestController('lf', nh, True, None)
     # rospy.spin()
     try:
         legController.test_kinematic()

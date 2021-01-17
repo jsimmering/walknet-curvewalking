@@ -30,8 +30,6 @@ class SingleLeg:
         # self.c1_static_transform = self.get_c1_static_transform()
         # rospy.loginfo("c1_static_transform = " + str(self.c1_static_transform))
         self.c1_static_transform = RSTATIC.body_c1_tf[RSTATIC.leg_names.index(self.name)]
-        rospy.loginfo("idx = " + str(RSTATIC.leg_names.index(self.name)))
-        rospy.loginfo("c1_static_transform = " + str(self.c1_static_transform))
 
         self.alpha_target = None
         self.beta_target = None
@@ -105,16 +103,16 @@ class SingleLeg:
         start_point.x = start[0]
         start_point.y = start[1]
         start_point.z = start[2]
-        rospy.loginfo("local start = " + str(start_point))
+        # rospy.loginfo("local start = " + str(start_point))
         # rospy.loginfo("append start point: " + str(start_point))
         # vecs = self.c1_rotation(self.alpha, self.c1_thigh_transformation(self.beta,
         #    self.thigh_tibia_transformation(self.gamma, self.tibia_ee_transformation())))
-        vecs = self.compute_forward_kinematics_c1()
+        vecs = self.c1_rotation(-self.alpha, self.compute_forward_kinematics_c1())
         pos = Point()
         pos.x = start_point.x + vecs[0]
         pos.y = start_point.y + vecs[1]
         pos.z = start_point.z + vecs[2]
-        rospy.loginfo("local target = " + str(pos))
+        # rospy.loginfo("local target = " + str(pos))
         # rospy.loginfo("type of vecs is: " + str(type(vecs)))
         # rospy.loginfo("target point x: " + str(pos.x) + " = start.point.x (" + str(
         #    start_point.x) + ") + vecs[idx][0] (" + str(vecs[idx][0]) + ")")
@@ -161,12 +159,6 @@ class SingleLeg:
             rate.sleep()
 
     def is_ready(self):
-        if self.alpha is None:
-            rospy.loginfo("alpha: " + str(self.alpha))
-        if self.beta is None:
-            rospy.loginfo("beta: " + str(self.beta))
-        if self.gamma is None:
-            rospy.loginfo(" gamma: " + str(self.gamma))
         if self.alpha is not None and self.beta is not None and self.gamma is not None:
             # rospy.loginfo("ready")
             return True
@@ -257,7 +249,6 @@ class SingleLeg:
         return angles[0] >= -0.6 or angles[0] <= 0.6 or angles[1] >= -1.0 or angles[1] <= 0.3 or angles[2] >= -1.0 or \
                angles[2] <= 1.0
 
-
     # ee position in body frame
     def compute_forward_kinematics(self, angles=None):
         return self.apply_c1_static_transform(self.compute_forward_kinematics_c1(angles))
@@ -283,31 +274,16 @@ class SingleLeg:
         # y_pos = temp_tarsus_position[1] - c1_pos[1]
         x_pos = -temp_tarsus_position[1]
         y_pos = temp_tarsus_position[2]
-        rospy.loginfo("x_pos = -temp_tarsus_position_c1[1] (" + str(x_pos) + ")")
-        rospy.loginfo("y_pos = temp_tarsus_position[2] (" + str(y_pos) + ")")
+        # rospy.loginfo("x_pos = -temp_tarsus_position_c1[1] (" + str(x_pos) + ")")
+        # rospy.loginfo("y_pos = temp_tarsus_position[2] (" + str(y_pos) + ")")
 
         alpha_check = -atan2(y_pos, x_pos)
-        rospy.loginfo('ee_y = ' + str(y_pos) + ' ee_x = ' + str(x_pos) + ' alpha_check= ' + str(alpha_check) +
-                      ' alpha = ' + str(alpha))
+        rospy.loginfo('abs(alpha_check= ' + str(alpha_check) + ' - alpha = ' + str(alpha) + ') = ' + str(
+            abs(alpha_check - alpha)) + " >= 0.01?")
         if abs(alpha_check - alpha) >= 0.01:
             raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
                 gamma) + ') are not valid for the forward/inverse kinematics.')
         return temp_tarsus_position
-
-    # def body_c1_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
-    #     # point=numpy.append(point,1)
-    #     # TODO ist alpha reversed?
-    #     # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-    #     cos_alpha = cos(alpha + radians(180))
-    #     sin_alpha = sin(alpha + radians(180))
-    #     cos90 = cos(radians(-90))
-    #     sin90 = sin(radians(-90))
-    #     trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
-    #         (0, cos_alpha, 0 - sin_alpha, 0.1034),
-    #         (0 - sin90, sin_alpha * cos90, cos_alpha * cos90, 0.001116),
-    #         (0, 0, 0, 1)])
-    #     # print('trans: ', trans)
-    #     return trans.dot(point)
 
     def c1_rotation(self, alpha, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
@@ -354,12 +330,12 @@ class SingleLeg:
         # print('trans: ', trans)
         return trans.dot(point)
 
-    def c1_thigh_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
+    def c1_thigh_transformation(self, beta, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
         # TODO ist alpha reversed?
         # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-        cos_alpha = cos(alpha)
-        sin_alpha = sin(alpha)
+        cos_alpha = cos(beta)
+        sin_alpha = sin(beta)
         # TODO rotate by 90 degrees only for left legs?
         cos90 = cos(radians(90))
         sin90 = sin(radians(90))
@@ -370,12 +346,12 @@ class SingleLeg:
         # print('trans: ', trans)
         return trans.dot(point)
 
-    def thigh_tibia_transformation(self, alpha, point=numpy.array([0, 0, 0, 1])):
+    def thigh_tibia_transformation(self, gamma, point=numpy.array([0, 0, 0, 1])):
         # point=numpy.append(point,1)
         # TODO ist alpha reversed?
         # alpha *= -1  # The direction of alpha is reversed as compared to the denavit-hartenberg notation.
-        cos_alpha = cos(alpha)
-        sin_alpha = sin(alpha)
+        cos_alpha = cos(gamma)
+        sin_alpha = sin(gamma)
         cos90 = cos(radians(180))
         sin90 = sin(radians(180))
         trans = numpy.array([(cos90, sin_alpha * sin90, cos_alpha * sin90, 0),
@@ -462,42 +438,80 @@ class SingleLeg:
         p_temp = copy.copy(p)
         # rospy.loginfo('ee_pos target = ' + str(p))
 
+        # temp_tarsus_position = self.c1_rotation(alpha, self.c1_thigh_transformation(beta,
+        #    self.thigh_tibia_transformation(gamma, self.tibia_ee_transformation())))
+        # calculate shoulder angle as angle of vector from c1 pos to ee pos in body frame
+        # x_pos = temp_tarsus_position[0] - c1_pos[0]
+        # y_pos = temp_tarsus_position[1] - c1_pos[1]
+        # x_pos = -temp_tarsus_position[1]
+        # y_pos = temp_tarsus_position[2]
+        # rospy.loginfo("x_pos = -temp_tarsus_position_c1[1] (" + str(x_pos) + ")")
+        # rospy.loginfo("y_pos = temp_tarsus_position[2] (" + str(y_pos) + ")")
+        # alpha_check = -atan2(y_pos, x_pos)
+
         # c1_pos = self.body_c1_transformation(self.alpha)
-        c1_pos = self.body_c1_transform(self.alpha)
+        c1_pos = self.apply_c1_static_transform()
         # alpha_angle: float = -atan2(p[1], (p[0]))
-        # TODO probably only works for lm leg find general solution!
         # rospy.loginfo('c1_pos = ' + str(c1_pos))
         # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
-        alpha_angle = -atan2(p[0] - c1_pos[0], p[1] - c1_pos[1])
+        c1_static_rotation_inverse = numpy.array([
+            [self.c1_static_transform[0][0], self.c1_static_transform[1][0], self.c1_static_transform[2][0]],
+            [self.c1_static_transform[0][1], self.c1_static_transform[1][1], self.c1_static_transform[2][1]],
+            [self.c1_static_transform[0][2], self.c1_static_transform[1][2], self.c1_static_transform[2][2]]])
+        translation_inverse = numpy.array(numpy.dot(-c1_static_rotation_inverse,
+            [self.c1_static_transform[0][3], self.c1_static_transform[1][3], self.c1_static_transform[2][3]]))
+        c1_static_inverse = numpy.array([
+            [c1_static_rotation_inverse[0][0], c1_static_rotation_inverse[0][1], c1_static_rotation_inverse[0][2],
+                translation_inverse[0]],
+            [c1_static_rotation_inverse[1][0], c1_static_rotation_inverse[1][1], c1_static_rotation_inverse[1][2],
+                translation_inverse[1]],
+            [c1_static_rotation_inverse[2][0], c1_static_rotation_inverse[2][1], c1_static_rotation_inverse[2][2],
+                translation_inverse[2]],
+            [0, 0, 0, 1]])
+        p_c1 = numpy.array(numpy.dot(c1_static_inverse, p))
+        alpha_angle = -atan2(p_c1[2], -p_c1[1])
+
         # beta_pos = self.body_c1_transformation(alpha_angle, self.c1_thigh_transformation(0))
-        beta_pos = self.body_c1_transform(self.c1_rotation(alpha_angle, self.c1_thigh_transformation(0)))
-        lct = numpy.linalg.norm(p[0:3] - beta_pos[0:3])
-        # rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
+        beta_pos = self.c1_rotation(alpha_angle, self.c1_thigh_transformation(0))
+        lct = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform(beta_pos)[0:3])
+        rospy.loginfo('beta_pos = ' + str(beta_pos) + ' h = ' + str(lct))
 
         # default_gamma_pos = self.body_c1_transformation(alpha_angle,
         #    self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
-        default_gamma_pos = self.body_c1_transform(self.c1_rotation(alpha_angle,
-            self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0))))
-        thigh_tibia_angle = -atan2(default_gamma_pos[2] - beta_pos[2], default_gamma_pos[1] - beta_pos[1])
-        # rospy.loginfo('thigh_tibia_angle = ' + str(thigh_tibia_angle))
-        tibia_z_angle = pi - atan2(0.02, -0.16)
-        # rospy.loginfo('tibia_z_angle = ' + str(tibia_z_angle))
-        # if (self.name=='rm'):
-        #    print(p)
+        default_gamma_pos = self.c1_rotation(alpha_angle,
+            self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
+        thigh_tibia_angle = -atan2(default_gamma_pos[0] - beta_pos[0], -default_gamma_pos[1] + beta_pos[1])  # 0.2211...
+        rospy.loginfo("thigh_tibia_angle = " + str(thigh_tibia_angle))
+        tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
         try:
-            gamma_inner = (acos((pow(self.segment_lengths[2], 2) + pow(self.segment_lengths[1], 2) - pow(lct, 2)) / (
-                    2 * self.segment_lengths[1] * self.segment_lengths[2])))  # - pi / 2
-            # gamma_angle = pi - gamma_inner
+            cos_gamma = (pow(self.segment_lengths[2], 2) + pow(self.segment_lengths[1], 2) - pow(lct, 2)) / (
+                    2 * self.segment_lengths[1] * self.segment_lengths[2])
+            rospy.loginfo("cos_gamma = " + str(cos_gamma))
+            # Avoid running in numerical rounding error
+            if (cos_gamma < -1):
+                gamma_inner = pi
+            else:
+                gamma_inner = (acos(cos_gamma))
+            rospy.loginfo("gamma_inner = " + str(gamma_inner))
             gamma_angle = gamma_inner - pi - tibia_z_angle
-            # rospy.loginfo(
-            #    'gamma_angle = ' + str(gamma_angle) + ' gamma_inner = ' + str(gamma_inner) + ' pi = ' + str(pi))
-            h1 = (acos((pow(self.segment_lengths[1], 2) + pow(lct, 2) - pow(self.segment_lengths[2], 2)) / (
-                    2 * self.segment_lengths[1] * lct)))
-            # rospy.loginfo('beta_inner = ' + str(h1))
-            ee_angle = -atan2(p[2] - beta_pos[2], p[1] - beta_pos[1])
+            if p[2] > 0:
+                rospy.loginfo("p[2] > 0: pi - gamma_angle")
+                gamma_angle = pi - gamma_inner - tibia_z_angle
+            rospy.loginfo("gamma_angle = " + str(gamma_angle))
+
+            cos_beta_inner = (pow(self.segment_lengths[1], 2) + pow(lct, 2) - pow(self.segment_lengths[2], 2)) / (
+                    2 * self.segment_lengths[1] * lct)
+            rospy.loginfo("cos_beta_inner = " + str(cos_beta_inner))
+            # Avoid running in numerical rounding error
+            if cos_beta_inner > 1:
+                h1 = 0
+            else:
+                h1 = (acos(cos_beta_inner))
+            rospy.loginfo('beta_inner = ' + str(h1))
+            # ee_angle = -atan2(p[2] - beta_pos[2], p[1] - beta_pos[1])
             # rospy.loginfo('ee_angle = ' + str(ee_angle))
             # rospy.loginfo('beta atan = ' + str(ee_angle - h1))
-            # Avoid running in numerical rounding error
+
             # rospy.loginfo('c1 to ee vector = ' + str(numpy.linalg.norm(p[0:3] - c1_pos[0:3])))
             vector_c1_ee = numpy.linalg.norm(p[0:3] - c1_pos[0:3])
             # rospy.loginfo(
@@ -505,7 +519,8 @@ class SingleLeg:
             #        vector_c1_ee))
             cos_beta = (pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
                     2 * lct * self.segment_lengths[0])
-            # rospy.loginfo('cos_beta = ' + str(cos_beta))
+            rospy.loginfo('cos_beta = ' + str(cos_beta))
+            # Avoid running in numerical rounding error
             if (cos_beta < -1.):
                 rospy.loginfo('----------------PI----------')
                 h2 = pi
@@ -517,19 +532,28 @@ class SingleLeg:
                 p_temp[2]) + ') is not valid for the given geometry for leg ' + self.name)
         if p[2] < 0:
             # beta_angle = (h1 + h2 + thigh_tibia_angle) - pi  # with rotation_dir
+            rospy.loginfo("pi - " + str(h1 + h2 + thigh_tibia_angle))
+            rospy.loginfo("h1 = " + str(h1))
+            rospy.loginfo("h2 = " + str(h2))
+            rospy.loginfo("thigh_tibia_angle = " + str(thigh_tibia_angle))
             beta_angle = pi - (h1 + h2 + thigh_tibia_angle)
+            rospy.loginfo("p[2] < 0: beta_angle (" + str(beta_angle) + ") = pi (" + str(pi) + ") - (h1 (" + str(
+                h1) + ") + h2 (" + str(h2) + ") + thigh_tibia_angle (" + str(thigh_tibia_angle) + "))")
             # rospy.loginfo('ee lower than body')
         else:
             # rospy.loginfo('ee higher than body')
             # beta_angle = h1 - h2 + pi + thigh_tibia_angle  # with rotation_dir
-            beta_angle = h1 - h2 - pi - thigh_tibia_angle
+            beta_angle = h1 + h2 - pi - thigh_tibia_angle
+            rospy.loginfo("p[2] >= 0: beta_angle (" + str(beta_angle) + ") = h1 (" + str(
+                h1) + ") - h2 (" + str(h2) + ") - pi (" + str(pi) + ") + thigh_tibia_angle (" + str(
+                thigh_tibia_angle) + "))")
 
         # if self.rotation_dir is True:
         #    gamma_angle *= -1
         # else:
         #    beta_angle *= -1
-        rospy.loginfo(
-            "return angles alpha = " + str(alpha_angle) + " beta = " + str(beta_angle) + " gamma = " + str(gamma_angle))
+        # rospy.loginfo(
+        #    "return angles alpha = " + str(alpha_angle) + " beta = " + str(beta_angle) + " gamma = " + str(gamma_angle))
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
     def get_current_angles(self):
