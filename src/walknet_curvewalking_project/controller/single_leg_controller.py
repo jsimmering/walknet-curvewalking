@@ -154,7 +154,7 @@ class SingleLegController:
             rate.sleep()
 
     # function for executing a single stance movement.
-    def manage_stance(self):
+    def manage_stance_movement(self):
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
         # while not self.leg.is_ready():
         #     rospy.loginfo("leg not connected yet! wait...")

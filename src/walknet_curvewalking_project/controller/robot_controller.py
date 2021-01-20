@@ -28,7 +28,7 @@ class RobotController:
             if name == 'lm' or name == 'rf' or name == 'rr':
                 # swing = True
                 leg_c = SingleLegController(name, self.nh, swing, self)
-                #leg_c.manage_stance()
+                # leg_c.manage_stance()
                 self.legs.append(leg_c)
         # for leg in self.legs:
         #    rospy.loginfo("############################### leg: " + leg.name + " ee_pos: " + str(leg.leg.ee_position()))
@@ -42,7 +42,8 @@ class RobotController:
 
     def init_body_model(self):
         for leg in self.legs:
-            self.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position()[0:3])
+            self.body_model.put_leg_on_ground(leg.name,
+                leg.leg.ee_position()[0:3] - leg.leg.apply_c1_static_transform()[0:3])
             rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
         self.body_model.updateLegStates()
 
@@ -92,6 +93,14 @@ class RobotController:
             thread.start()
 
     def move_body_cohesive(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        ready_status = [leg.leg.is_ready() for leg in self.legs]
+        rospy.loginfo("ready status = " + str(ready_status))
+        while ready_status.__contains__(False):
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+            ready_status = [leg.leg.is_ready() for leg in self.legs]
+            rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown():
             self.updateStanceBodyModel()
             for leg in self.legs:

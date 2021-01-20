@@ -116,7 +116,7 @@ class mmcBodyModelStance:
         # estimated based on estimated end effector positions.
         self.front_vect = [numpy.array([pos[0] - front_segment_start[0], pos[1] - front_segment_start[1],
             pos[2] - front_segment_start[2]]) for pos in self.ee_positions]
-        self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
+        #self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
 
         # Segment defining vectors: is constructed as a diamond for the mounting points of
         # the legs: segm_leg_ant = from coxa to front (anterior)
@@ -127,7 +127,7 @@ class mmcBodyModelStance:
         #    numpy.array([0.06, 0.0, 0.0])]
         self.segm_post_ant = numpy.array([0.24, 0.0, 0.0])
         self.segm_post_ant_norm = numpy.linalg.norm(self.segm_post_ant)
-        self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
+        #self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         # positions of the shoulder c1 joints for calculating real leg vectors
         self.c1_positions = [numpy.array([0.12, 0.06, 0.0]), numpy.array([0.12, -0.06, 0.0]),
@@ -139,29 +139,29 @@ class mmcBodyModelStance:
         #     numpy.array([0., self.width, -self.height]), numpy.array([0., -self.width, -self.height])]
         self.leg_vect = [numpy.array([target[0] - start[0], target[1] - start[1],
             target[2] - start[2]]) for target, start in zip(self.ee_positions, self.c1_positions)]
-        self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+        #self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
 
         # segm_leg_ant = from coxa to front (anterior) = real leg vector (coax to ee) - front vector (front of a segment to footpoint)
         # self.segm_leg_ant = [(self.leg_vect[0] - self.front_vect[0]), (self.leg_vect[1] - self.front_vect[1])]
         self.segm_leg_ant = [(self.leg_vect[i] - self.front_vect[i]) for i in
-            range(0, 6)]  # TODO front of segment to ee
+            range(0, 6)]
         self.segm_leg_ant_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_leg_ant]
-        self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
+        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
 
         # segm_leg_post = from coxa to back (posterior)
         # self.segm_leg_post = [(self.segm_leg_ant[0] - self.segm_post_ant[0]), (self.segm_leg_ant[1] - self.segm_post_ant[0])]
         # self.segm_leg_post = [(self.segm_leg_ant[i] - self.segm_post_ant[i // 2]) for i in range(0, 6)] -- for 3 segments
         self.segm_leg_post = [(self.segm_leg_ant[i] - self.segm_post_ant) for i in range(0, 6)]
         self.segm_leg_post_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_leg_post]
-        self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
+        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
 
         # lines connecting shoulders for normalization of segment length after iteration step
         self.segm_diag_to_right = [(self.segm_leg_ant[i * 2] - self.segm_leg_ant[i * 2 + 1]) for i in
             range(0, len(self.segm_leg_ant) // 2)]
         self.segm_diag_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_diag_to_right]
-        self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
-            self.segm_diag_to_right,
-            self.segm_diag_to_right_lines)
+        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
+        #    self.segm_diag_to_right,
+        #    self.segm_diag_to_right_lines)
 
         # Ground contact - which feet are on the ground
         self.gc = [False, False, False, False, False, False]
@@ -180,6 +180,7 @@ class mmcBodyModelStance:
         for i in range(0, len(self.footdiag)):
             for j in range(0, i):
                 self.footdiag[i][j] = self.set_up_foot_diag(i, j)
+
         # The explicit disturbance vectors of the network
         # self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
         # self.delta_back = [[numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])]]
@@ -278,7 +279,7 @@ class mmcBodyModelStance:
             markers.points.append(pos)
 
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
-        for i in range(0, 5):
+        for i in range(0, 3):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)
             rate.sleep()
@@ -308,7 +309,7 @@ class mmcBodyModelStance:
             markers.points.append(pos)
 
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
-        for i in range(0, 5):
+        for i in range(0, 3):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)
             rate.sleep()
@@ -320,13 +321,35 @@ class mmcBodyModelStance:
     #	When a leg is put on the ground a new connecting vector has to be established.
     #	This is calculated as the difference between the leg vectors.
     def set_up_foot_diag(self, start, target):
-        diag_vec = self.leg_vect[target] - self.leg_vect[start]  # + self.get_segm_vectors_between_legs(start, target)
+        diag_vec = self.leg_vect[target] - self.leg_vect[start] + self.get_segm_vectors_between_legs(start, target)
         return diag_vec
+
+    ##	Providing the segment vectors connecting two legs.
+    #	An equation is described by a series of vectors forming a closed kinematic
+    #	chain (two leg vectors, the footdiag and -possibly- segment vectors in
+    #	between). This function is calculating the segment vectors between the
+    #	given legs.
+    def get_segm_vectors_between_legs(self, start_leg, end_leg):
+        rospy.loginfo("in get_segm_vectors_between_legs start_leg = " + str(start_leg) + " end_leg = " + str(end_leg))
+        leg_diff = (end_leg // 2 - start_leg // 2)
+        if leg_diff == 0:
+            return (self.segm_leg_post[start_leg] - self.segm_leg_post[end_leg])
+        elif leg_diff == 1 or leg_diff == 2:
+            # return (self.segm_leg_post[start_leg] - self.segm_leg_ant[end_leg])
+            return (self.segm_leg_ant[start_leg] - self.segm_leg_ant[end_leg])
+        elif leg_diff == -1 or leg_diff == -2:
+            # return (self.segm_leg_ant[start_leg] - self.segm_leg_post[end_leg])
+            return (self.segm_leg_ant[start_leg] - self.segm_leg_ant[end_leg])
+        # elif leg_diff == 2:
+        #     return (self.segm_leg_post[start_leg] - self.segm_post_ant[1] - self.segm_leg_ant[end_leg])
+        # elif leg_diff == -2:
+        #     return (self.segm_leg_ant[start_leg] + self.segm_post_ant[1] - self.segm_leg_post[end_leg])
 
     ##	Sets ground contact to false and removes this leg from the body
     #	model computations. As the leg is not part of the closed kinematic chains
     #	after being lifted from the ground it shall not participate.
     def lift_leg_from_ground(self, leg_nr):
+        rospy.loginfo("lift leg from ground: " + RSTATIC.leg_names[leg_nr])
         if self.gc[leg_nr]:
             self.gc[leg_nr] = False
 
@@ -334,12 +357,11 @@ class mmcBodyModelStance:
     #	vectors to all other standing legs (footdiag) which are used by the
     #	network.
     def put_leg_on_ground(self, leg_name, leg_vec):
+        rospy.loginfo("put leg on ground: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
         if not self.gc[leg_nr]:
             # Set leg and diag vector
             self.leg_vect[leg_nr] = numpy.array(leg_vec)
-            rospy.loginfo("leg_vec[" + str(leg_nr) + "] = " + str(self.leg_vect[leg_nr]))
-            rospy.loginfo("segm_leg_ant[" + str(leg_nr) + "] = " + str(self.segm_leg_ant[leg_nr]))
             self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
             for i in range(0, leg_nr):
@@ -353,6 +375,7 @@ class mmcBodyModelStance:
     #	of the stance movement). When a leg switches between states it has to be added
     #	or removed from the body model.
     def updateLegStates(self):
+        rospy.loginfo("updateLegStates")
         # motiv leg needs to be singleLegController which has attribute swing that replaces inSwingPhase()
         # for motiv_leg, leg_nr in zip(self.motivationNetRobot.motivationNetLegs,
         #        range(len(self.motivationNetRobot.motivationNetLegs))):
@@ -386,8 +409,8 @@ class mmcBodyModelStance:
         equation_counter += self.damping
         for target_leg in range(0, len(self.gc)):
             if self.gc[target_leg] and target_leg != leg_nr:
-                part_vec = numpy.array(
-                    self.leg_vect[target_leg])  # + self.get_segm_vectors_between_legs(leg_nr, target_leg)
+                part_vec = numpy.array(self.leg_vect[target_leg]) + self.get_segm_vectors_between_legs(leg_nr,
+                    target_leg)
                 if target_leg < leg_nr:
                     part_vec -= self.footdiag[leg_nr][target_leg]
                 elif target_leg > leg_nr:
@@ -400,6 +423,7 @@ class mmcBodyModelStance:
     #	the new front vectors are computed, summed and the mean is calculated
     #	(the old value is also integrated, weighted by the damping value)
     def compute_front_computations_and_integrate(self, leg_nr):
+        rospy.loginfo("compute_front_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_front_vect = -self.delta_front[leg_nr // 2] - self.segm_post_ant[leg_nr // 2] + self.leg_vect[leg_nr] - \
         #                 self.segm_leg_post[leg_nr]  # 3 segments
@@ -426,6 +450,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segment_leg_ant_computations_and_integrate(self, leg_nr):
+        rospy.loginfo("compute_segment_leg_ant_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant[leg_nr // 2]
         new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant
@@ -440,6 +465,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segment_leg_post_computations_and_integrate(self, leg_nr):
+        rospy.loginfo("compute_segment_leg_post_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant[leg_nr // 2]
         new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant
@@ -453,6 +479,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segm_post_ant_computations_and_integrate(self, seg_nr):
+        rospy.loginfo("compute_segm_post_ant_computations_and_integrate: segment nr = " + str(seg_nr))
         if seg_nr != 0:
             rospy.logerr("segment nr is " + str(seg_nr) + " but only 1 segment exists")
         equation_counter = 7
@@ -475,8 +502,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segm_diag_computations_and_integrate(self, joint_nr):
-        if joint_nr != 0:
-            rospy.logerr("segment nr is " + str(joint_nr) + " but only 1 segment exists")
+        rospy.loginfo("compute_segm_diag_computations_and_integrate: joint_nr = " + str(joint_nr))
         equation_counter = 2
 
         new_segm_diag = self.segm_leg_post[2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[1 + joint_nr * 2]
@@ -495,46 +521,26 @@ class mmcBodyModelStance:
     #	different equations.
     ##
     def mmc_iteration_step(self):
+        rospy.loginfo(
+            "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
-        # self.delta_front[1] = (self.leg_vect[0] - self.segm_leg_post[0] - self.front_vect[0] - self.segm_post_ant)
-        # for 3 segments
-        # self.delta_front[2] = (self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant[1])
-        #
-        # self.delta_back[2] = self.pull_back
-        # self.delta_back[1] = -(self.leg_vect[4] - self.segm_leg_post[4] - self.front_vect[4] - self.segm_post_ant[2])
-        # self.delta_back[0] = -(self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant[1])
-        # self.delta_front[2] = (self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
-
         self.delta_back = self.pull_back
-        # self.delta_back[2] = self.pull_back
-        # self.delta_back[1] = -(self.leg_vect[4] - self.segm_leg_post[4] - self.front_vect[4] - self.segm_post_ant)
-        # self.delta_back[0] = -(self.leg_vect[2] - self.segm_leg_post[2] - self.front_vect[2] - self.segm_post_ant)
 
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
-        # TODO leg vec calculation wrong?!
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
-        # segm_post_ant = [self.compute_segm_post_ant_computations_and_integrate(i) for i in range(0, 3)]
         segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-        # To make the whole body stiff (one body segment) simply align the three body segments.
-        # segm_post_ant[1] = ((self.segm_post_ant_norm[1]/numpy.linalg.norm(segm_post_ant[0]))*segm_post_ant[0])
-        # segm_post_ant[2] = ((self.segm_post_ant_norm[2]/numpy.linalg.norm(segm_post_ant[0]))*segm_post_ant[0])
-        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
         segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
-            # rospy.loginfo("update leg vec: old = " + str(self.leg_vect[i]) + " new = " + str(leg_vect[i]))
             self.leg_vect[i] = leg_vect[i]
         self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
         self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
         self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
         self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        # for i in range(0, 3):
-        #     self.segm_diag_to_right[i] = segm_diag_to_right[i]
-        #     self.segm_post_ant[i] = segm_post_ant[i]
         self.segm_diag_to_right[0] = segm_diag_to_right[0]
         self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
             self.segm_diag_to_right,
@@ -551,6 +557,8 @@ class mmcBodyModelStance:
     #	segment. Takes an angle (0 os straight ahead) and a velocity factor
     #	(around 0.1-0.2 should be fine) to come up with a corresponding pull vector.
     def pullBodyModelAtFrontIntoRelativeDirection(self, pull_angle, speed_fact):
+        rospy.loginfo(
+            "pullBodyModelAtFrontIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
         pull_angle_BM = pull_angle + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
         self.pull_front[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_front[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
@@ -560,15 +568,19 @@ class mmcBodyModelStance:
     #	(around 0.1 - positive means backwards walking!)
     #	to come up with a corresponding pull vector.
     def pullBodyModelAtBackIntoRelativeDirection(self, pull_angle, speed_fact):
+        rospy.loginfo(
+            "pullBodyModelAtBackIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
         # pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[2][1], -self.segm_post_ant[2][0]) -- 3 segments
         pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[1], -self.segm_post_ant[0])
         self.pull_back[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_back[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
 
     def get_leg_vector(self, leg_name):
+        rospy.loginfo("get_leg_vector: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
         target_vec_wn = [self.leg_vect[leg_nr][0], self.leg_vect[leg_nr][1], self.leg_vect[leg_nr][2], 0]
         return target_vec_wn
 
     def get_ground_contact(self, leg_nr):
+        rospy.loginfo("get_ground_contact: " + RSTATIC.leg_names[leg_nr])
         return self.gc[leg_nr]

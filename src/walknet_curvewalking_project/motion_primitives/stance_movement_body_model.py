@@ -55,25 +55,27 @@ class StanceMovementBodyModel():
     #	classes.
     def modulated_routine_function_call(self):
         if not self.init_stance_footpoint:
-            # print("Stance on ground - ", self.leg_controller.name,
-            #    self.leg_controller.leg.ee_position())
-            stance_foot_pos = self.leg_controller.leg.ee_position()
+            # stance_foot_pos = self.leg_controller.leg.ee_position()
             # if (stance_foot_pos[0] <= self.leg_controller.pep_shifted[0]):
             #     print("Stance correction: foot moved in Body Model in front of PEP ",
             #         self.leg_controller.wleg.leg.name)
             #     stance_foot_pos[0] = self.leg_controller.pep_shifted[0] + 0.02
-            self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.ee_position())
+            # self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.compute_forward_kinematics_c1()[0:3])  #self.leg_controller.leg.ee_position())
+            self.bodyModelStance.put_leg_on_ground(self.leg_controller.name,
+                self.leg_controller.leg.ee_position()[0:3] - self.leg_controller.leg.apply_c1_static_transform()[0:3])
             self.init_stance_footpoint = True
         try:
-            next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(
-                self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name))
+            target_vec = self.leg_controller.leg.apply_c1_static_transform()[0:3] + self.bodyModelStance.get_leg_vector(
+                self.leg_controller.leg.name)[0:3]
+            next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
             self.leg_controller.leg.set_command(next_angles)
         except ValueError:
-            rospy.logerr("ValueError in " + str(
-                self.leg_controller.leg.name) + " during inverse kinematics computation.\n Tried to reach position " +
-                str(self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name)) + "\ncurrent position is: " +
-                str(self.leg_controller.leg.ee_position()) + "\ncurrent angles are: " + str(
-                self.leg_controller.leg.get_current_angles()) + "\nMaintaining current angles.")
+            rospy.logerr("ValueError in " + str(self.leg_controller.leg.name) +
+                         " during inverse kinematics computation.\n Tried to reach position " +
+                         str(self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name)) +
+                         "\ncurrent position is: " + str(self.leg_controller.leg.ee_position()) +
+                         "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
+                         "\nMaintaining current angles.")
             self.leg_controller.leg.set_command(self.leg_controller.leg.get_current_angles())
 
         # current_angles = numpy.array(self.leg_controller.leg.ee_position())
