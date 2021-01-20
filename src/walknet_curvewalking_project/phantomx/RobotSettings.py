@@ -13,7 +13,7 @@ alpha_rotation_dir = (False, True, False, True, False, True)  # ('lf', 'rf', 'lm
 
 segment_length = (0.054, 0.066, 0.16)  # (c1_to_thigh, thigh, tibia)
 
-joint_angle_limits = ((-0.6, 0.6), (-1.0, 0.3), (-1.0, 1.0))
+joint_angle_limits = ((-0.5, 0.5), (-1.5, 1.2), (-1.5, 0.6))
 # ((c1 - alpha: (lower, upper), thigh - beta: (lower, upper), tibia - gamme: (lower, upper))
 
 lm = numpy.array([[0, 0, 1, 0],

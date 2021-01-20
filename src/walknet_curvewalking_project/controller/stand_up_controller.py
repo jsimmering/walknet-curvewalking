@@ -87,11 +87,11 @@ def talker():
             finished = False
 
         rospy.loginfo("move tibia down:")
-        if not make_move(-1.0, tibia_joint_values, tibia_pub_list, tibia_mutex, rate):
+        if not make_move(-1.2, tibia_joint_values, tibia_pub_list, tibia_mutex, rate):
             finished = False
 
         rospy.loginfo("straighten thigh:")
-        if not make_move(0.0, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
+        if not make_move(0.5, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
             finished = False
 
 
