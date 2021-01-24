@@ -7,7 +7,7 @@ def talker():
     rospy.init_node('talker', anonymous=True)
     if not rospy.is_shutdown():
         msg = robot_control()
-        msg.speed_fact = 0.2
+        msg.speed_fact = 0.1
         msg.pull_angle = 0.0
         pub.publish(msg)
 

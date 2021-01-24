@@ -26,13 +26,55 @@ class RobotController:
                 leg_c = SingleLegController(name, self.nh, swing, self)
                 self.legs.append(leg_c)
             if name == 'lm' or name == 'rf' or name == 'rr':
-                # swing = True
+                #swing = True
                 leg_c = SingleLegController(name, self.nh, swing, self)
                 # leg_c.manage_stance()
                 self.legs.append(leg_c)
         # for leg in self.legs:
         #    rospy.loginfo("############################### leg: " + leg.name + " ee_pos: " + str(leg.leg.ee_position()))
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
+
+    def move_legs_into_init_pos(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        for leg in self.legs:
+            while not leg.leg.is_ready():
+                rospy.loginfo("leg not connected yet! wait...")
+                rate.sleep()
+        rospy.loginfo("legs connected move to init pos")
+        init_pos = None
+        for leg in self.legs:
+            init_pos = None
+            if leg.swing and (leg.name == "lf" or leg.name == "rf"):
+                init_pos = RSTATIC.front_initial_pep
+            elif not leg.swing and (leg.name == "lf" or leg.name == "rf"):
+                init_pos = RSTATIC.front_initial_aep
+            elif leg.swing and (leg.name == "lm" or leg.name == "rm"):
+                init_pos = RSTATIC.middle_initial_pep
+            elif not leg.swing and (leg.name == "lm" or leg.name == "rm"):
+                init_pos = RSTATIC.middle_initial_aep
+            elif leg.swing and (leg.name == "lr" or leg.name == "rr"):
+                init_pos = RSTATIC.hind_initial_pep
+            elif not leg.swing and (leg.name == "lr" or leg.name == "rr"):
+                init_pos = RSTATIC.hind_initial_aep
+            init_pos[1] = init_pos[1] * leg.movement_dir
+            rospy.loginfo("leg " + str(leg.name) + " init_pos = " + str(init_pos))
+            leg.set_init_pos(init_pos)
+
+            if not init_pos is None:
+                leg.move_leg_to(init_pos)
+                rate.sleep()
+
+        finished = False
+        while not rospy.is_shutdown() and not finished:
+            finished = True
+            for leg in self.legs:
+                if not leg.leg.is_target_reached():
+                    finished = False
+                    leg.move_leg_to()
+                    rate.sleep()
+        rospy.loginfo("reached init positions")
+
+
 
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
@@ -80,6 +122,21 @@ class RobotController:
             thread.daemon = True
             thread.start()
 
+    def walk_body_model(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        ready_status = [leg.leg.is_ready() for leg in self.legs]
+        rospy.loginfo("ready status = " + str(ready_status))
+        while ready_status.__contains__(False):
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+            ready_status = [leg.leg.is_ready() for leg in self.legs]
+            rospy.loginfo("ready status = " + str(ready_status))
+        while not rospy.is_shutdown():
+            self.updateStanceBodyModel()
+            for leg in self.legs:
+                # input("press any key to performe the next step.")
+                leg.manage_walk()
+
     def start_walk(self):
         for leg in self.legs:
             thread = threading.Thread(target=leg.manage_walk_bezier)
@@ -113,9 +170,11 @@ if __name__ == '__main__':
     robot_controller = RobotController('robot', nh)
     # rospy.spin()
     try:
+        robot_controller.move_legs_into_init_pos()
         # robot_controller.walk()
         # robot_controller.start_walk()
-        robot_controller.move_body_cohesive()
-        rospy.spin()
+        # robot_controller.move_body_cohesive()
+        robot_controller.walk_body_model()
+        #rospy.spin()
     except rospy.ROSInterruptException:
         pass

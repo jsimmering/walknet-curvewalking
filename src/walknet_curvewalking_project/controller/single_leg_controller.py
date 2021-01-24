@@ -7,6 +7,7 @@ from std_msgs.msg import Bool
 
 from walknet_curvewalking_project.motion_primitives.stance_movement_body_model import StanceMovementBodyModel
 from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
 from walknet_curvewalking_project.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
@@ -16,19 +17,24 @@ from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 class SingleLegController:
     def __init__(self, name, note_handle, swing, robot):
         self.robot = robot
-        # rospy.init_node('single_leg_controller', anonymous=True)
-        self.nh = note_handle
         self.name = name
-        self.movement_dir = 1
+        self.nh = note_handle
+        self.rate = rospy.Rate(CONTROLLER_FREQUENCY)
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
+            self.movement_dir = 1
+        else:
             self.movement_dir = -1
         self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener(), self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         # self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
-        self.stance_net = StanceMovementBodyModel(self)
+        self.init_pos = None
+        if self.robot is None:
+            self.stance_net = None
+        else:
+            self.stance_net = StanceMovementBodyModel(self)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
             JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
@@ -36,15 +42,30 @@ class SingleLegController:
         self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
             JointControllerState, self.leg.tibia_callback)
 
+    def set_init_pos(self, p):
+        self.init_pos = p
+
     def bezier_swing(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
+            self.rate.sleep()
         self.temp.swing_start_point = self.leg.ee_position()[0:3]
-        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
+        # self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
+
+        target_pos = None
+        if self.name == "lf" or self.name == "rf":
+            target_pos = RSTATIC.front_initial_aep
+        elif self.name == "lm" or self.name == "rm":
+            target_pos = RSTATIC.middle_initial_aep
+        elif self.name == "lr" or self.name == "rr":
+            target_pos = RSTATIC.hind_initial_aep
+        target_pos[1] = target_pos[1] * self.movement_dir
+        rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(target_pos))
+
+        # self.temp.swing_target_point = self.leg.compute_inverse_kinematics(target_pos)
+        self.temp.swing_target_point = target_pos
         # at which position of the interval between the start and the end point the middle point should be placed
-        self.temp.apex_point_ratio = 0.05
+        self.temp.apex_point_ratio = 0.03
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
         #temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
@@ -55,22 +76,31 @@ class SingleLegController:
         print(self.temp.trajectory_generator.bezier_points)
         while not rospy.is_shutdown() and not self.leg.predictedGroundContact():
             self.temp.move_to_next_point(1)
-            rate.sleep()
+            self.rate.sleep()
         self.temp.move_to_next_point(0)
-        rate.sleep()
+        self.rate.sleep()
         self.swing = False
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier_body_model(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         # while not self.leg.is_ready():
         #     rospy.loginfo("leg not connected yet! wait...")
         #     rate.sleep()
         # rospy.loginfo("leg connected start walking")
         while not self.robot.walk_motivation and not rospy.is_shutdown():
             rospy.loginfo("no walking motivation...")
-            rate.sleep()
+            self.rate.sleep()
         rospy.loginfo("leg connected start walking")
+
+        target_pos = None
+        if self.name == "lf" or self.name == "rf":
+            target_pos = RSTATIC.front_initial_aep
+        elif self.name == "lm" or self.name == "rm":
+            target_pos = RSTATIC.middle_initial_aep
+        elif self.name == "lr" or self.name == "rr":
+            target_pos = RSTATIC.hind_initial_aep
+        target_pos[1] = target_pos[1] * self.movement_dir
+        rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(target_pos))
 
         while not rospy.is_shutdown():
             self.robot.updateStanceBodyModel()
@@ -78,28 +108,59 @@ class SingleLegController:
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
                     self.temp.swing_start_point = self.leg.ee_position()[0:3]
-                    self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                        [self.movement_dir * 0.3, 0, -1.0])[0:3]
+                    #self.temp.swing_target_point = self.leg.compute_forward_kinematics(
+                    #    [self.movement_dir * 0.3, 0, -1.0])[0:3]
+                    self.temp.swing_target_point = target_pos
                     self.temp.apex_point_ratio = 0.05
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
-                rate.sleep()
+                self.rate.sleep()
                 if self.leg.predictedGroundContact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
-                    rate.sleep()
+                    self.rate.sleep()
                     self.swing = False
                 # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
             else:
                 self.stance_net.modulated_routine_function_call()
 
+    # function for executing a single step in a stance movement.
+    def manage_walk(self):
+        if not self.robot.walk_motivation or rospy.is_shutdown():
+            rospy.loginfo("no moving motivation or shutdown...")
+            return
+        else:
+            rospy.loginfo("leg connected start walking")
+            if self.swing:
+                if self.temp.swing_start_point is None:
+                    rospy.loginfo("##############################reset swing")
+                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_target_point = self.leg.compute_forward_kinematics(
+                        [self.movement_dir * 0.3, -0.5, -1.2])[0:3]
+                    self.temp.apex_point_ratio = 0.05
+                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+                self.temp.move_to_next_point(1)
+                self.rate.sleep()
+                if self.leg.predictedGroundContact():
+                    self.temp.move_to_next_point(0)
+                    self.temp.swing_start_point = None
+                    self.rate.sleep()
+                    self.swing = False
+                # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
+            else:
+                self.stance_net.modulated_routine_function_call()
+                if self.leg.reached_pep():
+                    self.stance_net.reset_stance_trajectory()
+                    self.rate.sleep()
+                    self.swing = True
+
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
+            self.rate.sleep()
         rospy.loginfo("leg connected")
 
         alpha = 0.3
@@ -119,11 +180,11 @@ class SingleLegController:
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
-                rate.sleep()
+                self.rate.sleep()
                 if self.leg.predictedGroundContact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
-                    rate.sleep()
+                    self.rate.sleep()
                     self.swing = False
                 # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
             else:
@@ -131,17 +192,16 @@ class SingleLegController:
                 if self.stance_trajectory_gen.start_point is None:
                     self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
                 self.stance_trajectory_gen.stance()
-                rate.sleep()
+                self.rate.sleep()
                 if self.stance_trajectory_gen.is_finished():
                     self.swing = True
                     self.stance_trajectory_gen.set_start_point(None)
 
     # function for executing a single stance movement.
     def manage_simple_stance(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
+            self.rate.sleep()
         rospy.loginfo("leg connected start swing")
         self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
         alpha = 0.3
@@ -151,18 +211,17 @@ class SingleLegController:
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown() and not self.stance_trajectory_gen.is_finished():
             self.stance_trajectory_gen.stance()
-            rate.sleep()
+            self.rate.sleep()
 
     # function for executing a single stance movement.
     def manage_stance_movement(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
         # while not self.leg.is_ready():
         #     rospy.loginfo("leg not connected yet! wait...")
         #     rate.sleep()
         # rospy.loginfo("leg connected start walking")
         while not self.robot.walk_motivation and not rospy.is_shutdown():
             rospy.loginfo("no moving motivation...")
-            rate.sleep()
+            self.rate.sleep()
         rospy.loginfo("leg connected start walking")
         while not rospy.is_shutdown():
             # input("press any key to performe the next step for " + str(self.name) + " leg.")
@@ -178,15 +237,34 @@ class SingleLegController:
             rospy.loginfo("leg connected start walking")
             self.stance_net.modulated_routine_function_call()
 
+    # function for executing a single step in a stance movement.
+    def move_leg_to(self, p = None):
+        # rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        # while not rospy.is_shutdown() and not self.leg.is_target_reached():
+        #     angles = self.leg.compute_inverse_kinematics(p)
+        #     self.leg.set_command(angles)
+        #     rate.sleep()
+        if rospy.is_shutdown():
+            return
+        else:
+            if p is None:
+                p = self.init_pos
+            # TODO what does array.any() or array.all() do?
+            if self.init_pos[0] != p[0] or self.init_pos[1] != p[1] or self.init_pos[2] != p[2]:
+                rospy.logerr("move leg to " + str(p) + " but init pose is set to " + str(self.init_pos))
+            angles = self.leg.compute_inverse_kinematics(p)
+            rospy.loginfo(self.name + ": inverse kinematic. for position " + str(p) + " angles = " + str(angles))
+            self.leg.set_command(angles)
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
-    legController = SingleLegController('rr', nh, True)
+    legController = SingleLegController('rr', nh, True, None)
     # rospy.spin()
     try:
         # legController.manage_walk()
-        legController.manage_walk_bezier()
-        # legController.bezier_swing()
+        # legController.manage_walk_bezier()
+        legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_simple_stance()
     except rospy.ROSInterruptException:

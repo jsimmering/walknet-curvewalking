@@ -91,7 +91,7 @@ def talker():
             finished = False
 
         rospy.loginfo("straighten thigh:")
-        if not make_move(0.5, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
+        if not make_move(-0.5, thigh_joint_values, thigh_pub_list, thigh_mutex, rate):
             finished = False
 
 

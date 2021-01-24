@@ -263,15 +263,32 @@ class TestController:
         rospy.loginfo('ee_pos (inverse kinematic angles) = ' + str(ee_pos))
         rospy.loginfo("##########################################################################################")
 
+    def test_pep_aep(self):
+        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        while not self.leg.is_ready():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        rospy.loginfo("##########################################################################################")
+        # lf aep = [0.3, 0.25, -0.11] lf pep = [0.18, 0.25, -0.11]
+        # rf aep = [0.3, -0.25, -0.11] lf pep = [0.18, -0.25, -0.11]
+        # pep front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height
+        cur_angles = self.leg.compute_inverse_kinematics([0.3, 0.25, -0.11])
+        rospy.loginfo('inverse kinematic angles for aep [0.3, 0.25, -0.11]: ' + str(cur_angles))
+        while not rospy.is_shutdown():
+            self.leg.set_command(cur_angles)
+            rate.sleep()
+        rospy.loginfo("##########################################################################################")
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
     legController = TestController('lf', nh, True, None)
     # rospy.spin()
     try:
-        legController.test_kinematic()
+        legController.test_pep_aep()
+        # legController.test_kinematic()
         # legController.manage_walk()
-        #legController.manage_walk_bezier()
+        # legController.manage_walk_bezier()
         # legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()
