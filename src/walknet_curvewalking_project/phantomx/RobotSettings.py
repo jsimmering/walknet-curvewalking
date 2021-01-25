@@ -48,17 +48,17 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
-default_stance_distance = 0.1
+default_stance_distance = 0.08
 stance_height = -0.11
 default_stance_width = 0.25
 
-front_initial_aep = numpy.array([0.29, default_stance_width, stance_height])  # for forward walking
+front_initial_aep = numpy.array([0.26, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array([0.05, 0.327, stance_height])  # for forward walking
+middle_initial_aep = numpy.array([0.04, 0.327, stance_height])  # for forward walking
 middle_initial_pep = numpy.array(
     [middle_initial_aep[0] - default_stance_distance, 0.327, stance_height])  # -0.07# for forward walking
-hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
+hind_initial_aep = numpy.array([-0.18, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 # == Ground Contact Parameters ========
