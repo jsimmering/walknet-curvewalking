@@ -39,7 +39,7 @@ def bezier(points, parameter, order=2):
     while relevant_points.shape[0] > 1:
         deltas = numpy.diff(relevant_points, n=1, axis=0)
         relevant_points = relevant_points[0:-1] + deltas * relative_parameter  # [0:-1] = [:-1] all elements except last
-    rospy.loginfo("return bezier point: " + str(relevant_points[0]))
+    #rospy.loginfo("return bezier point: " + str(relevant_points[0]))
     return relevant_points[0]  # [0, :]  # everything in row 0 (first row)
 
 
@@ -87,8 +87,8 @@ class TrajectoryGenerator:
         else:  # if the current_position is more than desired_distance away from the last_target_position,
             # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
             delta_position = self.last_target_position - current_position
-            if numpy.linalg.norm(delta_position) >= desired_distance:
-                rospy.loginfo("---ELSE: current distance " + str(numpy.linalg.norm(delta_position)) +
+            if round(numpy.linalg.norm(delta_position), 4) > desired_distance:
+                rospy.loginfo("---ELSE: current distance " + str(round(numpy.linalg.norm(delta_position), 4)) +
                               " is more than desired_distance away from the last_target_position, last_target_pos = " +
                               str(self.last_target_position) + " current_pos = " + str(current_position) +
                               " desired distance = " + str(desired_distance))
@@ -224,7 +224,7 @@ class SwingMovementBezier:
             self.trajectory_generator.bezier_points = bezier_points
 
     def compute_bezier_points(self):  # ForNormalSwingMovement(self):
-        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        #rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -295,10 +295,16 @@ class SwingMovementBezier:
                         control_point_3, self.swing_target_point])
 
     def compute_bezier_points_with_joint_angles(self):  # ForNormalSwingMovement(self):
-        rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        #rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = (self.swing_target_point - self.swing_start_point)[0:3]
         start_angles = self.leg.compute_inverse_kinematics(self.swing_start_point)
         target_angles = self.leg.compute_inverse_kinematics(self.swing_target_point)
+        angles = [(start_angles[0] + target_angles[0]) / 2,
+            (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
+            (start_angles[2] + target_angles[2]) / 2]
+        if not self.leg.check_joint_ranges(angles):
+            rospy.logerr('The provided angles for ' + self.leg.name + '(' + str(angles[0]) + ', ' + str(angles[1]) +
+                         ', ' + str(angles[2]) + ') are not valid for the forward/inverse kinematics.')
         apex_point = self.leg.compute_forward_kinematics([(start_angles[0] + target_angles[0]) / 2,
             (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
             (start_angles[2] + target_angles[2]) / 2])[0:3]
@@ -337,9 +343,9 @@ class SwingMovementBezier:
             next_angles = None
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
-                rospy.loginfo("target position is: " + str(target_position))
-                rospy.loginfo("computed next angles as: " + str(next_angles))
-                rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+                #rospy.loginfo("target position is: " + str(target_position))
+                #rospy.loginfo("computed next angles as: " + str(next_angles))
+                #rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
                 self.leg.set_command(next_angles)
             except ValueError:
                 rospy.logerr("ValueError in " + str(self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(

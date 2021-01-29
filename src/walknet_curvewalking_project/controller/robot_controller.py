@@ -23,6 +23,7 @@ class RobotController:
         for name in RSTATIC.leg_names:
             swing = False
             if name == 'rm' or name == 'lf' or name == 'lr':
+                #swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
             if name == 'lm' or name == 'rf' or name == 'rr':
                 swing = True
@@ -121,6 +122,7 @@ class RobotController:
             for leg in self.legs:
                 # input("press any key to performe the next step.")
                 leg.manage_walk()
+                rate.sleep()
 
     def move_body_cohesive(self):
         rate = rospy.Rate(CONTROLLER_FREQUENCY)
@@ -148,7 +150,7 @@ if __name__ == '__main__':
     # rospy.spin()
     try:
         robot_controller.move_legs_into_init_pos()
-        #robot_controller.move_body_cohesive()
+        # robot_controller.move_body_cohesive()
         robot_controller.walk_body_model()
     except rospy.ROSInterruptException:
         pass

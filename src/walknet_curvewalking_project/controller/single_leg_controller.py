@@ -66,7 +66,7 @@ class SingleLegController:
         # self.temp.swing_target_point = self.leg.compute_inverse_kinematics(target_pos)
         self.temp.swing_target_point = self.target_pos
         # at which position of the interval between the start and the end point the middle point should be placed
-        self.temp.apex_point_ratio = 0.03
+        self.temp.apex_point_ratio = 0.015
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
         # temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
@@ -102,7 +102,7 @@ class SingleLegController:
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                     #    [self.movement_dir * 0.3, 0, -1.0])[0:3]
                     self.temp.swing_target_point = self.target_pos
-                    self.temp.apex_point_ratio = 0.05
+                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -123,14 +123,14 @@ class SingleLegController:
             return
         else:
             if self.swing:
-                rospy.loginfo(self.name + ": execute swing step")
+                rospy.loginfo(self.name + ": execute swing step.")
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
                     self.temp.swing_start_point = self.leg.ee_position()[0:3]
                     self.temp.swing_target_point = self.target_pos
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                     #                                [self.movement_dir * 0.3, -0.5, -1.2])[0:3]
-                    self.temp.apex_point_ratio = 0.05
+                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -138,14 +138,16 @@ class SingleLegController:
                 if self.leg.predictedGroundContact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
-                    self.rate.sleep()
+                    # self.rate.sleep()
                     self.swing = False
                 # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
             else:
+                rospy.loginfo(self.name + ": execute stance step.")
                 self.stance_net.modulated_routine_function_call()
                 if self.leg.reached_pep():
+                    rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
                     self.stance_net.reset_stance_trajectory()
-                    self.rate.sleep()
+                    # self.rate.sleep()
                     self.swing = True
 
     # function for moving a leg alternating between swing and stance.
@@ -168,7 +170,7 @@ class SingleLegController:
                     self.temp.swing_start_point = self.leg.ee_position()[0:3]
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                         [self.movement_dir * 0.3, 0, -1.0])[0:3]
-                    self.temp.apex_point_ratio = 0.05
+                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -260,6 +262,7 @@ class SingleLegController:
 
 if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
+    # lm, rf, rr
     legController = SingleLegController('rr', nh, True, None)
     # rospy.spin()
     try:

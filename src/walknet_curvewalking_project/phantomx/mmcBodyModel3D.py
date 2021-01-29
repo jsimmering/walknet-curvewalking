@@ -330,7 +330,7 @@ class mmcBodyModelStance:
     #	between). This function is calculating the segment vectors between the
     #	given legs.
     def get_segm_vectors_between_legs(self, start_leg, end_leg):
-        rospy.loginfo("in get_segm_vectors_between_legs start_leg = " + str(start_leg) + " end_leg = " + str(end_leg))
+        #rospy.loginfo("in get_segm_vectors_between_legs start_leg = " + str(start_leg) + " end_leg = " + str(end_leg))
         leg_diff = (end_leg // 2 - start_leg // 2)
         if leg_diff == 0:
             return (self.segm_leg_post[start_leg] - self.segm_leg_post[end_leg])
@@ -375,7 +375,7 @@ class mmcBodyModelStance:
     #	of the stance movement). When a leg switches between states it has to be added
     #	or removed from the body model.
     def updateLegStates(self):
-        rospy.loginfo("updateLegStates")
+        #rospy.loginfo("updateLegStates")
         # motiv leg needs to be singleLegController which has attribute swing that replaces inSwingPhase()
         # for motiv_leg, leg_nr in zip(self.motivationNetRobot.motivationNetLegs,
         #        range(len(self.motivationNetRobot.motivationNetLegs))):
@@ -423,7 +423,7 @@ class mmcBodyModelStance:
     #	the new front vectors are computed, summed and the mean is calculated
     #	(the old value is also integrated, weighted by the damping value)
     def compute_front_computations_and_integrate(self, leg_nr):
-        rospy.loginfo("compute_front_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
+        #rospy.loginfo("compute_front_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_front_vect = -self.delta_front[leg_nr // 2] - self.segm_post_ant[leg_nr // 2] + self.leg_vect[leg_nr] - \
         #                 self.segm_leg_post[leg_nr]  # 3 segments
@@ -450,7 +450,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segment_leg_ant_computations_and_integrate(self, leg_nr):
-        rospy.loginfo("compute_segment_leg_ant_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
+        #rospy.loginfo("compute_segment_leg_ant_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant[leg_nr // 2]
         new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant
@@ -465,7 +465,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segment_leg_post_computations_and_integrate(self, leg_nr):
-        rospy.loginfo("compute_segment_leg_post_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
+        #rospy.loginfo("compute_segment_leg_post_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
         equation_counter = 1
         # new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant[leg_nr // 2]
         new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant
@@ -479,7 +479,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segm_post_ant_computations_and_integrate(self, seg_nr):
-        rospy.loginfo("compute_segm_post_ant_computations_and_integrate: segment nr = " + str(seg_nr))
+        #rospy.loginfo("compute_segm_post_ant_computations_and_integrate: segment nr = " + str(seg_nr))
         if seg_nr != 0:
             rospy.logerr("segment nr is " + str(seg_nr) + " but only 1 segment exists")
         equation_counter = 7
@@ -502,7 +502,7 @@ class mmcBodyModelStance:
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
     def compute_segm_diag_computations_and_integrate(self, joint_nr):
-        rospy.loginfo("compute_segm_diag_computations_and_integrate: joint_nr = " + str(joint_nr))
+        #rospy.loginfo("compute_segm_diag_computations_and_integrate: joint_nr = " + str(joint_nr))
         equation_counter = 2
 
         new_segm_diag = self.segm_leg_post[2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[1 + joint_nr * 2]
@@ -576,11 +576,11 @@ class mmcBodyModelStance:
         self.pull_back[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
 
     def get_leg_vector(self, leg_name):
-        rospy.loginfo("get_leg_vector: " + leg_name)
+        #rospy.loginfo("get_leg_vector: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
         target_vec_wn = [self.leg_vect[leg_nr][0], self.leg_vect[leg_nr][1], self.leg_vect[leg_nr][2], 0]
         return target_vec_wn
 
     def get_ground_contact(self, leg_nr):
-        rospy.loginfo("get_ground_contact: " + RSTATIC.leg_names[leg_nr])
+        #rospy.loginfo("get_ground_contact: " + RSTATIC.leg_names[leg_nr])
         return self.gc[leg_nr]

@@ -13,7 +13,7 @@ alpha_rotation_dir = (False, True, False, True, False, True)  # ('lf', 'rf', 'lm
 
 segment_length = (0.054, 0.066, 0.16)  # (c1_to_thigh, thigh, tibia)
 
-joint_angle_limits = ((-0.5, 0.5), (-1.5, 1.2), (-1.5, 0.6))
+joint_angle_limits = [[-0.5, 0.5], [-1.5, 1.2], [-1.5, 0.6]]
 # ((c1 - alpha: (lower, upper), thigh - beta: (lower, upper), tibia - gamme: (lower, upper))
 
 lm = numpy.array([[0, 0, 1, 0],
@@ -48,11 +48,11 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
-default_stance_distance = 0.08
-stance_height = -0.11
-default_stance_width = 0.25
+default_stance_distance = 0.07
+stance_height = -0.10
+default_stance_width = 0.27
 
-front_initial_aep = numpy.array([0.26, default_stance_width, stance_height])  # for forward walking
+front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
 middle_initial_aep = numpy.array([0.04, 0.327, stance_height])  # for forward walking

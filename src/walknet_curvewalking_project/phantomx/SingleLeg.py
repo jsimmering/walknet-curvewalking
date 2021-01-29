@@ -144,11 +144,11 @@ class SingleLeg:
         self.alpha = data.process_value
         self.alpha_target = data.set_point
         if data.error < 0.1:
-            #rospy.loginfo(self.name + ": alpha = " + str(self.alpha) + " alpha_target = " + str(
+            # rospy.loginfo(self.name + ": alpha = " + str(self.alpha) + " alpha_target = " + str(
             #    self.alpha_target) + " alpha_reached = True")
             self.alpha_reached = True
         else:
-            #rospy.loginfo(self.name + ": alpha = " + str(self.alpha) + " alpha_target = " + str(
+            # rospy.loginfo(self.name + ": alpha = " + str(self.alpha) + " alpha_target = " + str(
             #    self.alpha_target) + " alpha_reached = False")
             self.alpha_reached = False
 
@@ -156,11 +156,11 @@ class SingleLeg:
         self.beta = data.process_value
         self.beta_target = data.set_point
         if data.error < 0.1:
-            #rospy.loginfo(self.name + ": beta = " + str(self.beta) + " beta_target = " + str(
+            # rospy.loginfo(self.name + ": beta = " + str(self.beta) + " beta_target = " + str(
             #    self.beta_target) + " beta_reached = True")
             self.beta_reached = True
         else:
-            #rospy.loginfo(self.name + ": beta = " + str(self.beta) + " beta_target = " + str(
+            # rospy.loginfo(self.name + ": beta = " + str(self.beta) + " beta_target = " + str(
             #    self.beta_target) + " beta_reached = False")
             self.beta_reached = False
 
@@ -168,11 +168,11 @@ class SingleLeg:
         self.gamma = data.process_value
         self.gamma_target = data.set_point
         if data.error < 0.1:
-            #rospy.loginfo(self.name + ": gamma = " + str(self.gamma) + " gamma_target = " + str(
+            # rospy.loginfo(self.name + ": gamma = " + str(self.gamma) + " gamma_target = " + str(
             #    self.gamma_target) + " gamma_reached = True")
             self.gamma_reached = True
         else:
-            #rospy.loginfo(self.name + ": gamma = " + str(self.gamma) + " gamma_target = " + str(
+            # rospy.loginfo(self.name + ": gamma = " + str(self.gamma) + " gamma_target = " + str(
             #    self.gamma_target) + " gamma_reached = False")
             self.gamma_reached = False
 
@@ -191,18 +191,18 @@ class SingleLeg:
     def predictedGroundContact(self):
         if self.name == "lf" or self.name == "rf":
             if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
             if (self.ee_position()[2] < (
                     RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
             if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for rear leg")
                 return 1
 
@@ -215,18 +215,20 @@ class SingleLeg:
     #   (very stable, but works only on flat terrain).
     def reached_pep(self):
         if self.name == "lf" or self.name == "rf":
-            #if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_pep[0]) < 0.025:
+            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_pep[0]) < 0.025:
             if abs(self.ee_position()[0] - RSTATIC.front_initial_pep[0]) < 0.025:
                 rospy.loginfo("stop stance for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
-            rospy.loginfo("abs(self.ee_position()[0] ("+str(self.ee_position()[0])+") - self.movement_dir ("+str(self.movement_dir)+") * RSTATIC.middle_initial_pep[0] ("+str(RSTATIC.middle_initial_pep[0])+")) < 0.025")
-            #if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_pep[0]) < 0.025:
+            rospy.loginfo("abs(self.ee_position()[0] (" + str(self.ee_position()[0]) + ") - self.movement_dir (" + str(
+                self.movement_dir) + ") * RSTATIC.middle_initial_pep[0] (" + str(
+                RSTATIC.middle_initial_pep[0]) + ")) < 0.025")
+            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_pep[0]) < 0.025:
             if abs(self.ee_position()[0] - RSTATIC.middle_initial_pep[0]) < 0.025:
                 rospy.loginfo("stop stance for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
-            #if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_pep[0]) < 0.025:
+            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_pep[0]) < 0.025:
             if abs(self.ee_position()[0] - RSTATIC.hind_initial_pep[0]) < 0.025:
                 rospy.loginfo("stop stance for rear leg")
                 return 1
@@ -249,8 +251,10 @@ class SingleLeg:
         # return numpy.array(numpy.dot(pos, [0, 0, 0, 1]))
 
     def check_joint_ranges(self, angles):
-        return angles[0] >= -0.6 or angles[0] <= 0.6 or angles[1] >= -1.0 or angles[1] <= 0.3 or angles[2] >= -1.0 or \
-               angles[2] <= 1.0
+        return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][
+            1] or angles[1] >= RSTATIC.joint_angle_limits[1][0] or angles[1] <= \
+               RSTATIC.joint_angle_limits[1][1] or angles[2] >= RSTATIC.joint_angle_limits[2][0] or angles[
+                   2] <= RSTATIC.joint_angle_limits[2][1]
 
     # ee position in body frame
     def compute_forward_kinematics(self, angles=None):
@@ -281,8 +285,7 @@ class SingleLeg:
 
         alpha_check = -atan2(y_pos, x_pos)
         if abs(alpha_check - alpha) >= 0.01:
-            raise Exception('The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
-                gamma) + ') are not valid for the forward/inverse kinematics.')
+            raise ExceptionRSTATIC.joint_angle_limits.index(0)[0]
         return temp_tarsus_position
 
     def c1_rotation(self, alpha, point=numpy.array([0, 0, 0, 1])):
