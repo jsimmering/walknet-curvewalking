@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import rospy
-import threading
-
 from walknet_curvewalking.msg import robot_control
-from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
 from walknet_curvewalking_project.controller.single_leg_controller import SingleLegController
+from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
 
 
 class RobotController:
@@ -23,15 +20,15 @@ class RobotController:
         for name in RSTATIC.leg_names:
             swing = False
             if name == 'rm' or name == 'lf' or name == 'lr':
-                #swing = True
+                swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
             if name == 'lm' or name == 'rf' or name == 'rr':
-                swing = True
+                #swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
 
     def move_legs_into_init_pos(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         for leg in self.legs:
             while not leg.leg.is_ready():
                 rospy.loginfo("leg not connected yet! wait...")
@@ -109,7 +106,7 @@ class RobotController:
         self.body_model.mmc_iteration_step()
 
     def walk_body_model(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         ready_status = [leg.leg.is_ready() for leg in self.legs]
         rospy.loginfo("ready status = " + str(ready_status))
         while ready_status.__contains__(False):
@@ -125,7 +122,7 @@ class RobotController:
                 rate.sleep()
 
     def move_body_cohesive(self):
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         ready_status = [leg.leg.is_ready() for leg in self.legs]
         rospy.loginfo("ready status = " + str(ready_status))
         while ready_status.__contains__(False):
@@ -151,6 +148,6 @@ if __name__ == '__main__':
     try:
         robot_controller.move_legs_into_init_pos()
         # robot_controller.move_body_cohesive()
-        robot_controller.walk_body_model()
+        # robot_controller.walk_body_model()
     except rospy.ROSInterruptException:
         pass

@@ -2,8 +2,11 @@
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/SwingMovementBezier.py
 # modified for PhantomX Robot
 import copy
+
 import numpy
 import rospy
+
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 
 
@@ -333,9 +336,9 @@ class SwingMovementBezier:
             #    bezier_points = self.compute_bezier_points()
             #    self.trajectory_generator.bezier_points = bezier_points
             # target_position = self.trajectory_generator.compute_next_target(
-            #   desired_distance=self.swing_velocity / CONST.CONTROLLER_FREQUENCY)
+            #   desired_distance=self.swing_velocity / RSTATIC.controller_frequency)
             target_position = self.trajectory_generator.compute_next_target(
-                desired_distance=self.swing_velocity / CONST.CONTROLLER_FREQUENCY,
+                desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                 current_position=self.leg.ee_position()[0:3])
             # now it's just a matter of moving the leg to the next position
             current_input_angles = self.leg.get_current_angles()
@@ -343,9 +346,9 @@ class SwingMovementBezier:
             next_angles = None
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
-                #rospy.loginfo("target position is: " + str(target_position))
-                #rospy.loginfo("computed next angles as: " + str(next_angles))
-                #rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+                rospy.loginfo("target position is: " + str(target_position))
+                rospy.loginfo("computed next angles as: " + str(next_angles))
+                rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
                 self.leg.set_command(next_angles)
             except ValueError:
                 rospy.logerr("ValueError in " + str(self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(
@@ -353,9 +356,9 @@ class SwingMovementBezier:
                     "\nMaintaining current angles.")
                 self.leg.set_command(self.leg.get_current_angles())
             # compute the difference
-            delta_angles = next_angles - numpy.array(current_input_angles)
+            # delta_angles = next_angles - numpy.array(current_input_angles)
             # compute the required speed in order to reach those angles
-            angle_vel = delta_angles * CONST.CONTROLLER_FREQUENCY
+            # angle_vel = delta_angles * RSTATIC.controller_frequency
 
             # if self.mleg.wleg.leg.leg_enabled:
             #    self.mleg.wleg.addControlVelocities(angle_vel)

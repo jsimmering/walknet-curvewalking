@@ -1,15 +1,14 @@
 import copy
+from math import sin, cos, atan2, pow, pi, acos, radians
 
 import numpy
 import rospy
-import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import tf.transformations as transformations
-from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float64
-from math import sin, cos, atan2, pow, pi, acos, radians
+from visualization_msgs.msg import Marker
 
-from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 
 
 class SingleLeg:
@@ -106,7 +105,7 @@ class SingleLeg:
         self.c1_leg_vec_lines.points.append(start_point)
         self.c1_leg_vec_lines.points.append(pos)
 
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         for i in range(0, 5):
             self.visualization_pub.publish(self.c1_ee_points)
             self.visualization_pub.publish(self.c1_leg_vec_lines)
@@ -128,7 +127,7 @@ class SingleLeg:
         self.global_leg_vec_lines.points.append(start_point)
         self.global_leg_vec_lines.points.append(pos)
 
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         for i in range(0, 5):
             self.visualization_pub.publish(self.global_ee_points)
             self.visualization_pub.publish(self.global_leg_vec_lines)

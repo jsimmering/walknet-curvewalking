@@ -49,7 +49,7 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
 default_stance_distance = 0.07
-stance_height = -0.10
+stance_height = -0.09
 default_stance_width = 0.27
 
 front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking

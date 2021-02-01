@@ -4,13 +4,13 @@
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/BodymodelStance/mmcBodyModel3D.py
 # modified for PhantomX Robot
 
-import numpy, math
+import math
+import numpy
 import rospy
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point
 
 
 ##
@@ -280,7 +280,7 @@ class mmcBodyModelStance:
             markers.points.append(start_point)
             markers.points.append(pos)
 
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         for i in range(0, 3):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)
@@ -310,7 +310,7 @@ class mmcBodyModelStance:
             markers.points.append(start_point)
             markers.points.append(pos)
 
-        rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        rate = rospy.Rate(RSTATIC.controller_frequency)
         for i in range(0, 3):
             self.visualization_pub.publish(self.points)
             self.visualization_pub.publish(markers)

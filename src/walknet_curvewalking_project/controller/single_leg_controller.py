@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-import numpy
 import rospy
 import tf
 from control_msgs.msg import JointControllerState
 
-from walknet_curvewalking_project.motion_primitives.stance_movement_body_model import StanceMovementBodyModel
-from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
+from walknet_curvewalking_project.motion_primitives.stance_movement_body_model import StanceMovementBodyModel
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
-from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
+from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier
+from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
 
 
 class SingleLegController:
@@ -17,7 +15,7 @@ class SingleLegController:
         self.robot = robot
         self.name = name
         self.nh = note_handle
-        self.rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        self.rate = rospy.Rate(RSTATIC.controller_frequency)
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir 1")
             self.movement_dir = 1
@@ -57,7 +55,7 @@ class SingleLegController:
         rospy.loginfo(self.name + ": set init pos = " + str(self.init_pos))
 
     def bezier_swing(self):
-        while not self.leg.is_ready():
+        while not self.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
             self.rate.sleep()
         self.temp.swing_start_point = self.leg.ee_position()[0:3]
@@ -238,7 +236,7 @@ class SingleLegController:
 
     # function for executing a single step in a stance movement.
     def move_leg_to(self, p=None):
-        # rate = rospy.Rate(CONTROLLER_FREQUENCY)
+        # rate = rospy.Rate(RSRATIC.controller_frequency)
         # while not rospy.is_shutdown() and not self.leg.is_target_reached():
         #     angles = self.leg.compute_inverse_kinematics(p)
         #     self.leg.set_command(angles)
@@ -263,7 +261,7 @@ class SingleLegController:
 if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
     # lm, rf, rr
-    legController = SingleLegController('rr', nh, True, None)
+    legController = SingleLegController('lf', nh, True, None)
     # rospy.spin()
     try:
         # legController.manage_walk()

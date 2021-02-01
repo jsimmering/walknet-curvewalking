@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+
 import time
 from threading import Lock
 
 import rospy
-from std_msgs.msg import Float64
 from control_msgs.msg import JointControllerState
-from walknet_curvewalking_project.support.constants import CONTROLLER_FREQUENCY
+from std_msgs.msg import Float64
+
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 
 TIMEOUT = 15
 tibia_mutex = Lock()
@@ -78,7 +80,7 @@ def make_move(target, joint_values, pub_list, mutex, rate):
 
 def talker():
     finished = False
-    rate = rospy.Rate(CONTROLLER_FREQUENCY)
+    rate = rospy.Rate(RSTATIC.controller_frequency)
     while not rospy.is_shutdown() and not finished:
         finished = True
 
