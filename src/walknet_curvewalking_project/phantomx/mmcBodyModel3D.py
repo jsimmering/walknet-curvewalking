@@ -116,7 +116,6 @@ class mmcBodyModelStance:
         # estimated based on estimated end effector positions.
         self.front_vect = [numpy.array([pos[0] - front_segment_start[0], pos[1] - front_segment_start[1],
                                         pos[2] - front_segment_start[2]]) for pos in self.ee_positions]
-        # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
 
         # Segment defining vectors: is constructed as a diamond for the mounting points of
         # the legs: segm_leg_ant = from coxa to front (anterior)
@@ -127,7 +126,6 @@ class mmcBodyModelStance:
         #    numpy.array([0.06, 0.0, 0.0])]
         self.segm_post_ant = numpy.array([0.24, 0.0, 0.0])
         self.segm_post_ant_norm = numpy.linalg.norm(self.segm_post_ant)
-        # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         # positions of the shoulder c1 joints for calculating real leg vectors
         self.c1_positions = [numpy.array([0.12, 0.06, 0.0]), numpy.array([0.12, -0.06, 0.0]),
@@ -141,29 +139,23 @@ class mmcBodyModelStance:
         self.leg_vect = [numpy.array([target[0] - start[0], target[1] - start[1],
                                       target[2] - start[2]]) for target, start in
                          zip(self.ee_positions, self.c1_positions)]
-        # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
 
         # segm_leg_ant = from coxa to front (anterior) = real leg vector (coax to ee) - front vector (front of a segment to footpoint)
         # self.segm_leg_ant = [(self.leg_vect[0] - self.front_vect[0]), (self.leg_vect[1] - self.front_vect[1])]
         self.segm_leg_ant = [(self.leg_vect[i] - self.front_vect[i]) for i in
                              range(0, 6)]
         self.segm_leg_ant_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_leg_ant]
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
 
         # segm_leg_post = from coxa to back (posterior)
         # self.segm_leg_post = [(self.segm_leg_ant[0] - self.segm_post_ant[0]), (self.segm_leg_ant[1] - self.segm_post_ant[0])]
         # self.segm_leg_post = [(self.segm_leg_ant[i] - self.segm_post_ant[i // 2]) for i in range(0, 6)] -- for 3 segments
         self.segm_leg_post = [(self.segm_leg_ant[i] - self.segm_post_ant) for i in range(0, 6)]
         self.segm_leg_post_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_leg_post]
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
 
         # lines connecting shoulders for normalization of segment length after iteration step
         self.segm_diag_to_right = [(self.segm_leg_ant[i * 2] - self.segm_leg_ant[i * 2 + 1]) for i in
                                    range(0, len(self.segm_leg_ant) // 2)]
         self.segm_diag_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_diag_to_right]
-        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
-        #    self.segm_diag_to_right,
-        #    self.segm_diag_to_right_lines)
 
         # Ground contact - which feet are on the ground
         self.gc = [False, False, False, False, False, False]

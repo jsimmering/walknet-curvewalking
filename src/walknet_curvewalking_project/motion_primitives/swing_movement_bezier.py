@@ -90,8 +90,8 @@ class TrajectoryGenerator:
         else:  # if the current_position is more than desired_distance away from the last_target_position,
             # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
             delta_position = self.last_target_position - current_position
-            if round(numpy.linalg.norm(delta_position), 4) > desired_distance:
-                rospy.loginfo("---ELSE: current distance " + str(round(numpy.linalg.norm(delta_position), 4)) +
+            if round(numpy.linalg.norm(delta_position), 3) > desired_distance:
+                rospy.loginfo("---ELSE: current distance " + str(round(numpy.linalg.norm(delta_position), 3)) +
                               " is more than desired_distance away from the last_target_position, last_target_pos = " +
                               str(self.last_target_position) + " current_pos = " + str(current_position) +
                               " desired distance = " + str(desired_distance))
@@ -341,7 +341,7 @@ class SwingMovementBezier:
                 desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                 current_position=self.leg.ee_position()[0:3])
             # now it's just a matter of moving the leg to the next position
-            current_input_angles = self.leg.get_current_angles()
+            #current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
             next_angles = None
             try:

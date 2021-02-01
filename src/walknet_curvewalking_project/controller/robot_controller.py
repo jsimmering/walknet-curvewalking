@@ -20,10 +20,10 @@ class RobotController:
         for name in RSTATIC.leg_names:
             swing = False
             if name == 'rm' or name == 'lf' or name == 'lr':
-                swing = True
+                # swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
             if name == 'lm' or name == 'rf' or name == 'rr':
-                #swing = True
+                swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
 
@@ -117,6 +117,8 @@ class RobotController:
         while not rospy.is_shutdown():
             self.updateStanceBodyModel()
             for leg in self.legs:
+                if rospy.is_shutdown():
+                    break
                 # input("press any key to performe the next step.")
                 leg.manage_walk()
                 rate.sleep()
@@ -148,6 +150,6 @@ if __name__ == '__main__':
     try:
         robot_controller.move_legs_into_init_pos()
         # robot_controller.move_body_cohesive()
-        # robot_controller.walk_body_model()
+        robot_controller.walk_body_model()
     except rospy.ROSInterruptException:
         pass

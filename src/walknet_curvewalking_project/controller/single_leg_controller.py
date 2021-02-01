@@ -63,8 +63,6 @@ class SingleLegController:
 
         # self.temp.swing_target_point = self.leg.compute_inverse_kinematics(target_pos)
         self.temp.swing_target_point = self.target_pos
-        # at which position of the interval between the start and the end point the middle point should be placed
-        self.temp.apex_point_ratio = 0.015
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
         # temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
@@ -100,7 +98,6 @@ class SingleLegController:
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                     #    [self.movement_dir * 0.3, 0, -1.0])[0:3]
                     self.temp.swing_target_point = self.target_pos
-                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -128,7 +125,6 @@ class SingleLegController:
                     self.temp.swing_target_point = self.target_pos
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                     #                                [self.movement_dir * 0.3, -0.5, -1.2])[0:3]
-                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -168,7 +164,6 @@ class SingleLegController:
                     self.temp.swing_start_point = self.leg.ee_position()[0:3]
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
                         [self.movement_dir * 0.3, 0, -1.0])[0:3]
-                    self.temp.apex_point_ratio = 0.015
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -261,7 +256,7 @@ class SingleLegController:
 if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
     # lm, rf, rr
-    legController = SingleLegController('lf', nh, True, None)
+    legController = SingleLegController('lr', nh, True, None)
     # rospy.spin()
     try:
         # legController.manage_walk()
