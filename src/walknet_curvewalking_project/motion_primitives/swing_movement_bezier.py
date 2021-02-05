@@ -30,19 +30,20 @@ def bezier(points, parameter, order=2):
         segment_number = 0
     elif 1 < parameter:
         segment_number = num_of_segments - 1
+    # rospy.loginfo("number of currently relevant segment = " + str(segment_number))
     segment_number = int(segment_number)
-    # rospy.loginfo"number of currently relevant segment = " + str(segment_number))
+    # rospy.loginfo("number of currently relevant segment = " + str(segment_number))
 
     relative_parameter = (parameter * num_of_segments) - segment_number  # this is the parameter for the
     # current segment. It is mapped to the interval [0,1]
-    relevant_points = copy.copy(
-        points[segment_number * order:(segment_number + 1) * order + 1, :])  # the bezier points of the current segment
+    relevant_points = copy.copy(points[segment_number * order:(segment_number + 1) * order + 1, :])
+    # #the bezier points of the current segment
     # print("bezier points of the current segment = " + str(relevant_points))
     # compute the point
     while relevant_points.shape[0] > 1:
         deltas = numpy.diff(relevant_points, n=1, axis=0)
         relevant_points = relevant_points[0:-1] + deltas * relative_parameter  # [0:-1] = [:-1] all elements except last
-    #rospy.loginfo("return bezier point: " + str(relevant_points[0]))
+    # rospy.loginfo("return bezier point: " + str(relevant_points[0]))
     return relevant_points[0]  # [0, :]  # everything in row 0 (first row)
 
 
@@ -70,39 +71,60 @@ class TrajectoryGenerator:
     # a point is needed that is located at less than desired_distance from the current_position. Additionally,
     # a point is needed that is further than desired_distance away from the current_position.
     def compute_next_target(self, desired_distance=None, current_position=None):
-        if self.last_target_parameter is None:  # if the last target parameter is unknown, probably, this is the
-            # first iteration for a new trajectory.
+        # if desired_distance is not None and desired_distance < 0.15:
+        # rospy.logerr("desired_distance = " + str(desired_distance)) # + ". To small, set to 0.15")
+        # desired_distance = 0.15
+
+        if self.last_target_parameter is None:
+            # if the last target parameter is unknown, probably, this is the first iteration for a new trajectory.
             self.last_target_parameter = 0
             # the last target position is set to the first point of the bezier points
             # print("last_target_position = " + str(self.last_target_position))
             # print("bezier_points = " + str(self.bezier_points))
             self.last_target_position = self.bezier_points[0]  # [0, :]  # everything in row 0
-            # print("new last_target_position = " + str(self.last_target_position))
+            print("new last_target_position = " + str(self.last_target_position))
             # The number of segments the piecewise bezier curve consists of:
             num_of_segments = (self.bezier_points.shape[0] - 1) / self.order
             # A good estimation of the delta_paramet is necessary in order to reduce the number of iterations
-            self.norm_delta_parameter = 1 / num_of_segments * desired_distance / numpy.linalg.norm(
-                numpy.diff(self.bezier_points[0:2, :]))  # [0:2, :]  array containing row 0 and 1 of array
+            self.norm_delta_parameter = ((1 / num_of_segments) * desired_distance) / numpy.linalg.norm(
+                    numpy.diff(self.bezier_points[0:2, :]))  # [0:2, :]  array containing row 0 and 1 of array
+            # rospy.loginfo("num_of_segments = " + str(num_of_segments))
+            # rospy.loginfo("desired_distance = " + str(desired_distance))
+            # rospy.loginfo("numpy.linalg.norm(numpy.diff(self.bezier_points[0:2, :])) = " + str(numpy.linalg.norm(
+            #        numpy.diff(self.bezier_points[0:2, :]))))
+            # rospy.loginfo("norm_delta_parameter = " + str(self.norm_delta_parameter))
 
         # if no current_position is given by parameter, the last_target_position is assumed
         if current_position is None:
             current_position = self.last_target_position
-        else:  # if the current_position is more than desired_distance away from the last_target_position,
-            # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
+        else:
             delta_position = self.last_target_position - current_position
-            if round(numpy.linalg.norm(delta_position), 3) > desired_distance:
-                rospy.loginfo("---ELSE: current distance " + str(round(numpy.linalg.norm(delta_position), 3)) +
-                              " is more than desired_distance away from the last_target_position, last_target_pos = " +
-                              str(self.last_target_position) + " current_pos = " + str(current_position) +
-                              " desired distance = " + str(desired_distance))
+            # rospy.loginfo("delta_position (" + str(delta_position) + ") = self.last_target_position (" + str(
+            #        self.last_target_position) + ") - current_position (" + str(current_position) + ")")
+            delta_distance = numpy.linalg.norm(delta_position)
+            rospy.loginfo("current distance " + str(delta_distance) + " desired distance = " + str(desired_distance))
+            if delta_distance > desired_distance:
+                # delta_distance needs to be smaller than desired distance otherwise swing movement gets stuck sometimes.
+                # if the current_position is more than desired_distance away from the last_target_position,
+                # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
+                rospy.loginfo(
+                        "---ELSE: current distance is more than desired_distance away from the last_target_position,\nlast_target_pos = " +
+                        str(self.last_target_position) + " current_pos = " + str(current_position))
+                rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
+                              str(current_position + delta_position /
+                                  numpy.linalg.norm(delta_position) * desired_distance))
+
                 return current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
             del delta_position
         # Try to adapt the delta_parameter to the desired_distance
+
         delta_parameter = self.norm_delta_parameter * desired_distance
+        rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = norm_delta_parameter = " + str(
+                self.norm_delta_parameter) + ") * desired_distance" + str(desired_distance))
         parameter_position_list = [(self.last_target_parameter, self.last_target_position)]
-        slightly_further_parameter = None
-        slightly_closer_parameter = None
-        slightly_further_position = None
+        # slightly_further_parameter = None
+        # slightly_closer_parameter = None
+        # slightly_further_position = None
         for _ in range(6):
             # do this six times - this should be enough, usually, it takes two or three iterations to reach
             # an accuracy of 0.01.
@@ -111,6 +133,9 @@ class TrajectoryGenerator:
             test_parameter = self.last_target_parameter + delta_parameter
             test_target_position = bezier(self.bezier_points, test_parameter)
             parameter_position_list.append((test_parameter, test_target_position))
+            # rospy.loginfo(
+            #        "parameter list append temp_parameter = " + str(test_parameter) + " temp_target_position = " + str(
+            #                test_target_position) + " delta_parameter = " + str(delta_parameter))
 
             # If a delta_parameter was found that produces a point which has a distance to the current_position that
             # is close enough to the desired_distance, stop this algorithm.
@@ -119,12 +144,23 @@ class TrajectoryGenerator:
                 self.last_target_parameter += delta_parameter
                 self.last_target_position = current_position + (
                         test_target_position - current_position) / numpy.linalg.norm(
-                    test_target_position - current_position) * desired_distance
+                        test_target_position - current_position) * desired_distance
+                rospy.loginfo("+++RETURN delta_parameter found that produces a point = " +
+                              str(self.last_target_position))
                 return self.last_target_position
 
             # adapt the delta_parameter for the next iteration
             delta_parameter = delta_parameter / (
                     numpy.linalg.norm(test_target_position - current_position) / desired_distance)
+            if (delta_parameter / (
+                    numpy.linalg.norm(test_target_position - current_position) / desired_distance)) < 0.0001:
+                rospy.logerr("delta_parameter = " + str(delta_parameter) + " to small! set to 0.0001")
+                delta_parameter = 0.0001
+                rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" + str(
+                        delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" + str(
+                        test_target_position) + ") - current_position (" + str(current_position) + ")) (" + str(
+                        numpy.linalg.norm(test_target_position - current_position)) + ") \n/ desired_distance (" + str(
+                        desired_distance) + "))")
 
             # TODO can be done only once after for??
             # variables containing a parameter, position and the corresponding distance that is slightly smaller than
@@ -140,6 +176,7 @@ class TrajectoryGenerator:
             # search in the parameter_position_list for a parameter that leads to a distance slightly less than
             # desired_distance and a parameter that leads to a slightly longer distance
             for temp_parameter, temp_target_position in parameter_position_list:
+                # rospy.loginfo("parameter list temp_parameter = " + str(temp_parameter) + " temp_target_position = " + str(temp_target_position))
                 temp_distance = numpy.linalg.norm(temp_target_position - current_position)
 
                 if temp_distance <= desired_distance and slightly_closer_parameter < temp_parameter < \
@@ -159,6 +196,7 @@ class TrajectoryGenerator:
         # such a point will be produced by doubling the delta_parameter iteratively until it is big enough (or the
         # maximum number of iterations is reached.)
         if slightly_further_parameter == float('inf'):
+            # rospy.loginfo("last_target_parameter = " + str(self.last_target_parameter))
             slightly_further_parameter = slightly_closer_parameter
             for _ in range(20):
                 slightly_further_parameter = slightly_further_parameter + (
@@ -169,14 +207,17 @@ class TrajectoryGenerator:
                     break
             if slightly_further_position is None:
                 raise Exception(
-                    'The bezier curve behaves extremely strange! No appropriate point could be reached. Just for '
-                    'information some data: bezier points: ' + str(self.bezier_points) + ', parameter: ' + str(
-                        self.last_target_parameter))
+                        'The bezier curve behaves extremely strange! No appropriate point could be reached. Just for '
+                        'information some data: bezier points: ' + str(self.bezier_points) + ', parameter: ' + str(
+                                self.last_target_parameter))
 
         # use binary search to find a point with sufficient accuracy
         # initialize the test_parameter to be between the slightly closer and the slightly further parameters
         test_parameter = (slightly_closer_parameter + slightly_further_parameter) / 2
-        test_target_position = None
+        # rospy.loginfo("test_param (" + str(test_parameter) + ") = (slightly_closer_parameter (" + str(
+        #        slightly_closer_parameter) + ") + slightly_further_parameter (" + str(
+        #        slightly_further_parameter) + ")) / 2")
+        # test_target_position = None
         for _ in range(20):
             test_target_position = bezier(self.bezier_points, test_parameter)
             test_distance = numpy.linalg.norm(test_target_position - current_position)
@@ -190,10 +231,15 @@ class TrajectoryGenerator:
 
             test_parameter = (slightly_further_parameter + slightly_closer_parameter) / 2
 
+        # rospy.loginfo("abs(test_distance - desired_distance) / desired_distance (" +
+        #   str(abs(test_distance - desired_distance) / desired_distance) + ") < self.accuracy (" +
+        #   str(self.accuracy) + ")")
         self.norm_delta_parameter = (test_parameter - self.last_target_parameter) / desired_distance
         self.last_target_parameter = test_parameter
         self.last_target_position = current_position + (test_target_position - current_position) / numpy.linalg.norm(
-            test_target_position - current_position) * desired_distance
+                test_target_position - current_position) * desired_distance
+        rospy.loginfo("+++RETURN binary search = " +
+                      str(self.last_target_position))
         return self.last_target_position
 
 
@@ -227,7 +273,7 @@ class SwingMovementBezier:
             self.trajectory_generator.bezier_points = bezier_points
 
     def compute_bezier_points(self):  # ForNormalSwingMovement(self):
-        #rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        # rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -238,13 +284,13 @@ class SwingMovementBezier:
             control_point_1 = apex_point - 0.5 * self.apex_point_ratio * start_to_end_vector
             control_point_2 = apex_point + 0.5 * (1 - self.apex_point_ratio) * start_to_end_vector
             return numpy.array(
-                [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
+                    [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
         else:  # in case of a collision
             collision_ratio = numpy.dot((self.collision_point - self.swing_start_point),
-                start_to_end_direction) / start_to_end_distance  # where during the swing
+                    start_to_end_direction) / start_to_end_distance  # where during the swing
             # phase the collision happened
             start_to_end_vector_to_collision_point_distance = numpy.linalg.norm(
-                (self.collision_point - self.swing_start_point) - collision_ratio * start_to_end_vector)
+                    (self.collision_point - self.swing_start_point) - collision_ratio * start_to_end_vector)
             control_point_1 = self.collision_point - self.retraction_distance * start_to_end_direction
             evasion_point = self.collision_point + self.evasion_distance * apex_point_direction
             if collision_ratio < self.apex_point_ratio:  # the collision happened before the leg reached the apex
@@ -252,20 +298,20 @@ class SwingMovementBezier:
                     # the evasion movement will be below the apex point
                     evasion_to_apex_vector = apex_point - evasion_point
                     control_point_3 = apex_point - numpy.dot(0.5 * evasion_to_apex_vector,
-                        start_to_end_direction) * start_to_end_direction
+                            start_to_end_direction) * start_to_end_direction
                     evasion_to_control_point_3_vector = control_point_3 - evasion_point
                     evasion_to_control_point_3_distance = numpy.linalg.norm(evasion_to_control_point_3_vector)
                     evasion_to_control_point_3_direction = evasion_to_control_point_3_vector / \
                                                            evasion_to_control_point_3_distance
                     evasion_to_control_point_3_distance = self.retraction_distance / numpy.dot(
-                        evasion_to_control_point_3_direction, start_to_end_direction)
+                            evasion_to_control_point_3_direction, start_to_end_direction)
                     control_point_2 = evasion_point - evasion_to_control_point_3_distance * \
                                       evasion_to_control_point_3_direction
                     retraction_point = 0.5 * (control_point_2 - control_point_1) + control_point_1
                     control_point_4 = apex_point + 0.5 * self.apex_point_ratio * start_to_end_vector
                     return numpy.array(
-                        [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                            control_point_3, apex_point, control_point_4, self.swing_target_point])
+                            [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
+                             control_point_3, apex_point, control_point_4, self.swing_target_point])
                 else:  # the evasion movement will be above the standard apex point
                     if start_to_end_vector_to_collision_point_distance + self.evasion_distance > \
                             self.max_evasion_distance:
@@ -281,12 +327,12 @@ class SwingMovementBezier:
                     retraction_point = 0.5 * (control_point_2 - control_point_1) + control_point_1
                     control_point_4 = apex_point + 0.5 * (1 - self.apex_point_ratio) * start_to_end_vector
                     return numpy.array(
-                        [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                            control_point_3, apex_point, control_point_4, self.swing_target_point])
+                            [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
+                             control_point_3, apex_point, control_point_4, self.swing_target_point])
             else:  # the collision happened after the leg reached the apex
                 if collision_ratio > 0.9:
                     return numpy.array([self.collision_point, self.collision_point - apex_point_direction / 2,
-                        self.collision_point - apex_point_direction])
+                                        self.collision_point - apex_point_direction])
                 if start_to_end_vector_to_collision_point_distance + self.evasion_distance > self.max_evasion_distance:
                     evasion_point = self.swing_start_point + collision_ratio * start_to_end_vector + \
                                     self.max_evasion_distance * apex_point_direction
@@ -294,31 +340,29 @@ class SwingMovementBezier:
                 retraction_point = 0.5 * (control_point_2 - control_point_1) + control_point_1
                 control_point_3 = evasion_point + (1 - collision_ratio) * start_to_end_vector
                 return numpy.array(
-                    [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
-                        control_point_3, self.swing_target_point])
+                        [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
+                         control_point_3, self.swing_target_point])
 
     def compute_bezier_points_with_joint_angles(self):  # ForNormalSwingMovement(self):
-        #rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
-        start_to_end_vector = (self.swing_target_point - self.swing_start_point)[0:3]
+        # rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+        start_to_end_vector = (self.swing_target_point - self.swing_start_point)
         start_angles = self.leg.compute_inverse_kinematics(self.swing_start_point)
         target_angles = self.leg.compute_inverse_kinematics(self.swing_target_point)
         angles = [(start_angles[0] + target_angles[0]) / 2,
-            (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
-            (start_angles[2] + target_angles[2]) / 2]
+                  (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
+                  (start_angles[2] + target_angles[2]) / 2]
         if not self.leg.check_joint_ranges(angles):
             rospy.logerr('The provided angles for ' + self.leg.name + '(' + str(angles[0]) + ', ' + str(angles[1]) +
                          ', ' + str(angles[2]) + ') are not valid for the forward/inverse kinematics.')
-        apex_point = self.leg.compute_forward_kinematics([(start_angles[0] + target_angles[0]) / 2,
-            (start_angles[1] + target_angles[1]) / 2 - CONST.DEFAULT_APEX_THIGH_OFFSET,
-            (start_angles[2] + target_angles[2]) / 2])[0:3]
+        apex_point = self.leg.compute_forward_kinematics([angles[0], angles[1], angles[2]])
         if self.collision_point is None:  # if no collision happened
             control_point_1 = apex_point - 0.5 * self.apex_point_ratio * start_to_end_vector
             control_point_2 = apex_point + 0.5 * (1 - self.apex_point_ratio) * start_to_end_vector
             return numpy.array(
-                [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
+                    [self.swing_start_point, control_point_1, apex_point, control_point_2, self.swing_target_point])
         else:  # in case of a collision
             rospy.logerr("a collision occured! calculate bezier points based on positions instead of joint angles!")
-            self.compute_bezier_points()
+            return self.compute_bezier_points()
 
     def move_to_next_point(self, activation):
         # if not self.mleg.leg_enabled:
@@ -337,23 +381,27 @@ class SwingMovementBezier:
             #    self.trajectory_generator.bezier_points = bezier_points
             # target_position = self.trajectory_generator.compute_next_target(
             #   desired_distance=self.swing_velocity / RSTATIC.controller_frequency)
+            # rospy.loginfo("ee pos  = " + str(self.leg.ee_position()))
+            # rospy.loginfo("angles  = " + str(self.leg.get_current_angles()))
+            # rospy.loginfo("targets = " + str(self.leg.get_current_targets()))
             target_position = self.trajectory_generator.compute_next_target(
-                desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
-                current_position=self.leg.ee_position()[0:3])
+                    desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
+                    current_position=self.leg.ee_position())
             # now it's just a matter of moving the leg to the next position
-            #current_input_angles = self.leg.get_current_angles()
+            # current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
             next_angles = None
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
-                rospy.loginfo("target position is: " + str(target_position))
-                rospy.loginfo("computed next angles as: " + str(next_angles))
-                rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+                # rospy.loginfo("target position is: " + str(target_position))
+                # rospy.loginfo("computed next angles as: " + str(next_angles))
+                # rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
                 self.leg.set_command(next_angles)
             except ValueError:
-                rospy.logerr("ValueError in " + str(self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(
-                    target_position) + "\ncurrent angles are: " + str(self.leg.get_current_angles()) +
-                    "\nMaintaining current angles.")
+                rospy.logerr("ValueError in " + str(
+                        self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(
+                        target_position) + "\ncurrent angles are: " + str(self.leg.get_current_angles()) +
+                             "\nMaintaining current angles.")
                 self.leg.set_command(self.leg.get_current_angles())
             # compute the difference
             # delta_angles = next_angles - numpy.array(current_input_angles)
@@ -380,7 +428,7 @@ if __name__ == '__main__':
     # end point using the apex_point_ratio concept.
     temp.apex_point_offset = numpy.array([0, 0, 0.4])
     temp.collision_point = numpy.array([0.8, 0, 0.256])
-    # bezier_points = temp.compute_bezier_points()
-    bezier_points = temp.compute_bezier_points_with_joint_angles()
+    bezier_points = temp.compute_bezier_points()
+    # bezier_points = temp.compute_bezier_points_with_joint_angles()
     print(bezier_points)
     # temp.move_to_next_point(1)

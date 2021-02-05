@@ -257,7 +257,7 @@ class SingleLeg:
 
     # ee position in body frame
     def compute_forward_kinematics(self, angles=None):
-        return self.apply_c1_static_transform(self.compute_forward_kinematics_c1(angles))
+        return self.apply_c1_static_transform(self.compute_forward_kinematics_c1(angles))[0:3]
 
     def compute_forward_kinematics_c1(self, angles=None):
         if angles is None:
