@@ -393,9 +393,11 @@ class SwingMovementBezier:
             next_angles = None
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
-                # rospy.loginfo("target position is: " + str(target_position))
-                # rospy.loginfo("computed next angles as: " + str(next_angles))
-                # rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
+                if RSTATIC.DEBUG:
+                    rospy.loginfo("current targets: " + str(self.leg.get_current_targets()))
+                    rospy.loginfo("target position is: " + str(target_position))
+                    rospy.loginfo("computed next angles as: " + str(next_angles))
+                    rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
                 self.leg.set_command(next_angles)
             except ValueError:
                 rospy.logerr("ValueError in " + str(
@@ -428,7 +430,7 @@ if __name__ == '__main__':
     # end point using the apex_point_ratio concept.
     temp.apex_point_offset = numpy.array([0, 0, 0.4])
     temp.collision_point = numpy.array([0.8, 0, 0.256])
-    bezier_points = temp.compute_bezier_points()
-    # bezier_points = temp.compute_bezier_points_with_joint_angles()
+    # bezier_points = temp.compute_bezier_points()
+    bezier_points = temp.compute_bezier_points_with_joint_angles()
     print(bezier_points)
     # temp.move_to_next_point(1)

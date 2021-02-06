@@ -60,13 +60,13 @@ class StanceMovementBodyModel():
             #     print("Stance correction: foot moved in Body Model in front of PEP ",
             #         self.leg_controller.wleg.leg.name)
             #     stance_foot_pos[0] = self.leg_controller.pep_shifted[0] + 0.02
-            # self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.compute_forward_kinematics_c1()[0:3])  #self.leg_controller.leg.ee_position())
+            # self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.compute_forward_kinematics_c1())  #self.leg_controller.leg.ee_position())
             self.bodyModelStance.put_leg_on_ground(self.leg_controller.name,
-                self.leg_controller.leg.ee_position()[0:3] - self.leg_controller.leg.apply_c1_static_transform()[0:3])
+                self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
             self.init_stance_footpoint = True
         try:
-            target_vec = self.leg_controller.leg.apply_c1_static_transform()[0:3] + self.bodyModelStance.get_leg_vector(
-                self.leg_controller.leg.name)[0:3]
+            target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
+                self.leg_controller.leg.name)
             next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
             self.leg_controller.leg.set_command(next_angles)
         except ValueError:

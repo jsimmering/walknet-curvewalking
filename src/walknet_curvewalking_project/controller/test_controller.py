@@ -22,7 +22,7 @@ class TestController:
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener(), self.movement_dir)
+        self.leg = SingleLeg(name, self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
@@ -57,8 +57,8 @@ class TestController:
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         temp = SwingMovementBezier(self.leg)
-        temp.swing_start_point = self.leg.ee_position()[0:3]
-        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
+        temp.swing_start_point = self.leg.ee_position()
+        temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
         # at which position of the interval between the start and the end point the middle point should be placed
         #temp.apex_point_offset = numpy.array([0, 0, 0.4])
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
@@ -106,8 +106,8 @@ class TestController:
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
-        self.temp.swing_start_point = self.leg.ee_position()[0:3]
-        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])[0:3]
+        self.temp.swing_start_point = self.leg.ee_position()
+        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
         # at which position of the interval between the start and the end point the middle point should be placed
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
@@ -117,7 +117,7 @@ class TestController:
         # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
         self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
         print(self.temp.trajectory_generator.bezier_points)
-        while not rospy.is_shutdown() and not self.leg.predictedGroundContact():
+        while not rospy.is_shutdown() and not self.leg.predicted_ground_contact():
             self.temp.move_to_next_point(1)
             rate.sleep()
         self.temp.move_to_next_point(0)
@@ -141,14 +141,14 @@ class TestController:
             if self.swing:
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
-                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_start_point = self.leg.ee_position()
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                        [self.movement_dir * 0.3, 0, -1.0])[0:3]
+                        [self.movement_dir * 0.3, 0, -1.0])
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
                 rate.sleep()
-                if self.leg.predictedGroundContact():
+                if self.leg.predicted_ground_contact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
                     rate.sleep()

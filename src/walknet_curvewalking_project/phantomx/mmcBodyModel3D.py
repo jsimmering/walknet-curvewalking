@@ -571,7 +571,7 @@ class mmcBodyModelStance:
     def get_leg_vector(self, leg_name):
         # rospy.loginfo("get_leg_vector: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
-        target_vec_wn = [self.leg_vect[leg_nr][0], self.leg_vect[leg_nr][1], self.leg_vect[leg_nr][2], 0]
+        target_vec_wn = [self.leg_vect[leg_nr][0], self.leg_vect[leg_nr][1], self.leg_vect[leg_nr][2]]
         return target_vec_wn
 
     def get_ground_contact(self, leg_nr):

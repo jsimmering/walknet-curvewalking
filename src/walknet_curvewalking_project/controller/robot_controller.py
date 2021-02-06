@@ -83,7 +83,7 @@ class RobotController:
     def init_body_model(self):
         for leg in self.legs:
             self.body_model.put_leg_on_ground(leg.name,
-                leg.leg.ee_position()[0:3] - leg.leg.apply_c1_static_transform()[0:3])
+                leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
             rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
         self.body_model.updateLegStates()
 
@@ -92,7 +92,7 @@ class RobotController:
     def updateStanceBodyModel(self):
         if self.debug:
             mleg = self.legs[4]
-            print("GC: ", mleg.leg.predictedGroundContact(), " - ", mleg.leg.ee_position()[2])
+            print("GC: ", mleg.leg.predicted_ground_contact(), " - ", mleg.leg.ee_position()[2])
             print("SWING: ", mleg.swing)
             # input()
 
@@ -150,6 +150,6 @@ if __name__ == '__main__':
     try:
         robot_controller.move_legs_into_init_pos()
         #robot_controller.move_body_cohesive()
-        #robot_controller.walk_body_model()
+        robot_controller.walk_body_model()
     except rospy.ROSInterruptException:
         pass

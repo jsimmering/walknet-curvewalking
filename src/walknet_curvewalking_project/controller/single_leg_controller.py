@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import rospy
-import tf
 from control_msgs.msg import JointControllerState
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
@@ -22,7 +21,7 @@ class SingleLegController:
         else:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, [0.054, 0.066, 0.16], tf.TransformListener(), self.movement_dir)
+        self.leg = SingleLeg(name, self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
@@ -43,11 +42,11 @@ class SingleLegController:
         else:
             self.stance_net = StanceMovementBodyModel(self)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.c1_callback)
+                JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.thigh_callback)
+                JointControllerState, self.leg.thigh_callback)
         self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.tibia_callback)
+                JointControllerState, self.leg.tibia_callback)
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -66,10 +65,10 @@ class SingleLegController:
         # temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
         # bezier_points = temp.compute_bezier_points()
-        #self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+        # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
         self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
         print(self.temp.trajectory_generator.bezier_points)
-        while not rospy.is_shutdown() and not self.leg.predictedGroundContact():
+        while not rospy.is_shutdown() and not self.leg.predicted_ground_contact():
             self.temp.move_to_next_point(1)
             self.rate.sleep()
         self.temp.move_to_next_point(0)
@@ -92,15 +91,15 @@ class SingleLegController:
             if self.swing:
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
-                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_start_point = self.leg.ee_position()
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                    #    [self.movement_dir * 0.3, 0, -1.0])[0:3]
+                    #   [self.movement_dir * 0.3, 0, -1.0])
                     self.temp.swing_target_point = self.target_pos
-                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
                 self.rate.sleep()
-                if self.leg.predictedGroundContact():
+                if self.leg.predicted_ground_contact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
                     self.rate.sleep()
@@ -119,15 +118,15 @@ class SingleLegController:
                 rospy.loginfo(self.name + ": execute swing step.")
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
-                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_start_point = self.leg.ee_position()
                     self.temp.swing_target_point = self.target_pos
                     # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                    #                                [self.movement_dir * 0.3, -0.5, -1.2])[0:3]
-                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+                    #                                [self.movement_dir * 0.3, -0.5, -1.2])
+                    #self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
                 self.rate.sleep()
-                if self.leg.predictedGroundContact():
+                if self.leg.predicted_ground_contact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
                     # self.rate.sleep()
@@ -159,14 +158,14 @@ class SingleLegController:
                 rospy.loginfo(str(self.name) + " in swing phase")
                 if self.temp.swing_start_point is None:
                     rospy.loginfo("##############################reset swing")
-                    self.temp.swing_start_point = self.leg.ee_position()[0:3]
+                    self.temp.swing_start_point = self.leg.ee_position()
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                        [self.movement_dir * 0.3, 0, -1.0])[0:3]
-                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+                            [self.movement_dir * 0.3, 0, -1.0])
+                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
                 self.rate.sleep()
-                if self.leg.predictedGroundContact():
+                if self.leg.predicted_ground_contact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
                     self.rate.sleep()
@@ -247,7 +246,7 @@ class SingleLegController:
                 rospy.logerr("move leg to " + str(p) + " but init pose is set to " + str(self.init_pos))
             angles = self.leg.compute_inverse_kinematics(p)
             rospy.loginfo(
-                self.name + ": move_leg_to inverse kinematic. for position " + str(p) + " angles = " + str(angles))
+                    self.name + ": move_leg_to inverse kinematic. for position " + str(p) + " angles = " + str(angles))
             self.leg.set_command(angles)
 
 
