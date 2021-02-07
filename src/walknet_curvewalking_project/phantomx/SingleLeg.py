@@ -141,19 +141,22 @@ class SingleLeg:
         return self.alpha is not None and self.beta is not None and self.gamma is not None
 
     def c1_callback(self, data):
+        # rospy.loginfo(self.name + ": got c1 data = " + str(data))
         self.alpha = data.process_value
         self.alpha_target = data.set_point
-        self.alpha_reached = data.error < 0.05
+        self.alpha_reached = -0.005 < data.error < 0.005
 
     def thigh_callback(self, data):
+        # rospy.loginfo(self.name + ": got thigh data = " + str(data))
         self.beta = data.process_value
         self.beta_target = data.set_point
-        self.beta_reached = data.error < 0.05
+        self.beta_reached = -0.05 < data.error < 0.05
 
     def tibia_callback(self, data):
+        # rospy.loginfo(self.name + ": got tibia data = " + str(data))
         self.gamma = data.process_value
         self.gamma_target = data.set_point
-        self.gamma_reached = data.error < 0.05
+        self.gamma_reached = -0.05 < data.error < 0.05
 
     def ee_position(self):
         self.update_ee_position()
@@ -169,7 +172,7 @@ class SingleLeg:
     #   (very stable, but works only on flat terrain).
     def predicted_ground_contact(self):
         if self.name == "lf" or self.name == "rf":
-            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
+            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
                     and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for front leg")
                 return 1
@@ -180,7 +183,7 @@ class SingleLeg:
                 rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
-            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor))\
+            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
                     and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for rear leg")
                 return 1
@@ -401,6 +404,9 @@ class SingleLeg:
     def is_target_reached(self):
         if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
             return None
+        rospy.loginfo(self.name + ": self.alpha_reached (" + str(self.alpha_reached) + ") and self.beta_reached (" +
+                      str(self.beta_reached) + ") and self.gamma_reached (" + str(self.gamma_reached) + ") = " +
+                      str(self.alpha_reached and self.beta_reached and self.gamma_reached))
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def set_command(self, next_angles):
@@ -410,6 +416,7 @@ class SingleLeg:
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
+            rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])

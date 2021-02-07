@@ -14,7 +14,9 @@ alpha_rotation_dir = (False, True, False, True, False, True)  # ('lf', 'rf', 'lm
 
 segment_length = [0.054, 0.066, 0.16]  # (c1_to_thigh, thigh, tibia)
 
-joint_angle_limits = [[-0.5, 0.5], [-1.5, 1.2], [-1.5, 0.6]]
+# adjusted joint ranges in robot description
+# joint_angle_limits = [[-0.5, 0.5], [-1.5, 1.2], [-1.5, 0.6]]
+joint_angle_limits = [[-0.6, 0.6], [-2.0, 2.0], [-2.5, 0.75]]
 # ((c1 - alpha: (lower, upper), thigh - beta: (lower, upper), tibia - gamme: (lower, upper))
 
 lm = numpy.array([[0, 0, 1, 0],
@@ -49,17 +51,31 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
-default_stance_distance = 0.07
-stance_height = -0.09
-default_stance_width = 0.27
+# default_stance_distance = 0.07
+# stance_height = -0.09
+# default_stance_width = 0.27
+#
+# front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
+# front_initial_pep = numpy.array(
+#     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
+# middle_initial_aep = numpy.array([0.035, 0.327, stance_height])  # for forward walking
+# middle_initial_pep = numpy.array(
+#     [middle_initial_aep[0] - default_stance_distance, 0.327, stance_height])  # -0.07# for forward walking
+# hind_initial_aep = numpy.array([-0.18, default_stance_width, stance_height])
+# hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
-front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
+# == with changed joint ranges
+default_stance_distance = 0.10
+stance_height = -0.11
+default_stance_width = 0.26
+
+front_initial_aep = numpy.array([0.26, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array([0.035, 0.327, stance_height])  # for forward walking
+middle_initial_aep = numpy.array([0.05, 0.31, stance_height])  # for forward walking
 middle_initial_pep = numpy.array(
-    [middle_initial_aep[0] - default_stance_distance, 0.327, stance_height])  # -0.07# for forward walking
-hind_initial_aep = numpy.array([-0.18, default_stance_width, stance_height])
+    [middle_initial_aep[0] - default_stance_distance, 0.31, stance_height])  # -0.07# for forward walking
+hind_initial_aep = numpy.array([-0.16, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 # == Ground Contact Parameters ========

@@ -82,7 +82,6 @@ class TrajectoryGenerator:
             # print("last_target_position = " + str(self.last_target_position))
             # print("bezier_points = " + str(self.bezier_points))
             self.last_target_position = self.bezier_points[0]  # [0, :]  # everything in row 0
-            print("new last_target_position = " + str(self.last_target_position))
             # The number of segments the piecewise bezier curve consists of:
             num_of_segments = (self.bezier_points.shape[0] - 1) / self.order
             # A good estimation of the delta_paramet is necessary in order to reduce the number of iterations
@@ -110,17 +109,16 @@ class TrajectoryGenerator:
                 rospy.loginfo(
                         "---ELSE: current distance is more than desired_distance away from the last_target_position,\nlast_target_pos = " +
                         str(self.last_target_position) + " current_pos = " + str(current_position))
-                rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
-                              str(current_position + delta_position /
-                                  numpy.linalg.norm(delta_position) * desired_distance))
+                if RSTATIC.DEBUG:
+                    rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
+                                  str(current_position + delta_position /
+                                      numpy.linalg.norm(delta_position) * desired_distance))
 
                 return current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
             del delta_position
         # Try to adapt the delta_parameter to the desired_distance
 
         delta_parameter = self.norm_delta_parameter * desired_distance
-        rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = norm_delta_parameter = " + str(
-                self.norm_delta_parameter) + ") * desired_distance" + str(desired_distance))
         parameter_position_list = [(self.last_target_parameter, self.last_target_position)]
         # slightly_further_parameter = None
         # slightly_closer_parameter = None
@@ -145,8 +143,9 @@ class TrajectoryGenerator:
                 self.last_target_position = current_position + (
                         test_target_position - current_position) / numpy.linalg.norm(
                         test_target_position - current_position) * desired_distance
-                rospy.loginfo("+++RETURN delta_parameter found that produces a point = " +
-                              str(self.last_target_position))
+                if RSTATIC.DEBUG:
+                    rospy.loginfo(
+                            "+++RETURN delta_parameter found that produces a point = " + str(self.last_target_position))
                 return self.last_target_position
 
             # adapt the delta_parameter for the next iteration
@@ -156,11 +155,12 @@ class TrajectoryGenerator:
                     numpy.linalg.norm(test_target_position - current_position) / desired_distance)) < 0.0001:
                 rospy.logerr("delta_parameter = " + str(delta_parameter) + " to small! set to 0.0001")
                 delta_parameter = 0.0001
-                rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" + str(
-                        delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" + str(
-                        test_target_position) + ") - current_position (" + str(current_position) + ")) (" + str(
-                        numpy.linalg.norm(test_target_position - current_position)) + ") \n/ desired_distance (" + str(
-                        desired_distance) + "))")
+                if RSTATIC.DEBUG:
+                    rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" +
+                                  str(delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" +
+                                  str(test_target_position) + ") - current_position (" + str(current_position) +
+                                  ")) (" + str(numpy.linalg.norm(test_target_position - current_position)) +
+                                  ") \n/ desired_distance (" + str(desired_distance) + "))")
 
             # TODO can be done only once after for??
             # variables containing a parameter, position and the corresponding distance that is slightly smaller than
@@ -238,8 +238,8 @@ class TrajectoryGenerator:
         self.last_target_parameter = test_parameter
         self.last_target_position = current_position + (test_target_position - current_position) / numpy.linalg.norm(
                 test_target_position - current_position) * desired_distance
-        rospy.loginfo("+++RETURN binary search = " +
-                      str(self.last_target_position))
+        if RSTATIC.DEBUG:
+            rospy.loginfo("+++RETURN binary search = " + str(self.last_target_position))
         return self.last_target_position
 
 
