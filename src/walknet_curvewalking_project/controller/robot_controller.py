@@ -78,6 +78,8 @@ class RobotController:
         if data.speed_fact > 0:
             self.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, data.speed_fact)
             self.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
+            for leg in self.legs:
+                leg.set_delay_1b(data.speed_fact)
             self.walk_motivation = True
 
     def init_body_model(self):

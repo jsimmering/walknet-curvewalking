@@ -39,11 +39,14 @@ class SingleLeg:
 
         self.ee_pos = None
 
-        # Variables for detection of ground contact
-        self.contact = 0
-        self.contTime = 0
-        self.contactOld = 0
-        self.lift_counter = 0
+        # if self.name == "lf" or self.name == "rf":
+        #     self.pep_thresh = RSTATIC.front_initial_pep[0].copy()
+        # if self.name == "lm" or self.name == "rm":
+        #     self.pep_thresh = RSTATIC.middle_initial_pep[0].copy()
+        # if self.name == "lr" or self.name == "rr":
+        #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
+        self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
+        self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
 
         if RSTATIC.DEBUG:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -190,30 +193,46 @@ class SingleLeg:
 
         return 0
 
+    def shift_pep(self, distance):
+        if distance == 0.0:
+            self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
+            rospy.logwarn(self.name + ": reset pep!")
+        rospy.loginfo(self.name + ": shift_pep self.pep_thresh ("+str(self.pep_thresh)+") - distance ("+str(distance)+") = ("+str(self.pep_thresh - distance)+") < self.min_pep ("+str()+")")
+        if self.pep_thresh - distance < self.min_pep:
+            self.pep_thresh = self.min_pep
+            rospy.logwarn(self.name + ": pep shift to severe. reached min_pep. Swing no longer inhibited.")
+        else:
+            self.pep_thresh -= distance
+        rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
+
     ##
     #   Estimate ground ground_contact:
     #   Predict current leg position (using fw kinematics) and
     #   simply decide if the leg should touch ground
     #   (very stable, but works only on flat terrain).
     def reached_pep(self):
-        if self.name == "lf" or self.name == "rf":
-            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_pep[0]) < 0.025:
-            if abs(self.ee_position()[0] - RSTATIC.front_initial_pep[0]) < 0.025:
-                rospy.loginfo("stop stance for front leg")
-                return 1
-        if self.name == "lm" or self.name == "rm":
-            rospy.loginfo("abs(self.ee_position()[0] (" + str(self.ee_position()[0]) + ") - self.movement_dir (" + str(
-                    self.movement_dir) + ") * RSTATIC.middle_initial_pep[0] (" + str(
-                    RSTATIC.middle_initial_pep[0]) + ")) < 0.025")
-            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_pep[0]) < 0.025:
-            if abs(self.ee_position()[0] - RSTATIC.middle_initial_pep[0]) < 0.025:
-                rospy.loginfo("stop stance for middle leg")
-                return 1
-        if self.name == "lr" or self.name == "rr":
-            # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_pep[0]) < 0.025:
-            if abs(self.ee_position()[0] - RSTATIC.hind_initial_pep[0]) < 0.025:
-                rospy.loginfo("stop stance for rear leg")
-                return 1
+        # if self.name == "lf" or self.name == "rf":
+        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_pep[0]) < 0.025:
+        #     if abs(self.ee_position()[0] - RSTATIC.front_initial_pep[0]) < 0.025:
+        #         rospy.loginfo("stop stance for front leg")
+        #         return 1
+        # if self.name == "lm" or self.name == "rm":
+        #     rospy.loginfo("abs(self.ee_position()[0] (" + str(self.ee_position()[0]) + ") - self.movement_dir (" + str(
+        #             self.movement_dir) + ") * RSTATIC.middle_initial_pep[0] (" + str(
+        #             RSTATIC.middle_initial_pep[0]) + ")) < 0.025")
+        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_pep[0]) < 0.025:
+        #     if abs(self.ee_position()[0] - RSTATIC.middle_initial_pep[0]) < 0.025:
+        #         rospy.loginfo("stop stance for middle leg")
+        #         return 1
+        # if self.name == "lr" or self.name == "rr":
+        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_pep[0]) < 0.025:
+        #     if abs(self.ee_position()[0] - RSTATIC.hind_initial_pep[0]) < 0.025:
+        #         rospy.loginfo("stop stance for rear leg")
+        #         return 1
+
+        if self.ee_position()[0] < self.pep_thresh:
+            rospy.loginfo(self.name + ": stop stance")
+            return 1
 
         return 0
 

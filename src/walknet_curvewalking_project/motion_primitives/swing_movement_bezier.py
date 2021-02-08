@@ -101,7 +101,7 @@ class TrajectoryGenerator:
             # rospy.loginfo("delta_position (" + str(delta_position) + ") = self.last_target_position (" + str(
             #        self.last_target_position) + ") - current_position (" + str(current_position) + ")")
             delta_distance = numpy.linalg.norm(delta_position)
-            rospy.loginfo("current distance " + str(delta_distance) + " desired distance = " + str(desired_distance))
+            # rospy.loginfo("current distance " + str(delta_distance) + " desired distance = " + str(desired_distance))
             if delta_distance > desired_distance:
                 # delta_distance needs to be smaller than desired distance otherwise swing movement gets stuck sometimes.
                 # if the current_position is more than desired_distance away from the last_target_position,
