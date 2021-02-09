@@ -48,6 +48,22 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
 
+        self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
+        self.pep_thresh_point = Marker()
+        self.pep_thresh_point.header.frame_id = "MP_BODY"
+        self.pep_thresh_point.header.stamp = rospy.Time.now()
+        self.pep_thresh_point.ns = self.name + "_points_and_lines"
+        self.pep_thresh_point.action = Marker.ADD
+        self.pep_thresh_point.pose.orientation.w = 1.0
+        self.pep_thresh_point.id = 4
+        self.pep_thresh_point.type = Marker.POINTS
+        self.pep_thresh_point.scale.x = 0.005
+        self.pep_thresh_point.scale.y = 0.005
+        self.pep_thresh_point.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20)/100
+        self.pep_thresh_point.color.b = (RSTATIC.leg_names.index(self.name) * 20)/100
+        self.pep_thresh_point.color.a = 1.0
+        self.pub_point()
+
         if RSTATIC.DEBUG:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
             self.c1_ee_points = Marker()
@@ -140,6 +156,16 @@ class SingleLeg:
             self.visualization_pub.publish(self.global_leg_vec_lines)
             rate.sleep()
 
+    def pub_point(self):
+        self.pep_thresh_point.points.clear()
+        point = Point(self.pep_thresh, self.movement_dir * 0.25, -0.1)
+        self.pep_thresh_point.points.append(point)
+
+        rate = rospy.Rate(RSTATIC.controller_frequency)
+        for i in range(0, 5):
+            self.visualization_pub.publish(self.pep_thresh_point)
+            rate.sleep()
+
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
 
@@ -204,6 +230,7 @@ class SingleLeg:
         else:
             self.pep_thresh -= distance
         rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
+        self.pub_point()
 
     ##
     #   Estimate ground ground_contact:
@@ -232,6 +259,8 @@ class SingleLeg:
 
         if self.ee_position()[0] < self.pep_thresh:
             rospy.loginfo(self.name + ": stop stance")
+            if self.pep_thresh == self.min_pep:
+                rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
             return 1
 
         return 0

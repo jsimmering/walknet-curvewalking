@@ -138,7 +138,7 @@ class RobotController:
         rospy.loginfo("leg_status = " + str(leg_status))
         while not rospy.is_shutdown() and not leg_status.__contains__(False):
             self.updateStanceBodyModel()
-            for leg in self.legs:
+            for leg in self.legs.reverse():
                 # input("press any key to performe the next step.")
                 leg.manage_stance()
             leg_status = [not leg.swing for leg in self.legs]
