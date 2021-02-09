@@ -58,6 +58,12 @@ class SingleLegController:
             #        RSTATIC.leg_names[leg_behind_idx]))
             self._rule1_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[leg_behind_idx] + '/rule1', Float64,
                     self.rule1_callback)
+        neighbour_leg_idx = RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)
+        if 0 <= neighbour_leg_idx < 6:
+            #rospy.loginfo(self.name + ": neighbour_leg_idx = " + str(neighbour_leg_idx) + " neighbour_leg = " + str(
+            #        RSTATIC.leg_names[neighbour_leg_idx]))
+            self._rule1_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] + '/rule1', Float64,
+                    self.rule1_callback)
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -106,9 +112,9 @@ class SingleLegController:
 
     def rule1_callback(self, data):
         now = rospy.Time.now()
-        rospy.loginfo(self.name + ' received rule 1 from leg behind ' + str(
-                RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
-                      'nsecs. shift target.')
+        rospy.loginfo(
+                self.name + ' received rule 1'  # from leg behind ' + str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg 
+                            'at ' + str(now.secs) + ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
         self.leg.shift_pep(data.data)
 
     # function for executing a single step in a stance movement.
@@ -128,7 +134,7 @@ class SingleLegController:
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                     rospy.loginfo("####### pub rule 1 inhibit swing for leg in front")
-                    self.pub_rule1(0.024)
+                    # self.pub_rule1(-0.024)
                 self.temp.move_to_next_point(1)
                 self.rate.sleep()
                 if self.leg.predicted_ground_contact():
@@ -142,14 +148,22 @@ class SingleLegController:
                 rospy.loginfo(self.name + ": execute stance step.")
                 if RSTATIC.DEBUG:
                     rospy.loginfo("time since last_stance_activation = now (" + str(
-                            rospy.Time.now()) + ") - last_activation (" + str(self.last_stance_activation) + ") = " + str(
+                            rospy.Time.now()) + ") - last_activation (" + str(
+                            self.last_stance_activation) + ") = " + str(
                             rospy.Time.now() - self.last_stance_activation))
                     rospy.loginfo("must be <= delay_1b " + str(rospy.Duration.from_sec(self.delay_1b)))
                 if rospy.Duration.from_sec(0) <= rospy.Time.now() - self.last_stance_activation <= \
                         rospy.Duration.from_sec(self.delay_1b):
-                    self.pub_rule1(0.006)
+                    # self.pub_rule1(-0.006)
+                    pass
                 else:
                     # TODO create more intuitive way for reset e.g. custom message that could also contain all rules?
+                    # self.pub_rule1(0)
+                    pass
+                if rospy.Duration.from_sec(0.27) <= rospy.Time.now() - self.last_stance_activation <= \
+                        rospy.Duration.from_sec(0.32):
+                    self.pub_rule1(0.008)
+                if rospy.Duration.from_sec(0.32) <= rospy.Time.now() - self.last_stance_activation:
                     self.pub_rule1(0)
                 self.stance_net.modulated_routine_function_call()
                 rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))

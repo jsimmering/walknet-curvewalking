@@ -224,11 +224,11 @@ class SingleLeg:
             self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
             rospy.logwarn(self.name + ": reset pep!")
         rospy.loginfo(self.name + ": shift_pep self.pep_thresh ("+str(self.pep_thresh)+") - distance ("+str(distance)+") = ("+str(self.pep_thresh - distance)+") < self.min_pep ("+str()+")")
-        if self.pep_thresh - distance < self.min_pep:
+        if self.pep_thresh + distance < self.min_pep:
             self.pep_thresh = self.min_pep
             rospy.logwarn(self.name + ": pep shift to severe. reached min_pep. Swing no longer inhibited.")
         else:
-            self.pep_thresh -= distance
+            self.pep_thresh += distance
         rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
         self.pub_point()
 
