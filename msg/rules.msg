@@ -1,0 +1,5 @@
+float64 rule1
+float64 rule2_ipsilateral
+float64 rule2_contralateral
+float64 rule3_ipsilateral
+float64 rule3_contralateral

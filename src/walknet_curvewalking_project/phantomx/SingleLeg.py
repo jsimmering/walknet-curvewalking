@@ -47,6 +47,8 @@ class SingleLeg:
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
+        self.pep_shift_ipsilateral = 0
+        self.pep_shift_contralateral = 0
 
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
         self.pep_thresh_point = Marker()
@@ -59,8 +61,8 @@ class SingleLeg:
         self.pep_thresh_point.type = Marker.POINTS
         self.pep_thresh_point.scale.x = 0.005
         self.pep_thresh_point.scale.y = 0.005
-        self.pep_thresh_point.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20)/100
-        self.pep_thresh_point.color.b = (RSTATIC.leg_names.index(self.name) * 20)/100
+        self.pep_thresh_point.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20) / 100
+        self.pep_thresh_point.color.b = (RSTATIC.leg_names.index(self.name) * 20) / 100
         self.pep_thresh_point.color.a = 1.0
         self.pub_point()
 
@@ -219,16 +221,22 @@ class SingleLeg:
 
         return 0
 
-    def shift_pep(self, distance):
-        if distance == 0.0:
-            self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
-            rospy.logwarn(self.name + ": reset pep!")
-        rospy.loginfo(self.name + ": shift_pep self.pep_thresh ("+str(self.pep_thresh)+") - distance ("+str(distance)+") = ("+str(self.pep_thresh - distance)+") < self.min_pep ("+str()+")")
-        if self.pep_thresh + distance < self.min_pep:
+    def shift_pep_ipsilateral(self, distance):
+        self.pep_shift_ipsilateral = distance
+        self.shift_pep()
+
+    def shift_pep_contralateral(self, distance):
+        self.pep_shift_contralateral = distance
+        self.shift_pep()
+
+    def shift_pep(self):
+        pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
+                     self.pep_shift_ipsilateral + self.pep_shift_contralateral
+        if pep_thresh < self.min_pep:
             self.pep_thresh = self.min_pep
-            rospy.logwarn(self.name + ": pep shift to severe. reached min_pep. Swing no longer inhibited.")
+            rospy.logwarn(self.name + ": pep shift to severe. Set to min_pep = " + str(self.pep_thresh))
         else:
-            self.pep_thresh += distance
+            self.pep_thresh = pep_thresh
         rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
         self.pub_point()
 

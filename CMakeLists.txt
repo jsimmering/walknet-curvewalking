@@ -50,6 +50,7 @@ catkin_python_setup()
 add_message_files(
     FILES
     robot_control.msg
+    rules.msg
 #   Message2.msg
 )
 
