@@ -61,7 +61,7 @@ class RobotController:
                 leg.set_init_pos(init_pos)
 
             if not leg.init_pos is None:
-                leg.move_leg_to(leg.init_pos)
+                leg.move_leg_to()
                 rate.sleep()
 
         finished = False
@@ -121,8 +121,8 @@ class RobotController:
             for leg in self.legs:
                 if rospy.is_shutdown():
                     break
-                # input("press any key to performe the next step.")
                 leg.manage_walk()
+            # input("press any key to performe the next step.")
             rate.sleep()
 
     def move_body_cohesive(self):

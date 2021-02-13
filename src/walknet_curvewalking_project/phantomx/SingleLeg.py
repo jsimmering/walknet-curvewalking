@@ -48,22 +48,29 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
         self.pep_shift_ipsilateral = 0
+        self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
 
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
-        self.pep_thresh_point = Marker()
-        self.pep_thresh_point.header.frame_id = "MP_BODY"
-        self.pep_thresh_point.header.stamp = rospy.Time.now()
-        self.pep_thresh_point.ns = self.name + "_points_and_lines"
-        self.pep_thresh_point.action = Marker.ADD
-        self.pep_thresh_point.pose.orientation.w = 1.0
-        self.pep_thresh_point.id = 4
-        self.pep_thresh_point.type = Marker.POINTS
-        self.pep_thresh_point.scale.x = 0.005
-        self.pep_thresh_point.scale.y = 0.005
-        self.pep_thresh_point.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20) / 100
-        self.pep_thresh_point.color.b = (RSTATIC.leg_names.index(self.name) * 20) / 100
-        self.pep_thresh_point.color.a = 1.0
+        self.pep_thresh_line = Marker()
+        self.pep_thresh_initial = Marker()
+        self.pep_thresh_line.header.frame_id = self.pep_thresh_initial.header.frame_id = "MP_BODY"
+        self.pep_thresh_line.header.stamp = self.pep_thresh_initial.header.stamp = rospy.Time.now()
+        self.pep_thresh_line.ns = self.pep_thresh_initial.ns = self.name + "_points_and_lines"
+        self.pep_thresh_line.action = self.pep_thresh_initial.action = Marker.ADD
+        self.pep_thresh_line.pose.orientation.w = self.pep_thresh_initial.pose.orientation.w = 1.0
+        self.pep_thresh_initial.id = 4
+        self.pep_thresh_line.id = 5
+        self.pep_thresh_line.type = self.pep_thresh_initial.type = Marker.LINE_LIST
+        self.pep_thresh_line.scale.x = self.pep_thresh_initial.scale.x = 0.002
+        # self.pep_thresh_line.color.r = self.pep_thresh_initial.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20) / 100
+        # self.pep_thresh_line.color.b = self.pep_thresh_initial.color.b = (RSTATIC.leg_names.index(self.name) * 20) / 100
+        self.pep_thresh_initial.color.g = 1.0
+        self.pep_thresh_line.color.a = self.pep_thresh_initial.color.a = 1.0
+        point = Point(RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.20, -0.1)
+        self.pep_thresh_initial.points.append(point)
+        point = Point(RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.35, -0.1)
+        self.pep_thresh_initial.points.append(point)
         self.pub_point()
 
         if RSTATIC.DEBUG:
@@ -159,13 +166,18 @@ class SingleLeg:
             rate.sleep()
 
     def pub_point(self):
-        self.pep_thresh_point.points.clear()
-        point = Point(self.pep_thresh, self.movement_dir * 0.25, -0.1)
-        self.pep_thresh_point.points.append(point)
+        self.pep_thresh_line.points.clear()
+        self.pep_thresh_line.color.r = 1.0
+
+        point = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        self.pep_thresh_line.points.append(point)
+        point = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        self.pep_thresh_line.points.append(point)
 
         rate = rospy.Rate(RSTATIC.controller_frequency)
         for i in range(0, 5):
-            self.visualization_pub.publish(self.pep_thresh_point)
+            self.visualization_pub.publish(self.pep_thresh_line)
+            self.visualization_pub.publish(self.pep_thresh_initial)
             rate.sleep()
 
     def is_ready(self):
@@ -225,19 +237,25 @@ class SingleLeg:
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
 
+    def shift_pep_ipsilateral_front(self, distance):
+        self.pep_shift_ipsilateral_front = distance
+        self.shift_pep()
+
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
         self.shift_pep()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                     self.pep_shift_ipsilateral + self.pep_shift_contralateral
+                     self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
         if pep_thresh < self.min_pep:
             self.pep_thresh = self.min_pep
             rospy.logwarn(self.name + ": pep shift to severe. Set to min_pep = " + str(self.pep_thresh))
         else:
             self.pep_thresh = pep_thresh
-        rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
+        # if pep_thresh != RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy():
+        #     rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh) + " initial pep = " +
+        #                   str(RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()))
         self.pub_point()
 
     ##
@@ -466,13 +484,12 @@ class SingleLeg:
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def set_command(self, next_angles):
-        rospy.loginfo(
-                "set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
-                        self.get_current_angles()))
+        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
+        #                self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
-            rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            #rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
