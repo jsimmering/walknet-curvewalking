@@ -69,7 +69,7 @@ class SingleLeg:
         point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
         self.pep_init_thresh_line.points.append(point1)
         self.pep_init_thresh_line.points.append(point2)
-        self.pub_pep_threshold()
+        #self.pub_pep_threshold()
 
         if RSTATIC.DEBUG:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -164,17 +164,20 @@ class SingleLeg:
             rate.sleep()
 
     def pub_pep_threshold(self):
-        self.pep_thresh_line.points.clear()
-        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        self.pep_thresh_line.points.append(point1)
-        self.pep_thresh_line.points.append(point2)
+        while not rospy.is_shutdown():
+            self.pep_thresh_line.points.clear()
+            point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+            point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+            self.pep_thresh_line.points.append(point1)
+            self.pep_thresh_line.points.append(point2)
 
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 5):
-            self.visualization_pub.publish(self.pep_init_thresh_line)
-            self.visualization_pub.publish(self.pep_thresh_line)
-            rate.sleep()
+            rate = rospy.Rate(RSTATIC.controller_frequency)
+            for i in range(0, 5):
+                if rospy.is_shutdown():
+                    break
+                self.visualization_pub.publish(self.pep_init_thresh_line)
+                self.visualization_pub.publish(self.pep_thresh_line)
+                rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -473,13 +476,12 @@ class SingleLeg:
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def set_command(self, next_angles):
-        rospy.loginfo(
-                "set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
-                        self.get_current_angles()))
+        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
+        #               str(self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
-            rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            #rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
