@@ -140,13 +140,11 @@ class SingleLegController:
 
     def contralateral_rules_callback(self, data):
         now = rospy.Time.now()
-        rospy.loginfo(
-                self.name + ' received rule 1 from neighbouring leg ' + str(
-                        RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(
-                        now.secs) + ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_contralateral + data.rule3_contralateral
-        rospy.loginfo("shift_distance (" + str(shift_distance) + ") = data.rule1 (" + str(
-                data.rule1) + ") + data.rule2_contralateral (" + str(
+        rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
+                      str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
+                      ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
+        shift_distance = data.rule2_contralateral + data.rule3_contralateral
+        rospy.loginfo("shift_distance (" + str(shift_distance) + ") = data.rule2_contralateral (" + str(
                 data.rule2_contralateral) + ") + data.rule3_contralateral (" + str(data.rule3_contralateral) + ")")
         self.leg.shift_pep_contralateral(shift_distance)
 
