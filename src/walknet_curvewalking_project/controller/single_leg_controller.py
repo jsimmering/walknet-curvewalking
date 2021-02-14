@@ -74,8 +74,8 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
         # publish pep visualization
-        #th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
-        #th.start()
+        th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
+        th.start()
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -182,10 +182,10 @@ class SingleLegController:
         if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
             rospy.logerr(self.name + " rule 1 -0.006")
             rules_msg.rule1 = -0.006
-        if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.32):
+        if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.37):
             rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
-            rules_msg.rule2_ipsilateral = 0.008
-            rules_msg.rule2_contralateral = 0.002
+            rules_msg.rule2_ipsilateral = 0.01
+            rules_msg.rule2_contralateral = 0.005
         if self.threshold_rule3_ipsilateral < self.leg.ee_position()[0] < \
                 self.threshold_rule3_ipsilateral - 0.005:
             rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
@@ -214,7 +214,7 @@ class SingleLegController:
             # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
             self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
         # rospy.loginfo("####### pub rule 1 inhibit swing for leg in front")
-        rules_msg = rules(-0.024, 0.0, 0.0, 0.0, 0.0)
+        rules_msg = rules(-0.03, 0.0, 0.0, 0.0, 0.0)
         # rules_msg.rule1 = -0.024
         # rules_msg.rule2_ipsilateral = 0.0
         # rules_msg.rule2_contralateral = 0.0

@@ -69,7 +69,7 @@ class SingleLeg:
         point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
         self.pep_init_thresh_line.points.append(point1)
         self.pep_init_thresh_line.points.append(point2)
-        #self.pub_pep_threshold()
+        # self.pub_pep_threshold()
 
         if RSTATIC.DEBUG:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -244,11 +244,12 @@ class SingleLeg:
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
                      self.pep_shift_ipsilateral + self.pep_shift_contralateral
         if pep_thresh < self.min_pep:
-            self.pep_thresh = self.min_pep
-            rospy.logwarn(self.name + ": pep shift to severe. Set to min_pep = " + str(self.pep_thresh))
-        else:
-            self.pep_thresh = pep_thresh
-        #rospy.loginfo(self.name + ": pep_thresh set to " + str(self.pep_thresh))
+            # self.pep_thresh = self.min_pep
+            rospy.logwarn(
+                    self.name + ": pep shift severe! set to " + str(pep_thresh) + " min_pep = " + str(self.min_pep))
+        # else:
+        self.pep_thresh = pep_thresh
+        # rospy.loginfo(self.name + ": pep_thresh set to " + str(self.pep_thresh))
 
     ##
     #   Estimate ground ground_contact:
@@ -481,7 +482,7 @@ class SingleLeg:
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
-            #rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            # rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
