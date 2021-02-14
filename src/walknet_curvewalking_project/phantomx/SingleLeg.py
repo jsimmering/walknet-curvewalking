@@ -245,7 +245,7 @@ class SingleLeg:
             rospy.logwarn(self.name + ": pep shift to severe. Set to min_pep = " + str(self.pep_thresh))
         else:
             self.pep_thresh = pep_thresh
-        rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
+        #rospy.loginfo(self.name + ": pep_thresh set to " + str(self.pep_thresh))
 
     ##
     #   Estimate ground ground_contact:
