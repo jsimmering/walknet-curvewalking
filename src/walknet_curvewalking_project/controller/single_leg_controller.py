@@ -157,6 +157,8 @@ class SingleLegController:
             return
         else:
             rules_msg = rules()
+            rules_msg.rule1 = rules_msg.rule2_ipsilateral = rules_msg.rule2_contralateral = \
+                rules_msg.rule3_ipsilateral = rules_msg.rule3_contralateral = 0.0
             if self.swing:
                 rospy.loginfo(self.name + ": execute swing step.")
                 if self.temp.swing_start_point is None:
@@ -190,8 +192,6 @@ class SingleLegController:
                     rospy.loginfo("must be <= delay_1b " + str(rospy.Duration.from_sec(self.delay_1b)))
 
                 stance_duration = rospy.Time.now() - self.last_stance_activation
-                rules_msg.rule1 = rules_msg.rule2_ipsilateral = rules_msg.rule2_contralateral = \
-                    rules_msg.rule3_ipsilateral = rules_msg.rule3_contralateral = 0.0
                 if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
                     rules_msg.rule1 = -0.006
                 if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.32):
@@ -211,6 +211,7 @@ class SingleLegController:
                     # self.rate.sleep()
                     self.swing = True
             self.pub_rules(rules_msg)
+            self.leg.pub_pep_threshold()
 
     # function for executing a single step in a stance movement.
     def manage_stance(self):
