@@ -22,7 +22,7 @@ class SingleLegController:
             rospy.loginfo("leg on left side movement_dir 1")
             self.movement_dir = 1
         else:
-            rospy.loginfo("leg on left side movement_dir -1")
+            rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
@@ -36,16 +36,16 @@ class SingleLegController:
         self.threshold_rule3_contralateral = None
 
         # self.target_pos = None
-        self.displ_leg_ipsilateral = 0.0125
+        self.displ_leg_ipsilateral = 0.015
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
-            self.displ_leg = 0.003
+            self.displ_leg = 0.01
         elif self.name == "lm" or self.name == "rm":
             self.target_pos = RSTATIC.middle_initial_aep.copy()
             self.displ_leg = 0.0
         elif self.name == "lr" or self.name == "rr":
             self.target_pos = RSTATIC.hind_initial_aep.copy()
-            self.displ_leg = 0.001
+            self.displ_leg = 0.005
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
 
@@ -106,7 +106,11 @@ class SingleLegController:
         rospy.loginfo(self.name + ": aep_x = " + str(aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " + str(
                 fabs(aep_x - pep_x)))
         rospy.loginfo(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral))
+        rospy.loginfo(
+                self.name + ": threshold_rule3_ipsilateral + 0.01 = " + str(self.threshold_rule3_ipsilateral + 0.01))
         rospy.loginfo(self.name + ": threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
+        rospy.loginfo(self.name + ": threshold_rule3_contralateral + 0.01 = " +
+                      str(self.threshold_rule3_contralateral + 0.01))
 
     def bezier_swing(self):
         while not self.leg.is_ready() and not rospy.is_shutdown():
@@ -132,7 +136,7 @@ class SingleLegController:
 
     def pub_rules(self, rules_msg):
         now = rospy.Time.now()
-        #rospy.loginfo(self.name + ' start swing publish rule 1 at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
+        # rospy.loginfo(self.name + ' start swing publish rule 1 at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
         #              'nsecs')
         self._rules_pub.publish(rules_msg)
 
@@ -195,19 +199,26 @@ class SingleLegController:
         # rules_msg.rule3_ipsilateral = 0.0
         # rules_msg.rule3_contralateral = 0.0
         if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
-            rospy.logerr(self.name + " rule 1 -0.006")
+            #rospy.logerr(self.name + " rule 1 -0.006")
             rules_msg.rule1 = -0.006
         if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.37):
-            rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
+            #rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
             rules_msg.rule2_ipsilateral = 0.01
             rules_msg.rule2_contralateral = 0.005
-        if self.threshold_rule3_ipsilateral < self.leg.ee_position()[0] < \
-                self.threshold_rule3_ipsilateral - 0.005:
-            rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
+        dep_stance = (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)].copy()[0] +
+                      RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)].copy()[0]) / 2.0
+        stance_progress = (self.leg.compute_forward_kinematics()[0]) - dep_stance
+        # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
+        #               ") = (leg.compute_forward_kinematics()[0] (" +
+        #               str(self.leg.compute_forward_kinematics()[0]) + ")) - dep_stance (" + str(dep_stance) + ")")
+        # rospy.logerr(self.name + ": self.threshold_rule3_ipsilateral (" + str(self.threshold_rule3_ipsilateral) +
+        #              ") < stance_progress (" + str(stance_progress) + ") < " +
+        #              str(self.threshold_rule3_ipsilateral + 0.01))
+        if self.threshold_rule3_ipsilateral - 0.01 < stance_progress < self.threshold_rule3_ipsilateral:
+            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
-        if self.threshold_rule3_contralateral < self.leg.ee_position()[0] < \
-                self.threshold_rule3_contralateral - 0.005:
-            rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
+        if self.threshold_rule3_contralateral - 0.01 < stance_progress < self.threshold_rule3_contralateral:
+            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
             rules_msg.rule3_contralateral = self.displ_leg
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
