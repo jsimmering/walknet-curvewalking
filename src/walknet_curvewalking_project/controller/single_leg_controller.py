@@ -67,6 +67,12 @@ class SingleLegController:
             #        RSTATIC.leg_names[leg_behind_idx]))
             self._ipsilateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[leg_behind_idx] +
                                                            '/rules', rules, self.ipsilateral_rules_callback)
+        leg_in_front_idx = RSTATIC.leg_names.index(self.name) - 2
+        if 0 <= leg_in_front_idx < 6:
+            # rospy.loginfo(self.name + ": leg_behind_idx = " + str(leg_behind_idx) + " leg_in_front_idx = " + str(
+            #        RSTATIC.leg_names[leg_in_front_idx]))
+            self._ipsilateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[leg_in_front_idx] +
+                                                           '/rules', rules, self.ipsilateral_rules_from_front_callback)
         neighbour_leg_idx = RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)
         if 0 <= neighbour_leg_idx < 6:
             # rospy.loginfo(self.name + ": neighbour_leg_idx = " + str(neighbour_leg_idx) + " neighbour_leg = " + str(
@@ -134,12 +140,21 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_ipsilateral + data.rule3_ipsilateral
+        shift_distance = data.rule1 + data.rule2_ipsilateral
         if shift_distance != 0.0:
-            rospy.loginfo(self.name + ": shift_distance (" + str(shift_distance) + ") = data.rule1 (" +
-                          str(data.rule1) + ") + data.rule2_ipsilateral (" + str(data.rule2_ipsilateral) +
-                          ") + data.rule3_ipsilateral (" + str(data.rule3_ipsilateral) + ")")
+            rospy.loginfo(self.name + ": from leg behind shift_distance (" + str(shift_distance) + ") = data.rule1 (" +
+                          str(data.rule1) + ") + data.rule2_ipsilateral (" + str(data.rule2_ipsilateral) + ")")
         self.leg.shift_pep_ipsilateral(shift_distance)
+
+    def ipsilateral_rules_from_front_callback(self, data):
+        # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
+        #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
+        #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
+        shift_distance = data.rule3_ipsilateral
+        if shift_distance != 0.0:
+            rospy.loginfo(self.name + ": from leg in front shift_distance (" + str(shift_distance) +
+                          ") = data.rule3_ipsilateral (" + str(data.rule3_ipsilateral) + ")")
+        self.leg.shift_pep_ipsilateral_from_front(shift_distance)
 
     def contralateral_rules_callback(self, data):
         # rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
@@ -147,9 +162,9 @@ class SingleLegController:
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
         shift_distance = data.rule2_contralateral + data.rule3_contralateral
         if shift_distance != 0.0:
-            rospy.loginfo(self.name + ": shift_distance (" + str(shift_distance) + ") = data.rule2_contralateral (" +
-                          str(data.rule2_contralateral) + ") + data.rule3_contralateral (" +
-                          str(data.rule3_contralateral) + ")")
+            rospy.loginfo(self.name + ": from neighbour leg shift_distance (" + str(shift_distance) +
+                          ") = data.rule2_contralateral (" + str(data.rule2_contralateral) +
+                          ") + data.rule3_contralateral (" + str(data.rule3_contralateral) + ")")
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.

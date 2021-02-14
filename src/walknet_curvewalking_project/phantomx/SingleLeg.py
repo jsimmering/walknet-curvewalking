@@ -48,6 +48,7 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
         self.pep_shift_ipsilateral = 0
+        self.pep_shift_ipsilateral_from_front = 0
         self.pep_shift_contralateral = 0
 
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -236,13 +237,17 @@ class SingleLeg:
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
 
+    def shift_pep_ipsilateral_from_front(self, distance):
+        self.pep_shift_ipsilateral_from_front = distance
+        self.shift_pep()
+
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
         self.shift_pep()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                     self.pep_shift_ipsilateral + self.pep_shift_contralateral
+                     self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
         if pep_thresh < self.min_pep:
             # self.pep_thresh = self.min_pep
             rospy.logwarn(
