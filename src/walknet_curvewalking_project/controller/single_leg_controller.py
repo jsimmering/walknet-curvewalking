@@ -83,6 +83,12 @@ class SingleLegController:
         th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
         th.start()
 
+        self.rule1 = True
+        self.rule2_ipsi = True
+        self.rule2_contra = True
+        self.rule3_ipsi = True
+        self.rule3_contra = True
+
     def set_init_pos(self, p):
         self.init_pos = p
         rospy.loginfo(self.name + ": set init pos to P = " + str(p))
@@ -144,7 +150,11 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_ipsilateral
+        shift_distance = 0.0
+        if self.rule1:
+            shift_distance += data.rule1
+        if self.rule2_ipsi:
+            shift_distance += data.rule2_ipsilateral
         if shift_distance != 0.0:
             rospy.loginfo(self.name + ": from leg behind shift_distance (" + str(shift_distance) + ") = data.rule1 (" +
                           str(data.rule1) + ") + data.rule2_ipsilateral (" + str(data.rule2_ipsilateral) + ")")
@@ -154,7 +164,9 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule3_ipsilateral
+        shift_distance = 0.0
+        if self.rule3_ipsi:
+            shift_distance += data.rule3_ipsilateral
         if shift_distance != 0.0:
             rospy.loginfo(self.name + ": from leg in front shift_distance (" + str(shift_distance) +
                           ") = data.rule3_ipsilateral (" + str(data.rule3_ipsilateral) + ")")
@@ -164,7 +176,11 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
         #               str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule2_contralateral + data.rule3_contralateral
+        shift_distance = 0.0
+        if self.rule2_contra:
+            shift_distance += data.rule2_contralateral
+        if self.rule3_contra:
+            shift_distance += data.rule3_contralateral
         if shift_distance != 0.0:
             rospy.loginfo(self.name + ": from neighbour leg shift_distance (" + str(shift_distance) +
                           ") = data.rule2_contralateral (" + str(data.rule2_contralateral) +
