@@ -30,10 +30,6 @@ class SingleLeg:
         self.beta_target = None
         self.gamma_target = None
 
-        self.alpha_command = None
-        self.beta_command = None
-        self.gamma_command = None
-
         self.alpha_reached = True
         self.beta_reached = True
         self.gamma_reached = True
@@ -63,8 +59,8 @@ class SingleLeg:
         self.pep_thresh_line.ns = self.pep_thresh_initial.ns = self.name + "_points_and_lines"
         self.pep_thresh_line.action = self.pep_thresh_initial.action = Marker.ADD
         self.pep_thresh_line.pose.orientation.w = self.pep_thresh_initial.pose.orientation.w = 1.0
-        self.pep_thresh_initial.id = 4 + RSTATIC.leg_names.index(self.name)
-        self.pep_thresh_line.id = 10 + RSTATIC.leg_names.index(self.name)
+        self.pep_thresh_initial.id = 4
+        self.pep_thresh_line.id = 5
         self.pep_thresh_line.type = self.pep_thresh_initial.type = Marker.LINE_LIST
         self.pep_thresh_line.scale.x = self.pep_thresh_initial.scale.x = 0.002
         # self.pep_thresh_line.color.r = self.pep_thresh_initial.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20) / 100
@@ -171,12 +167,7 @@ class SingleLeg:
 
     def pub_point(self):
         self.pep_thresh_line.points.clear()
-        if self.pep_thresh != RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy():
-            self.pep_thresh_line.color.r = 1.0
-            self.pep_thresh_line.color.g = 0.0
-        else:
-            self.pep_thresh_line.color.g = 1.0
-            self.pep_thresh_line.color.r = 0.0
+        self.pep_thresh_line.color.r = 1.0
 
         point = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
         self.pep_thresh_line.points.append(point)
@@ -184,10 +175,10 @@ class SingleLeg:
         self.pep_thresh_line.points.append(point)
 
         rate = rospy.Rate(RSTATIC.controller_frequency)
-        # for i in range(0, 5):
-        self.visualization_pub.publish(self.pep_thresh_line)
-        self.visualization_pub.publish(self.pep_thresh_initial)
-        # rate.sleep()
+        for i in range(0, 5):
+            self.visualization_pub.publish(self.pep_thresh_line)
+            self.visualization_pub.publish(self.pep_thresh_initial)
+            rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -225,18 +216,18 @@ class SingleLeg:
     def predicted_ground_contact(self):
         if self.name == "lf" or self.name == "rf":
             if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.0075:
+                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
             if (self.ee_position()[2] < (
                     RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.0075:
+                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
             if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.0075:
+                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.025:
                 rospy.loginfo("predict ground contact for rear leg")
                 return 1
 
@@ -265,6 +256,7 @@ class SingleLeg:
         # if pep_thresh != RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy():
         #     rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh) + " initial pep = " +
         #                   str(RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()))
+        self.pub_point()
 
     ##
     #   Estimate ground ground_contact:
@@ -489,19 +481,7 @@ class SingleLeg:
         rospy.loginfo(self.name + ": self.alpha_reached (" + str(self.alpha_reached) + ") and self.beta_reached (" +
                       str(self.beta_reached) + ") and self.gamma_reached (" + str(self.gamma_reached) + ") = " +
                       str(self.alpha_reached and self.beta_reached and self.gamma_reached))
-        rospy.loginfo(self.name + ": self.alpha (" + str(self.alpha) + ") and self.beta (" +
-                      str(self.beta) + ") and self.gamma (" + str(self.gamma) + ")")
-        rospy.loginfo(self.name + ": self.alpha_target (" + str(self.alpha_target) + ") and self.beta_target(" +
-                      str(self.beta_target) + ") and self.gamma_target (" + str(self.gamma_target) + ")")
         return self.alpha_reached and self.beta_reached and self.gamma_reached
-
-    def is_target_set(self):
-        if self.name == "lr":
-            rospy.logerr(self.name + ": alpha_target (" + str(self.alpha_target) + ") == alpha_command (" + str(
-                    self.alpha_command) + ") and beta_target (" + str(self.beta_target) + ") == beta_command (" + str(
-                    self.beta_command) + ") and gamma_target (" + str(self.gamma_target) + ") == gamma_command (" + str(
-                    self.gamma_command) + ")")
-        return self.alpha_target == self.alpha_command and self.beta_target == self.beta_command and self.gamma_target == self.gamma_command
 
     def set_command(self, next_angles):
         # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
@@ -509,10 +489,7 @@ class SingleLeg:
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
-            rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            #rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
-            self.alpha_command = next_angles[0]
-            self.beta_command = next_angles[1]
-            self.gamma_command = next_angles[2]
