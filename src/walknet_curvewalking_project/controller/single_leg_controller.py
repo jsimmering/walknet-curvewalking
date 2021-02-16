@@ -48,6 +48,7 @@ class SingleLegController:
             self.displ_leg = 0.005
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
+        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
 
         if self.robot is None:
             self.stance_net = None
@@ -95,7 +96,7 @@ class SingleLegController:
         rospy.loginfo(self.name + ": set init pos = " + str(self.init_pos))
 
     def set_delay_1b(self, velocity):
-        if velocity >= 0.4:
+        if velocity >= 0.03:
             delay = 0.8 - 1.5 * velocity
         elif velocity <= 0.4:
             delay = 0.4 - 0.5 * velocity
@@ -105,12 +106,11 @@ class SingleLegController:
             self.delay_1b = 0
         else:
             self.delay_1b = delay
-        aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
         pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
-        self.threshold_rule3_ipsilateral = fabs(aep_x - pep_x) / (1.0 + exp(-15.0 * (velocity - 0.37)))
-        self.threshold_rule3_contralateral = fabs(aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        rospy.loginfo(self.name + ": aep_x = " + str(aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " + str(
-                fabs(aep_x - pep_x)))
+        self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (1.0 + exp(-15.0 * (velocity - 0.37)))
+        self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
+        rospy.loginfo(self.name + ": aep_x = " + str(self.aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " +
+                      str(fabs(self.aep_x - pep_x)))
         rospy.loginfo(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral))
         rospy.loginfo(
                 self.name + ": threshold_rule3_ipsilateral + 0.01 = " + str(self.threshold_rule3_ipsilateral + 0.01))
@@ -221,9 +221,7 @@ class SingleLegController:
             #rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
             rules_msg.rule2_ipsilateral = 0.01
             rules_msg.rule2_contralateral = 0.005
-        dep_stance = (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)].copy()[0] +
-                      RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)].copy()[0]) / 2.0
-        stance_progress = (self.leg.compute_forward_kinematics()[0]) - dep_stance
+        stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
         # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
         #               ") = (leg.compute_forward_kinematics()[0] (" +
         #               str(self.leg.compute_forward_kinematics()[0]) + ")) - dep_stance (" + str(dep_stance) + ")")
