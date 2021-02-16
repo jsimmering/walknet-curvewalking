@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import threading
 from math import fabs, exp
 
 import rospy
@@ -21,7 +22,7 @@ class SingleLegController:
             rospy.loginfo("leg on left side movement_dir 1")
             self.movement_dir = 1
         else:
-            rospy.loginfo("leg on left side movement_dir -1")
+            rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
@@ -35,16 +36,16 @@ class SingleLegController:
         self.threshold_rule3_contralateral = None
 
         # self.target_pos = None
-        self.displ_leg_ipsilateral = 0.0125
+        self.displ_leg_ipsilateral = 0.015
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
-            self.displ_leg = 0.003
+            self.displ_leg = 0.01
         elif self.name == "lm" or self.name == "rm":
             self.target_pos = RSTATIC.middle_initial_aep.copy()
             self.displ_leg = 0.0
         elif self.name == "lr" or self.name == "rr":
             self.target_pos = RSTATIC.hind_initial_aep.copy()
-            self.displ_leg = 0.001
+            self.displ_leg = 0.005
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
 
@@ -66,12 +67,21 @@ class SingleLegController:
             #        RSTATIC.leg_names[leg_behind_idx]))
             self._ipsilateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[leg_behind_idx] +
                                                            '/rules', rules, self.ipsilateral_rules_callback)
+        leg_in_front_idx = RSTATIC.leg_names.index(self.name) - 2
+        if 0 <= leg_in_front_idx < 6:
+            # rospy.loginfo(self.name + ": leg_behind_idx = " + str(leg_behind_idx) + " leg_in_front_idx = " + str(
+            #        RSTATIC.leg_names[leg_in_front_idx]))
+            self._ipsilateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[leg_in_front_idx] +
+                                                           '/rules', rules, self.ipsilateral_rules_from_front_callback)
         neighbour_leg_idx = RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)
         if 0 <= neighbour_leg_idx < 6:
             # rospy.loginfo(self.name + ": neighbour_leg_idx = " + str(neighbour_leg_idx) + " neighbour_leg = " + str(
             #        RSTATIC.leg_names[neighbour_leg_idx]))
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
+        # publish pep visualization
+        th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
+        th.start()
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -96,7 +106,11 @@ class SingleLegController:
         rospy.loginfo(self.name + ": aep_x = " + str(aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " + str(
                 fabs(aep_x - pep_x)))
         rospy.loginfo(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral))
+        rospy.loginfo(
+                self.name + ": threshold_rule3_ipsilateral + 0.01 = " + str(self.threshold_rule3_ipsilateral + 0.01))
         rospy.loginfo(self.name + ": threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
+        rospy.loginfo(self.name + ": threshold_rule3_contralateral + 0.01 = " +
+                      str(self.threshold_rule3_contralateral + 0.01))
 
     def bezier_swing(self):
         while not self.leg.is_ready() and not rospy.is_shutdown():
@@ -122,95 +136,126 @@ class SingleLegController:
 
     def pub_rules(self, rules_msg):
         now = rospy.Time.now()
-        rospy.loginfo(self.name + ' start swing publish rule 1 at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
-                      'nsecs')
+        # rospy.loginfo(self.name + ' start swing publish rule 1 at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
+        #              'nsecs')
         self._rules_pub.publish(rules_msg)
 
     def ipsilateral_rules_callback(self, data):
-        now = rospy.Time.now()
-        rospy.loginfo(
-                self.name + ' received rule 1 from leg behind ' + str(
-                        RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(
-                        now.secs) + ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_ipsilateral + data.rule3_ipsilateral
-        rospy.loginfo("shift_distance (" + str(shift_distance) + ") = data.rule1 (" + str(
-                data.rule1) + ") + data.rule2_ipsilateral (" + str(
-                data.rule2_ipsilateral) + ") + data.rule3_ipsilateral (" + str(data.rule3_ipsilateral) + ")")
+        # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
+        #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
+        #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
+        shift_distance = data.rule1 + data.rule2_ipsilateral
+        if shift_distance != 0.0:
+            rospy.loginfo(self.name + ": from leg behind shift_distance (" + str(shift_distance) + ") = data.rule1 (" +
+                          str(data.rule1) + ") + data.rule2_ipsilateral (" + str(data.rule2_ipsilateral) + ")")
         self.leg.shift_pep_ipsilateral(shift_distance)
 
+    def ipsilateral_rules_from_front_callback(self, data):
+        # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
+        #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
+        #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
+        shift_distance = data.rule3_ipsilateral
+        if shift_distance != 0.0:
+            rospy.loginfo(self.name + ": from leg in front shift_distance (" + str(shift_distance) +
+                          ") = data.rule3_ipsilateral (" + str(data.rule3_ipsilateral) + ")")
+        self.leg.shift_pep_ipsilateral_from_front(shift_distance)
+
     def contralateral_rules_callback(self, data):
-        now = rospy.Time.now()
-        rospy.loginfo(
-                self.name + ' received rule 1 from neighbouring leg ' + str(
-                        RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(
-                        now.secs) + ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_contralateral + data.rule3_contralateral
-        rospy.loginfo("shift_distance (" + str(shift_distance) + ") = data.rule1 (" + str(
-                data.rule1) + ") + data.rule2_contralateral (" + str(
-                data.rule2_contralateral) + ") + data.rule3_contralateral (" + str(data.rule3_contralateral) + ")")
+        # rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
+        #               str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
+        #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
+        shift_distance = data.rule2_contralateral + data.rule3_contralateral
+        if shift_distance != 0.0:
+            rospy.loginfo(self.name + ": from neighbour leg shift_distance (" + str(shift_distance) +
+                          ") = data.rule2_contralateral (" + str(data.rule2_contralateral) +
+                          ") + data.rule3_contralateral (" + str(data.rule3_contralateral) + ")")
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.
     def manage_walk(self):
-        if not self.robot.walk_motivation or rospy.is_shutdown():
-            rospy.loginfo("no moving motivation or shutdown...")
-            return
+        # if not self.robot.walk_motivation or rospy.is_shutdown():
+        #     rospy.loginfo("no moving motivation or shutdown...")
+        #     return
+        # else:
+        if self.swing:
+            self.execute_swing_step()
         else:
-            rules_msg = rules()
-            if self.swing:
-                rospy.loginfo(self.name + ": execute swing step.")
-                if self.temp.swing_start_point is None:
-                    rospy.loginfo("##############################reset swing")
-                    self.temp.swing_start_point = self.leg.ee_position()
-                    self.temp.swing_target_point = self.target_pos
-                    # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                    #                                [self.movement_dir * 0.3, -0.5, -1.2])
-                    # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-                    self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
-                    rospy.loginfo("####### pub rule 1 inhibit swing for leg in front")
-                rules_msg.rule1 = -0.024
-                rules_msg.rule2_ipsilateral = rules_msg.rule2_contralateral = rules_msg.rule3_ipsilateral = \
-                    rules_msg.rule3_contralateral = 0.0
-                self.temp.move_to_next_point(1)
-                self.rate.sleep()
-                if self.leg.predicted_ground_contact():
-                    self.temp.move_to_next_point(0)
-                    self.temp.swing_start_point = None
-                    # self.rate.sleep()
-                    self.swing = False
-                    self.last_stance_activation = rospy.Time.now()
-                # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
-            else:
-                rospy.loginfo(self.name + ": execute stance step.")
-                if RSTATIC.DEBUG:
-                    rospy.loginfo("time since last_stance_activation = now (" + str(
-                            rospy.Time.now()) + ") - last_activation (" + str(
-                            self.last_stance_activation) + ") = " + str(
-                            rospy.Time.now() - self.last_stance_activation))
-                    rospy.loginfo("must be <= delay_1b " + str(rospy.Duration.from_sec(self.delay_1b)))
+            self.execute_stance_step()
 
-                stance_duration = rospy.Time.now() - self.last_stance_activation
-                rules_msg.rule1 = rules_msg.rule2_ipsilateral = rules_msg.rule2_contralateral = \
-                    rules_msg.rule3_ipsilateral = rules_msg.rule3_contralateral = 0.0
-                if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
-                    rules_msg.rule1 = -0.006
-                if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.32):
-                    rules_msg.rule2_ipsilateral = 0.008
-                    rules_msg.rule2_contralateral = 0.002
-                if self.threshold_rule3_ipsilateral < self.leg.ee_position()[0] < \
-                        self.threshold_rule3_ipsilateral - 0.005:
-                    rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
-                if self.threshold_rule3_contralateral < self.leg.ee_position()[0] < \
-                        self.threshold_rule3_contralateral - 0.005:
-                    rules_msg.rule3_contralateral = self.displ_leg
-                self.stance_net.modulated_routine_function_call()
-                rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
-                if self.leg.reached_pep():
-                    rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
-                    self.stance_net.reset_stance_trajectory()
-                    # self.rate.sleep()
-                    self.swing = True
-            self.pub_rules(rules_msg)
+    def execute_stance_step(self):
+        # rospy.loginfo(self.name + ": execute stance step.")
+        if RSTATIC.DEBUG:
+            rospy.loginfo("time since last_stance_activation = now (" + str(
+                    rospy.Time.now()) + ") - last_activation (" + str(
+                    self.last_stance_activation) + ") = " + str(
+                    rospy.Time.now() - self.last_stance_activation))
+            rospy.loginfo("must be <= delay_1b " + str(rospy.Duration.from_sec(self.delay_1b)))
+
+        stance_duration = rospy.Time.now() - self.last_stance_activation
+        rules_msg = rules(0.0, 0.0, 0.0, 0.0, 0.0)
+        # rules_msg.rule1 = 0.0
+        # rules_msg.rule2_ipsilateral = 0.0
+        # rules_msg.rule2_contralateral = 0.0
+        # rules_msg.rule3_ipsilateral = 0.0
+        # rules_msg.rule3_contralateral = 0.0
+        if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
+            #rospy.logerr(self.name + " rule 1 -0.006")
+            rules_msg.rule1 = -0.006
+        if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.37):
+            #rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
+            rules_msg.rule2_ipsilateral = 0.01
+            rules_msg.rule2_contralateral = 0.005
+        dep_stance = (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)].copy()[0] +
+                      RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)].copy()[0]) / 2.0
+        stance_progress = (self.leg.compute_forward_kinematics()[0]) - dep_stance
+        # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
+        #               ") = (leg.compute_forward_kinematics()[0] (" +
+        #               str(self.leg.compute_forward_kinematics()[0]) + ")) - dep_stance (" + str(dep_stance) + ")")
+        # rospy.logerr(self.name + ": self.threshold_rule3_ipsilateral (" + str(self.threshold_rule3_ipsilateral) +
+        #              ") < stance_progress (" + str(stance_progress) + ") < " +
+        #              str(self.threshold_rule3_ipsilateral + 0.01))
+        if self.threshold_rule3_ipsilateral - 0.01 < stance_progress < self.threshold_rule3_ipsilateral:
+            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
+            rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
+        if self.threshold_rule3_contralateral - 0.01 < stance_progress < self.threshold_rule3_contralateral:
+            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
+            rules_msg.rule3_contralateral = self.displ_leg
+        self.pub_rules(rules_msg)
+        self.stance_net.modulated_routine_function_call()
+        # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
+        if self.leg.reached_pep():
+            rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
+            self.stance_net.reset_stance_trajectory()
+            # self.rate.sleep()
+            self.swing = True
+
+    def execute_swing_step(self):
+        # rospy.loginfo(self.name + ": execute swing step.")
+        if self.temp.swing_start_point is None:
+            rospy.loginfo(self.name + ": reset swing")
+            self.temp.swing_start_point = self.leg.ee_position()
+            self.temp.swing_target_point = self.target_pos
+            # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
+            #                                [self.movement_dir * 0.3, -0.5, -1.2])
+            # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+            self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+        # rospy.loginfo("####### pub rule 1 inhibit swing for leg in front")
+        rules_msg = rules(-0.03, 0.0, 0.0, 0.0, 0.0)
+        # rules_msg.rule1 = -0.024
+        # rules_msg.rule2_ipsilateral = 0.0
+        # rules_msg.rule2_contralateral = 0.0
+        # rules_msg.rule3_ipsilateral = 0.0
+        # rules_msg.rule3_contralateral = 0.0
+        self.pub_rules(rules_msg)
+        self.temp.move_to_next_point(1)
+        self.rate.sleep()
+        if self.leg.predicted_ground_contact():
+            self.temp.move_to_next_point(0)
+            self.temp.swing_start_point = None
+            # self.rate.sleep()
+            self.swing = False
+            self.last_stance_activation = rospy.Time.now()
+            rospy.loginfo(self.name + 'swing is finished switch to stance.')
 
     # function for executing a single step in a stance movement.
     def manage_stance(self):

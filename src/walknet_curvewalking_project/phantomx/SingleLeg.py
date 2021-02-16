@@ -48,23 +48,29 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
         self.pep_shift_ipsilateral = 0
+        self.pep_shift_ipsilateral_from_front = 0
         self.pep_shift_contralateral = 0
 
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
-        self.pep_thresh_point = Marker()
-        self.pep_thresh_point.header.frame_id = "MP_BODY"
-        self.pep_thresh_point.header.stamp = rospy.Time.now()
-        self.pep_thresh_point.ns = self.name + "_points_and_lines"
-        self.pep_thresh_point.action = Marker.ADD
-        self.pep_thresh_point.pose.orientation.w = 1.0
-        self.pep_thresh_point.id = 4
-        self.pep_thresh_point.type = Marker.POINTS
-        self.pep_thresh_point.scale.x = 0.005
-        self.pep_thresh_point.scale.y = 0.005
-        self.pep_thresh_point.color.r = 1.0 - (RSTATIC.leg_names.index(self.name) * 20) / 100
-        self.pep_thresh_point.color.b = (RSTATIC.leg_names.index(self.name) * 20) / 100
-        self.pep_thresh_point.color.a = 1.0
-        self.pub_point()
+        self.pep_thresh_line = Marker()
+        self.pep_init_thresh_line = Marker()
+        self.pep_thresh_line.header.frame_id = self.pep_init_thresh_line.header.frame_id = "MP_BODY"
+        self.pep_thresh_line.header.stamp = self.pep_init_thresh_line.header.stamp = rospy.Time.now()
+        self.pep_thresh_line.ns = self.pep_init_thresh_line.ns = self.name + "_points_and_lines"
+        self.pep_thresh_line.action = self.pep_init_thresh_line.action = Marker.ADD
+        self.pep_thresh_line.pose.orientation.w = self.pep_init_thresh_line.pose.orientation.w = 1.0
+        self.pep_init_thresh_line.id = 4
+        self.pep_thresh_line.id = 5 + RSTATIC.leg_names.index(self.name)
+        self.pep_thresh_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
+        self.pep_thresh_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
+        self.pep_init_thresh_line.color.g = 1.0
+        self.pep_thresh_line.color.r = 1.0
+        self.pep_thresh_line.color.a = self.pep_init_thresh_line.color.a = 1.0
+        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        self.pep_init_thresh_line.points.append(point1)
+        self.pep_init_thresh_line.points.append(point2)
+        # self.pub_pep_threshold()
 
         if RSTATIC.DEBUG:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -158,15 +164,21 @@ class SingleLeg:
             self.visualization_pub.publish(self.global_leg_vec_lines)
             rate.sleep()
 
-    def pub_point(self):
-        self.pep_thresh_point.points.clear()
-        point = Point(self.pep_thresh, self.movement_dir * 0.25, -0.1)
-        self.pep_thresh_point.points.append(point)
+    def pub_pep_threshold(self):
+        while not rospy.is_shutdown():
+            self.pep_thresh_line.points.clear()
+            point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+            point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+            self.pep_thresh_line.points.append(point1)
+            self.pep_thresh_line.points.append(point2)
 
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 5):
-            self.visualization_pub.publish(self.pep_thresh_point)
-            rate.sleep()
+            rate = rospy.Rate(RSTATIC.controller_frequency)
+            for i in range(0, 5):
+                if rospy.is_shutdown():
+                    break
+                self.visualization_pub.publish(self.pep_init_thresh_line)
+                self.visualization_pub.publish(self.pep_thresh_line)
+                rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -225,20 +237,24 @@ class SingleLeg:
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
 
+    def shift_pep_ipsilateral_from_front(self, distance):
+        self.pep_shift_ipsilateral_from_front = distance
+        self.shift_pep()
+
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
         self.shift_pep()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                     self.pep_shift_ipsilateral + self.pep_shift_contralateral
+                     self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
         if pep_thresh < self.min_pep:
-            self.pep_thresh = self.min_pep
-            rospy.logwarn(self.name + ": pep shift to severe. Set to min_pep = " + str(self.pep_thresh))
-        else:
-            self.pep_thresh = pep_thresh
-        rospy.logwarn(self.name + ": pep_thresh set to " + str(self.pep_thresh))
-        self.pub_point()
+            # self.pep_thresh = self.min_pep
+            rospy.logwarn(
+                    self.name + ": pep shift severe! set to " + str(pep_thresh) + " min_pep = " + str(self.min_pep))
+        # else:
+        self.pep_thresh = pep_thresh
+        # rospy.loginfo(self.name + ": pep_thresh set to " + str(self.pep_thresh))
 
     ##
     #   Estimate ground ground_contact:
@@ -466,13 +482,12 @@ class SingleLeg:
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def set_command(self, next_angles):
-        rospy.loginfo(
-                "set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
-                        self.get_current_angles()))
+        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
+        #               str(self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:
-            rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            # rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])

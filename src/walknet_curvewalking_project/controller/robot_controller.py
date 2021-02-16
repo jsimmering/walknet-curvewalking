@@ -116,7 +116,7 @@ class RobotController:
             rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in self.legs]
             rospy.loginfo("ready status = " + str(ready_status))
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() and self.walk_motivation:
             self.updateStanceBodyModel()
             for leg in self.legs:
                 if rospy.is_shutdown():
@@ -152,6 +152,7 @@ if __name__ == '__main__':
     try:
         robot_controller.move_legs_into_init_pos()
         #robot_controller.move_body_cohesive()
-        robot_controller.walk_body_model()
+        while not rospy.is_shutdown():
+            robot_controller.walk_body_model()
     except rospy.ROSInterruptException:
         pass
