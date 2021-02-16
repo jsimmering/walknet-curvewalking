@@ -68,7 +68,9 @@ class RobotController:
         while not rospy.is_shutdown() and not finished:
             finished = True
             for leg in self.legs:
-                if not leg.leg.is_target_reached():
+                if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
+                    rospy.logerr(leg.name + " : target set = " + str(leg.leg.is_target_set()) + " target reached = " +
+                                 str(leg.leg.is_target_reached()))
                     finished = False
                     leg.move_leg_to()
                     rate.sleep()
