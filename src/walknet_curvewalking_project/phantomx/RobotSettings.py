@@ -65,20 +65,20 @@ body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 # == with changed joint ranges
-default_stance_distance = 0.05 #0.10 pep_shifted to aep_shifted
+default_stance_distance = 0.04 #0.10 pep_shifted to aep_shifted
 stance_height = -0.11
 default_stance_width = 0.26
 
-front_initial_aep = numpy.array([0.26, default_stance_width, stance_height])  # for forward walking
-#front_initial_aep = numpy.array([0.23, default_stance_width, stance_height])  # for forward walking
+#front_initial_aep = numpy.array([0.26, default_stance_width, stance_height])  # for forward walking
+front_initial_aep = numpy.array([0.23, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array([0.05, 0.31, stance_height])  # for forward walking
-#middle_initial_aep = numpy.array([0.02, 0.31, stance_height])  # for forward walking
+#middle_initial_aep = numpy.array([0.05, 0.31, stance_height])  # for forward walking
+middle_initial_aep = numpy.array([0.02, 0.31, stance_height])  # for forward walking
 middle_initial_pep = numpy.array(
     [middle_initial_aep[0] - default_stance_distance, 0.31, stance_height])  # -0.07# for forward walking
-hind_initial_aep = numpy.array([-0.16, default_stance_width, stance_height])
-#hind_initial_aep = numpy.array([-0.19, default_stance_width, stance_height])
+#hind_initial_aep = numpy.array([-0.16, default_stance_width, stance_height])
+hind_initial_aep = numpy.array([-0.19, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 front_min_x = 0.16
