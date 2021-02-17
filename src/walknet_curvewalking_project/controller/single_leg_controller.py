@@ -36,10 +36,10 @@ class SingleLegController:
         self.threshold_rule3_contralateral = None
 
         # self.target_pos = None
-        self.displ_leg_ipsilateral = 0.015
+        self.displ_leg_ipsilateral = 0.033
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
-            self.displ_leg = 0.01
+            self.displ_leg = 0.0125
         elif self.name == "lm" or self.name == "rm":
             self.target_pos = RSTATIC.middle_initial_aep.copy()
             self.displ_leg = 0.0
@@ -98,7 +98,7 @@ class SingleLegController:
     def set_delay_1b(self, velocity):
         if velocity >= 0.03:
             delay = 0.8 - 1.5 * velocity
-        elif velocity <= 0.4:
+        elif velocity <= 0.03:
             delay = 0.4 - 0.5 * velocity
         if delay > 0.27:
             self.delay_1b = 0.27
@@ -220,18 +220,18 @@ class SingleLegController:
         if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.37):
             #rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
             rules_msg.rule2_ipsilateral = 0.01
-            rules_msg.rule2_contralateral = 0.005
+            rules_msg.rule2_contralateral = 0.0075
         stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
-        # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
-        #               ") = (leg.compute_forward_kinematics()[0] (" +
-        #               str(self.leg.compute_forward_kinematics()[0]) + ")) - dep_stance (" + str(dep_stance) + ")")
+        rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
+                      ") = self.aep_x (" + str(self.aep_x) + ") - leg.compute_forward_kinematics()[0] (" +
+                      str(self.leg.compute_forward_kinematics()[0]))
         # rospy.logerr(self.name + ": self.threshold_rule3_ipsilateral (" + str(self.threshold_rule3_ipsilateral) +
         #              ") < stance_progress (" + str(stance_progress) + ") < " +
         #              str(self.threshold_rule3_ipsilateral + 0.01))
-        if self.threshold_rule3_ipsilateral - 0.01 < stance_progress < self.threshold_rule3_ipsilateral:
+        if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.01:
             #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
-        if self.threshold_rule3_contralateral - 0.01 < stance_progress < self.threshold_rule3_contralateral:
+        if self.threshold_rule3_contralateral < stance_progress < self.threshold_rule3_contralateral + 0.01:
             #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
             rules_msg.rule3_contralateral = self.displ_leg
         self.pub_rules(rules_msg)

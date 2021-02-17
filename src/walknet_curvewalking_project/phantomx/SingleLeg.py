@@ -216,18 +216,18 @@ class SingleLeg:
     def predicted_ground_contact(self):
         if self.name == "lf" or self.name == "rf":
             if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
                 rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
             if (self.ee_position()[2] < (
                     RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.005:
                 rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
             if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.025:
+                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
                 rospy.loginfo("predict ground contact for rear leg")
                 return 1
 
