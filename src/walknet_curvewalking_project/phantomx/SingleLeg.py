@@ -46,7 +46,6 @@ class SingleLeg:
         # if self.name == "lr" or self.name == "rr":
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
-        self.min_pep = RSTATIC.min_x[RSTATIC.leg_names.index(self.name)]
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_from_front = 0
         self.pep_shift_contralateral = 0
@@ -246,15 +245,8 @@ class SingleLeg:
         self.shift_pep()
 
     def shift_pep(self):
-        pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
+        self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
                      self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
-        if pep_thresh < self.min_pep:
-            # self.pep_thresh = self.min_pep
-            rospy.logwarn(
-                    self.name + ": pep shift severe! set to " + str(pep_thresh) + " min_pep = " + str(self.min_pep))
-        # else:
-        self.pep_thresh = pep_thresh
-        # rospy.loginfo(self.name + ": pep_thresh set to " + str(self.pep_thresh))
 
     ##
     #   Estimate ground ground_contact:
@@ -283,8 +275,9 @@ class SingleLeg:
 
         if self.ee_position()[0] < self.pep_thresh:
             rospy.loginfo(self.name + ": stop stance")
-            if self.pep_thresh == self.min_pep:
-                rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
+            # TODO find min pep_thresh for warning in case the leg has to move to far back.
+            # if self.pep_thresh == self.min_pep:
+            #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
             return 1
 
         return 0
