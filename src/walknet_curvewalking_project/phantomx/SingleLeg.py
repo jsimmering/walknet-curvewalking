@@ -53,22 +53,27 @@ class SingleLeg:
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
         self.pep_thresh_line = Marker()
         self.pep_init_thresh_line = Marker()
-        self.pep_thresh_line.header.frame_id = self.pep_init_thresh_line.header.frame_id = "MP_BODY"
-        self.pep_thresh_line.header.stamp = self.pep_init_thresh_line.header.stamp = rospy.Time.now()
-        self.pep_thresh_line.ns = self.pep_init_thresh_line.ns = self.name + "_points_and_lines"
-        self.pep_thresh_line.action = self.pep_init_thresh_line.action = Marker.ADD
-        self.pep_thresh_line.pose.orientation.w = self.pep_init_thresh_line.pose.orientation.w = 1.0
+        self.aep_line = Marker()
+        self.pep_thresh_line.header.frame_id = self.aep_line.header.frame_id = self.pep_init_thresh_line.header.frame_id = "MP_BODY"
+        self.pep_thresh_line.header.stamp = self.aep_line.header.stamp = self.pep_init_thresh_line.header.stamp = rospy.Time.now()
+        self.pep_thresh_line.ns = self.aep_line.ns = self.pep_init_thresh_line.ns = self.name + "_points_and_lines"
+        self.pep_thresh_line.action = self.aep_line.action = self.pep_init_thresh_line.action = Marker.ADD
+        self.pep_thresh_line.pose.orientation.w = self.aep_line.pose.orientation.w = self.pep_init_thresh_line.pose.orientation.w = 1.0
         self.pep_init_thresh_line.id = 4
-        self.pep_thresh_line.id = 5 + RSTATIC.leg_names.index(self.name)
-        self.pep_thresh_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
-        self.pep_thresh_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
+        self.aep_line.id = 5 + RSTATIC.leg_names.index(self.name)
+        self.pep_thresh_line.id = 11 + RSTATIC.leg_names.index(self.name)
+        self.pep_thresh_line.type = self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
+        self.pep_thresh_line.scale.x = self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
         self.pep_init_thresh_line.color.g = 1.0
+        self.aep_line.color.b = 1.0
         self.pep_thresh_line.color.r = 1.0
-        self.pep_thresh_line.color.a = self.pep_init_thresh_line.color.a = 1.0
-        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        self.pep_init_thresh_line.points.append(point1)
-        self.pep_init_thresh_line.points.append(point2)
+        self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
+        self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
+        self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
+        point1 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.20, -0.1)
+        point2 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.35, -0.1)
+        self.aep_line.points.append(point1)
+        self.aep_line.points.append(point2)
         # self.pub_pep_threshold()
 
         if RSTATIC.DEBUG:
@@ -175,6 +180,7 @@ class SingleLeg:
             for i in range(0, 5):
                 if rospy.is_shutdown():
                     break
+                self.visualization_pub.publish(self.aep_line)
                 self.visualization_pub.publish(self.pep_init_thresh_line)
                 self.visualization_pub.publish(self.pep_thresh_line)
                 rate.sleep()
