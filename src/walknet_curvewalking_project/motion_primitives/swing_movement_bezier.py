@@ -107,7 +107,8 @@ class TrajectoryGenerator:
                 # if the current_position is more than desired_distance away from the last_target_position,
                 # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
                 rospy.loginfo(
-                        "---ELSE: current distance is more than desired_distance away from the last_target_position,\nlast_target_pos = " +
+                        "---ELSE: current distance (" + str(delta_distance) +") is more than desired_distance (" +
+                        str(desired_distance) +") away from the last_target_position,\nlast_target_pos = " +
                         str(self.last_target_position) + " current_pos = " + str(current_position))
                 if RSTATIC.DEBUG:
                     rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +

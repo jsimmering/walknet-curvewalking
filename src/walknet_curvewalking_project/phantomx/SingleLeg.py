@@ -21,6 +21,8 @@ class SingleLeg:
         self._gamma_pub = rospy.Publisher('/phantomx/j_tibia_' + self.name + '_position_controller/command', Float64,
                 queue_size=1)
 
+        self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
+
         self.alpha = None
         self.beta = None
         self.gamma = None
@@ -70,8 +72,10 @@ class SingleLeg:
         self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
         self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
         self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
-        point1 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.20, -0.1)
-        point2 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.35, -0.1)
+        point1 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.20,
+                -0.1)
+        point2 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.35,
+                -0.1)
         self.aep_line.points.append(point1)
         self.aep_line.points.append(point2)
         # self.pub_pep_threshold()
@@ -176,14 +180,13 @@ class SingleLeg:
             self.pep_thresh_line.points.append(point1)
             self.pep_thresh_line.points.append(point2)
 
-            rate = rospy.Rate(RSTATIC.controller_frequency)
-            for i in range(0, 5):
+            for i in range(0, 3):
                 if rospy.is_shutdown():
                     break
                 self.visualization_pub.publish(self.aep_line)
                 self.visualization_pub.publish(self.pep_init_thresh_line)
                 self.visualization_pub.publish(self.pep_thresh_line)
-                rate.sleep()
+                self.viz_pub_rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -222,18 +225,18 @@ class SingleLeg:
         if self.name == "lf" or self.name == "rf":
             if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
                     and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
-                rospy.loginfo("predict ground contact for front leg")
+                # rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
             if (self.ee_position()[2] < (
                     RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
                     and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.005:
-                rospy.loginfo("predict ground contact for middle leg")
+                # rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
             if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
                     and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
-                rospy.loginfo("predict ground contact for rear leg")
+                # rospy.loginfo("predict ground contact for rear leg")
                 return 1
 
         return 0
@@ -252,7 +255,7 @@ class SingleLeg:
 
     def shift_pep(self):
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                     self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
+                          self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
 
     ##
     #   Estimate ground ground_contact:
@@ -279,14 +282,15 @@ class SingleLeg:
         #         rospy.loginfo("stop stance for rear leg")
         #         return 1
 
-        if self.ee_position()[0] < self.pep_thresh:
-            rospy.loginfo(self.name + ": stop stance")
-            # TODO find min pep_thresh for warning in case the leg has to move to far back.
-            # if self.pep_thresh == self.min_pep:
-            #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
-            return 1
+        # if self.ee_position()[0] < self.pep_thresh:
+        # rospy.loginfo(self.name + ": stop stance")
+        # TODO find min pep_thresh for warning in case the leg has to move to far back.
+        # if self.pep_thresh == self.min_pep:
+        #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
+        # return 1
 
-        return 0
+        # return 0
+        return self.ee_position()[0] < self.pep_thresh
 
     def check_joint_ranges(self, angles):
         return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][

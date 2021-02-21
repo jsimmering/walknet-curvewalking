@@ -515,8 +515,8 @@ class mmcBodyModelStance:
     #	different equations.
     ##
     def mmc_iteration_step(self):
-        rospy.loginfo(
-                "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
+        #rospy.loginfo(
+        #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 
