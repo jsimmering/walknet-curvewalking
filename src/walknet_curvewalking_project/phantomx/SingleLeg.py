@@ -49,7 +49,7 @@ class SingleLeg:
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.pep_shift_ipsilateral = 0
-        self.pep_shift_ipsilateral_from_front = 0
+        self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
 
         self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -223,8 +223,8 @@ class SingleLeg:
     #   (very stable, but works only on flat terrain).
     def predicted_ground_contact(self):
         if self.name == "lf" or self.name == "rf":
-            if (self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
+            if self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor):
+                # and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
                 # rospy.loginfo("predict ground contact for front leg")
                 return 1
         if self.name == "lm" or self.name == "rm":
@@ -234,8 +234,8 @@ class SingleLeg:
                 # rospy.loginfo("predict ground contact for middle leg")
                 return 1
         if self.name == "lr" or self.name == "rr":
-            if (self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
+            if self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor):
+                # and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
                 # rospy.loginfo("predict ground contact for rear leg")
                 return 1
 
@@ -246,7 +246,7 @@ class SingleLeg:
         self.shift_pep()
 
     def shift_pep_ipsilateral_from_front(self, distance):
-        self.pep_shift_ipsilateral_from_front = distance
+        self.pep_shift_ipsilateral_front = distance
         self.shift_pep()
 
     def shift_pep_contralateral(self, distance):
@@ -255,7 +255,7 @@ class SingleLeg:
 
     def shift_pep(self):
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                          self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_from_front + self.pep_shift_contralateral
+                          self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
 
     ##
     #   Estimate ground ground_contact:

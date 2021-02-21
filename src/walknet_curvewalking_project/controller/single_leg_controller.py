@@ -253,6 +253,7 @@ class SingleLegController:
             # rospy.loginfo(self.name + ": reset swing")
             self.temp.swing_start_point = self.leg.ee_position()
             self.temp.swing_target_point = self.target_pos
+            self.temp.reacht_peak = False
             # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
             #                                [self.movement_dir * 0.3, -0.5, -1.2])
             # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
@@ -267,7 +268,7 @@ class SingleLegController:
         self.pub_rules(rules_msg)
         self.temp.move_to_next_point(1)
         # self.rate.sleep()
-        if self.leg.predicted_ground_contact():
+        if self.temp.reacht_peak and self.leg.predicted_ground_contact():
             self.temp.move_to_next_point(0)
             self.temp.swing_start_point = None
             # self.rate.sleep()

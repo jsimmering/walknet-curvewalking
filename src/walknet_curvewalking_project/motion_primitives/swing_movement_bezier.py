@@ -107,15 +107,16 @@ class TrajectoryGenerator:
                 # if the current_position is more than desired_distance away from the last_target_position,
                 # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
                 rospy.loginfo(
-                        "---ELSE: current distance (" + str(delta_distance) +") is more than desired_distance (" +
-                        str(desired_distance) +") away from the last_target_position,\nlast_target_pos = " +
+                        "---ELSE: current distance (" + str(delta_distance) + ") is more than desired_distance (" +
+                        str(desired_distance) + ") away from the last_target_position,\nlast_target_pos = " +
                         str(self.last_target_position) + " current_pos = " + str(current_position))
                 if RSTATIC.DEBUG:
                     rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
                                   str(current_position + delta_position /
                                       numpy.linalg.norm(delta_position) * desired_distance))
 
-                return current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
+                next_target = current_position + delta_position / numpy.linalg.norm(delta_position) * desired_distance
+                return (next_target, self.last_target_parameter)
             del delta_position
         # Try to adapt the delta_parameter to the desired_distance
 
@@ -147,7 +148,8 @@ class TrajectoryGenerator:
                 if RSTATIC.DEBUG:
                     rospy.loginfo(
                             "+++RETURN delta_parameter found that produces a point = " + str(self.last_target_position))
-                return self.last_target_position
+
+                return (self.last_target_position, test_parameter)
 
             # adapt the delta_parameter for the next iteration
             delta_parameter = delta_parameter / (
@@ -241,7 +243,7 @@ class TrajectoryGenerator:
                 test_target_position - current_position) * desired_distance
         if RSTATIC.DEBUG:
             rospy.loginfo("+++RETURN binary search = " + str(self.last_target_position))
-        return self.last_target_position
+        return (self.last_target_position, self.last_target_parameter)
 
 
 class SwingMovementBezier:
@@ -263,6 +265,8 @@ class SwingMovementBezier:
         self.evasion_distance = 0.06
         self.retraction_distance = 0.10
         self.max_evasion_distance = 0.25
+
+        self.reacht_peak = False
         # self.frozen = True
 
     def notify_of_collision(self, weight=1):
@@ -374,6 +378,7 @@ class SwingMovementBezier:
                 self.trajectory_generator.reset()
                 self.swing_start_point = self.leg.ee_position()
                 self.swing_target_point = None
+                self.reacht_peak = False
                 self.collision_point = None
 
             # if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
@@ -385,9 +390,11 @@ class SwingMovementBezier:
             # rospy.loginfo("ee pos  = " + str(self.leg.ee_position()))
             # rospy.loginfo("angles  = " + str(self.leg.get_current_angles()))
             # rospy.loginfo("targets = " + str(self.leg.get_current_targets()))
-            target_position = self.trajectory_generator.compute_next_target(
+            target_position, target_parameter = self.trajectory_generator.compute_next_target(
                     desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                     current_position=self.leg.ee_position())
+            if target_parameter >= 0.5:
+                self.reacht_peak = True
             # now it's just a matter of moving the leg to the next position
             # current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
