@@ -38,7 +38,7 @@ class SingleLegController:
         # self.target_pos = None
         # TODO possibly needs to be adjusted with velocity? 4cm steps 0.01 velocity 0.02; 0.075 - 0.1 velocity 0.033?
         self.displ_leg_ipsilateral = 0.06
-        #self.displ_leg_ipsilateral = 0.035
+        # self.displ_leg_ipsilateral = 0.035
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
             self.displ_leg = 0.025
@@ -109,7 +109,8 @@ class SingleLegController:
         else:
             self.delay_1b = delay
         pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
-        self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (1.0 + exp(-15.0 * (velocity - 0.37)))
+        self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
+                    1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
         rospy.loginfo(self.name + ": aep_x = " + str(self.aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " +
                       str(fabs(self.aep_x - pep_x)))
@@ -196,7 +197,7 @@ class SingleLegController:
         #     rospy.loginfo("no moving motivation or shutdown...")
         #     return
         # else:
-        #start = rospy.Time.now()
+        # start = rospy.Time.now()
         if self.swing:
             self.execute_swing_step()
         else:
@@ -218,10 +219,10 @@ class SingleLegController:
         stance_duration = rospy.Time.now() - self.last_stance_activation
         rules_msg = rules(0.0, 0.0, 0.0, 0.0, 0.0)
         if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
-            #rospy.logerr(self.name + " rule 1 -0.006")
+            # rospy.logerr(self.name + " rule 1 -0.006")
             rules_msg.rule1 = -0.027
         if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.40):
-            #rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
+            # rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
             rules_msg.rule2_ipsilateral = 0.0426
             rules_msg.rule2_contralateral = 0.011
         stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
@@ -232,16 +233,16 @@ class SingleLegController:
         #              ") < stance_progress (" + str(stance_progress) + ") < " +
         #              str(self.threshold_rule3_ipsilateral + 0.01))
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
-            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
+            # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
         if self.threshold_rule3_contralateral < stance_progress < self.threshold_rule3_contralateral + 0.016:
-            #rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
+            # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg))
             rules_msg.rule3_contralateral = self.displ_leg
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
         if self.leg.reached_pep():
-            rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
+            # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
             self.swing = True
@@ -249,7 +250,7 @@ class SingleLegController:
     def execute_swing_step(self):
         # rospy.loginfo(self.name + ": execute swing step.")
         if self.temp.swing_start_point is None:
-            rospy.loginfo(self.name + ": reset swing")
+            # rospy.loginfo(self.name + ": reset swing")
             self.temp.swing_start_point = self.leg.ee_position()
             self.temp.swing_target_point = self.target_pos
             # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
@@ -265,14 +266,14 @@ class SingleLegController:
         # rules_msg.rule3_contralateral = 0.0
         self.pub_rules(rules_msg)
         self.temp.move_to_next_point(1)
-        self.rate.sleep()
+        # self.rate.sleep()
         if self.leg.predicted_ground_contact():
             self.temp.move_to_next_point(0)
             self.temp.swing_start_point = None
             # self.rate.sleep()
             self.swing = False
             self.last_stance_activation = rospy.Time.now()
-            rospy.loginfo(self.name + 'swing is finished switch to stance.')
+            # rospy.loginfo(self.name + 'swing is finished switch to stance.')
 
     # function for executing a single step in a stance movement.
     def manage_stance(self):
