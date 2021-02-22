@@ -343,7 +343,7 @@ class mmcBodyModelStance:
     #	model computations. As the leg is not part of the closed kinematic chains
     #	after being lifted from the ground it shall not participate.
     def lift_leg_from_ground(self, leg_nr):
-        rospy.loginfo("lift leg from ground: " + RSTATIC.leg_names[leg_nr])
+        #rospy.loginfo("lift leg from ground: " + RSTATIC.leg_names[leg_nr])
         if self.gc[leg_nr]:
             self.gc[leg_nr] = False
 
@@ -351,7 +351,7 @@ class mmcBodyModelStance:
     #	vectors to all other standing legs (footdiag) which are used by the
     #	network.
     def put_leg_on_ground(self, leg_name, leg_vec):
-        rospy.loginfo("put leg on ground: " + leg_name)
+        #rospy.loginfo("put leg on ground: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
         if not self.gc[leg_nr]:
             # Set leg and diag vector

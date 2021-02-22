@@ -37,7 +37,8 @@ class SingleLegController:
 
         # self.target_pos = None
         # TODO possibly needs to be adjusted with velocity? 4cm steps 0.01 velocity 0.02; 0.075 - 0.1 velocity 0.033?
-        self.displ_leg_ipsilateral = 0.06
+        #self.displ_leg_ipsilateral = 0.0425
+        self.displ_leg_ipsilateral = 0.041
         # self.displ_leg_ipsilateral = 0.035
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
@@ -47,7 +48,7 @@ class SingleLegController:
             self.displ_leg = 0.0
         elif self.name == "lr" or self.name == "rr":
             self.target_pos = RSTATIC.hind_initial_aep.copy()
-            self.displ_leg = 0.01
+            self.displ_leg = 0.03
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
         self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
@@ -102,8 +103,8 @@ class SingleLegController:
             delay = 0.8 - 1.5 * velocity
         elif velocity <= 0.03:
             delay = 0.4 - 0.5 * velocity
-        if delay > 0.25:
-            self.delay_1b = 0.25
+        if delay > 0.27:
+            self.delay_1b = 0.27
         elif delay < 0.0:
             self.delay_1b = 0
         else:
@@ -180,6 +181,8 @@ class SingleLegController:
             shift_distance += data.rule2_contralateral
         if self.rule3_contra:
             shift_distance += data.rule3_contralateral
+        #if self.name == "lr" or self.name == "rr":
+        #    shift_distance += data.rule1
         # if shift_distance != 0.0:
         #     rospy.loginfo(self.name + ": from neighbour leg shift_distance (" + str(shift_distance) +
         #                   ") = data.rule2_contralateral (" + str(data.rule2_contralateral) +
@@ -221,9 +224,9 @@ class SingleLegController:
         if rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
             # rospy.logerr(self.name + " rule 1 -0.006")
             rules_msg.rule1 = -0.027
-        if rospy.Duration.from_sec(0.25) <= stance_duration <= rospy.Duration.from_sec(0.40):
+        if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.4):
             # rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
-            rules_msg.rule2_ipsilateral = 0.0426
+            rules_msg.rule2_ipsilateral = 0.043
             rules_msg.rule2_contralateral = 0.011
         stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
         # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
