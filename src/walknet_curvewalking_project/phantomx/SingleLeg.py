@@ -48,6 +48,7 @@ class SingleLeg:
         # if self.name == "lr" or self.name == "rr":
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
+        self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
@@ -72,10 +73,8 @@ class SingleLeg:
         self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
         self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
         self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
-        point1 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.20,
-                -0.1)
-        point2 = Point(RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy(), self.movement_dir * 0.35,
-                -0.1)
+        point1 = Point(self.aep_thresh, self.movement_dir * 0.20, -0.1)
+        point2 = Point(self.aep_thresh, self.movement_dir * 0.35, -0.1)
         self.aep_line.points.append(point1)
         self.aep_line.points.append(point2)
         # self.pub_pep_threshold()
@@ -254,8 +253,12 @@ class SingleLeg:
         self.shift_pep()
 
     def shift_pep(self):
-        self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
-                          self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
+        pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
+                     self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
+        if pep_thresh > self.aep_thresh - 0.01:
+            self.pep_thresh = self.aep_thresh - 0.01
+        else:
+            self.pep_thresh = pep_thresh
 
     ##
     #   Estimate ground ground_contact:
