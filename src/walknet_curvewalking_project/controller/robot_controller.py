@@ -20,7 +20,7 @@ class RobotController:
         self.name = name
         self.walk_motivation = False
         self.legs = []
-        self.leg_threads_list = []
+        #self.leg_threads_list = []
         self.started = False
         self.body_model = mmcBodyModelStance(self)
         for name in RSTATIC.leg_names:
@@ -31,10 +31,10 @@ class RobotController:
             if name == 'lm' or name == 'rf' or name == 'rr':
                 swing = True
                 self.legs.append(SingleLegController(name, self.nh, swing, self))
-        for leg in self.legs:
-            self.leg_threads_list.append(threading.Thread(target=leg.walking_thread, daemon=True))
-        self.th = threading.Thread(target=self.leg_thread, daemon=True)
-        self.th_body = threading.Thread(target=self.body_thread, daemon=True)
+        # for leg in self.legs:
+        #     self.leg_threads_list.append(threading.Thread(target=leg.walking_thread, daemon=True))
+        # self.th = threading.Thread(target=self.leg_thread, daemon=True)
+        # self.th_body = threading.Thread(target=self.body_thread, daemon=True)
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
 
     def move_legs_into_init_pos(self):
@@ -46,7 +46,10 @@ class RobotController:
         for leg in self.legs:
             if leg.swing and (leg.name == "lf" or leg.name == "rf"):
                 init_pos = RSTATIC.front_initial_pep.copy()
+                #init_pos = (RSTATIC.front_initial_aep.copy() + RSTATIC.front_initial_pep.copy()) / 2.0
                 init_pos[1] = init_pos[1] * leg.movement_dir
+                #leg.swing = False
+                #leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
             elif not leg.swing and (leg.name == "lf" or leg.name == "rf"):
                 init_pos = RSTATIC.front_initial_aep.copy()
@@ -54,7 +57,10 @@ class RobotController:
                 leg.set_init_pos(init_pos)
             elif leg.swing and (leg.name == "lm" or leg.name == "rm"):
                 init_pos = RSTATIC.middle_initial_pep.copy()
+                #init_pos = (RSTATIC.middle_initial_aep.copy() + RSTATIC.middle_initial_pep.copy()) / 2.0
                 init_pos[1] = init_pos[1] * leg.movement_dir
+                #leg.swing = False
+                #leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
             elif not leg.swing and (leg.name == "lm" or leg.name == "rm"):
                 init_pos = RSTATIC.middle_initial_aep.copy()
@@ -62,7 +68,10 @@ class RobotController:
                 leg.set_init_pos(init_pos)
             elif leg.swing and (leg.name == "lr" or leg.name == "rr"):
                 init_pos = RSTATIC.hind_initial_pep.copy()
+                #init_pos = (RSTATIC.hind_initial_aep.copy() + RSTATIC.hind_initial_pep.copy()) / 2.0
                 init_pos[1] = init_pos[1] * leg.movement_dir
+                #leg.swing = False
+                #leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
             elif not leg.swing and (leg.name == "lr" or leg.name == "rr"):
                 init_pos = RSTATIC.hind_initial_aep.copy()
@@ -154,7 +163,7 @@ class RobotController:
             rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and self.walk_motivation:
             self.update_stance_body_model()
-            for leg in self.legs:
+            for leg in reversed(self.legs):
                 if rospy.is_shutdown():
                     break
                 # input("press any key to performe the next step.")
