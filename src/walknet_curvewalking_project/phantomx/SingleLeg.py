@@ -37,6 +37,11 @@ class SingleLeg:
         self.gamma_reached = True
 
         self._segment_lengths = RSTATIC.segment_length.copy()
+        self._segment_masses = RSTATIC.segment_masses.copy()
+        self.mass = sum(self._segment_masses)
+        self._segment_centers_of_mass = RSTATIC.segment_coms
+        self._center_of_mass = None
+
         self.movement_dir = movement_dir
 
         self.ee_pos = None
@@ -78,98 +83,6 @@ class SingleLeg:
         self.aep_line.points.append(point1)
         self.aep_line.points.append(point2)
         # self.pub_pep_threshold()
-
-        if RSTATIC.DEBUG:
-            self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
-            self.c1_ee_points = Marker()
-            self.global_ee_points = Marker()
-            self.c1_leg_vec_lines = Marker()
-            self.global_leg_vec_lines = Marker()
-            self._set_up_visualization()
-
-    def _set_up_visualization(self):
-        self.global_ee_points.header.frame_id = self.global_leg_vec_lines.header.frame_id = "MP_BODY"
-        self.c1_ee_points.header.frame_id = self.c1_leg_vec_lines.header.frame_id = "c1_" + self.name
-        # self.c1_ee_points.header.frame_id = self.c1_leg_vec_lines.header.frame_id = "MP_BODY"
-        self.c1_ee_points.header.stamp = self.global_ee_points.header.stamp = self.global_leg_vec_lines.header.stamp = \
-            self.c1_leg_vec_lines.header.stamp = rospy.Time.now()
-        self.c1_ee_points.ns = self.global_ee_points.ns = self.global_leg_vec_lines.ns = self.c1_leg_vec_lines.ns = \
-            "points_and_lines"
-        self.c1_ee_points.action = self.global_ee_points.action = self.global_leg_vec_lines.action = \
-            self.c1_leg_vec_lines.action = Marker.ADD
-        self.c1_ee_points.pose.orientation.w = self.global_ee_points.pose.orientation.w = \
-            self.global_leg_vec_lines.pose.orientation.w = self.c1_leg_vec_lines.pose.orientation.w = 1.0
-
-        self.global_ee_points.id = 0
-        self.c1_ee_points.id = 1
-        self.global_leg_vec_lines.id = 2
-        self.c1_leg_vec_lines.id = 3
-
-        self.global_ee_points.type = Marker.POINTS
-        self.c1_ee_points.type = Marker.POINTS
-        self.global_leg_vec_lines.type = Marker.LINE_LIST
-        self.c1_leg_vec_lines.type = Marker.LINE_LIST
-
-        self.global_ee_points.scale.x = 0.005
-        self.global_ee_points.scale.y = 0.005
-        self.c1_ee_points.scale.x = 0.005
-        self.c1_ee_points.scale.y = 0.005
-
-        self.global_leg_vec_lines.scale.x = 0.0025
-        self.c1_leg_vec_lines.scale.x = 0.0025
-
-        self.global_ee_points.color.r = 1.0
-        self.global_ee_points.color.a = 1.0
-        self.c1_ee_points.color.b = 1.0
-        self.c1_ee_points.color.a = 1.0
-        self.global_leg_vec_lines.color.a = 1.0
-        self.c1_leg_vec_lines.color.a = 1.0
-        self.global_leg_vec_lines.color.r = 1.0
-        self.c1_leg_vec_lines.color.b = 1.0
-
-    def pub_local(self):
-        start_point = Point()
-        start = [0, 0, 0]
-        start_point.x = start[0]
-        start_point.y = start[1]
-        start_point.z = start[2]
-        vecs = self.c1_rotation(-self.alpha, self.compute_forward_kinematics_c1())
-        pos = Point()
-        pos.x = start_point.x + vecs[0]
-        pos.y = start_point.y + vecs[1]
-        pos.z = start_point.z + vecs[2]
-        self.c1_ee_points.points.append(start_point)
-        self.c1_ee_points.points.append(pos)
-        self.c1_leg_vec_lines.points.append(start_point)
-        self.c1_leg_vec_lines.points.append(pos)
-
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 5):
-            self.visualization_pub.publish(self.c1_ee_points)
-            self.visualization_pub.publish(self.c1_leg_vec_lines)
-            rate.sleep()
-
-    def pub_global(self):
-        start_point = Point()
-        start = [0, 0, 0]
-        start_point.x = start[0]
-        start_point.y = start[1]
-        start_point.z = start[2]
-        self.global_ee_points.points.append(start_point)
-        vecs = self.compute_forward_kinematics()
-        pos = Point()
-        pos.x = start_point.x + vecs[0]
-        pos.y = start_point.y + vecs[1]
-        pos.z = start_point.z + vecs[2]
-        self.global_ee_points.points.append(pos)
-        self.global_leg_vec_lines.points.append(start_point)
-        self.global_leg_vec_lines.points.append(pos)
-
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 5):
-            self.visualization_pub.publish(self.global_ee_points)
-            self.visualization_pub.publish(self.global_leg_vec_lines)
-            rate.sleep()
 
     def pub_pep_threshold(self):
         while not rospy.is_shutdown():
@@ -214,6 +127,14 @@ class SingleLeg:
 
     def update_ee_position(self):
         self.ee_pos = self.compute_forward_kinematics()
+
+    def leg_center_of_mass(self):
+        #if isinstance(self._center_of_mass, (type(None))):
+        self.update_com_position()
+        return self._center_of_mass
+
+    def update_com_position(self):
+        self._center_of_mass = self.compute_com()
 
     ##
     #   Estimate ground ground_contact:
@@ -266,33 +187,9 @@ class SingleLeg:
     #   simply decide if the leg should touch ground
     #   (very stable, but works only on flat terrain).
     def reached_pep(self):
-        # if self.name == "lf" or self.name == "rf":
-        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.front_initial_pep[0]) < 0.025:
-        #     if abs(self.ee_position()[0] - RSTATIC.front_initial_pep[0]) < 0.025:
-        #         rospy.loginfo("stop stance for front leg")
-        #         return 1
-        # if self.name == "lm" or self.name == "rm":
-        #     rospy.loginfo("abs(self.ee_position()[0] (" + str(self.ee_position()[0]) + ") - self.movement_dir (" + str(
-        #             self.movement_dir) + ") * RSTATIC.middle_initial_pep[0] (" + str(
-        #             RSTATIC.middle_initial_pep[0]) + ")) < 0.025")
-        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.middle_initial_pep[0]) < 0.025:
-        #     if abs(self.ee_position()[0] - RSTATIC.middle_initial_pep[0]) < 0.025:
-        #         rospy.loginfo("stop stance for middle leg")
-        #         return 1
-        # if self.name == "lr" or self.name == "rr":
-        #     # if abs(self.ee_position()[0] - self.movement_dir * RSTATIC.hind_initial_pep[0]) < 0.025:
-        #     if abs(self.ee_position()[0] - RSTATIC.hind_initial_pep[0]) < 0.025:
-        #         rospy.loginfo("stop stance for rear leg")
-        #         return 1
-
-        # if self.ee_position()[0] < self.pep_thresh:
-        # rospy.loginfo(self.name + ": stop stance")
         # TODO find min pep_thresh for warning in case the leg has to move to far back.
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
-        # return 1
-
-        # return 0
         return self.ee_position()[0] < self.pep_thresh
 
     def check_joint_ranges(self, angles):
@@ -300,6 +197,26 @@ class SingleLeg:
             1] or angles[1] >= RSTATIC.joint_angle_limits[1][0] or angles[1] <= \
                RSTATIC.joint_angle_limits[1][1] or angles[2] >= RSTATIC.joint_angle_limits[2][0] or angles[
                    2] <= RSTATIC.joint_angle_limits[2][1]
+
+    def compute_com(self, angles=None):
+        if angles is None:
+            alpha = self.alpha
+            beta = self.beta
+            gamma = self.gamma
+        else:
+            alpha = angles[0]
+            beta = angles[1]
+            gamma = angles[2]
+
+        center_of_mass_of_coxa = self.c1_rotation(alpha, numpy.append(self._segment_centers_of_mass[0], 1))
+        center_of_mass_of_femur = self.c1_rotation(alpha,
+                self.c1_thigh_transformation(beta, numpy.append(self._segment_centers_of_mass[1], 1)))
+        center_of_mass_of_tibia = self.c1_rotation(alpha, self.c1_thigh_transformation(beta,
+                self.thigh_tibia_transformation(gamma, numpy.append(self._segment_centers_of_mass[2], 1))))
+        center_of_mass = (center_of_mass_of_coxa * self._segment_masses[0] + center_of_mass_of_femur *
+                          self._segment_masses[1] + center_of_mass_of_tibia * self._segment_masses[2]) / \
+                         sum(self._segment_masses)
+        return (self.apply_c1_static_transform(center_of_mass))[0:3]
 
     # ee position in body frame
     def compute_forward_kinematics(self, angles=None):

@@ -32,7 +32,7 @@ import numpy
 # as a consequence a movement can be connected to a MotivationUnit which
 # (when active) always executes the connected modulatedRoutineFunctionCall.
 ##
-class StanceMovementBodyModel():
+class StanceMovementBodyModel:
 
     ##	Initialisation of the Stance Movement. Connecting to the bodyModelStance and
     #	setting the inverseKinematic_provider.
