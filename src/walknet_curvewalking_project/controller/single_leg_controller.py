@@ -84,8 +84,8 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
         # publish pep visualization
-        th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
-        th.start()
+        #th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
+        #th.start()
 
         self.rule1 = True
         self.rule2_ipsi = True
@@ -95,8 +95,6 @@ class SingleLegController:
 
     def set_init_pos(self, p):
         self.init_pos = p
-        rospy.loginfo(self.name + ": set init pos to P = " + str(p))
-        rospy.loginfo(self.name + ": set init pos = " + str(self.init_pos))
 
     def set_delay_1b(self, velocity):
         if velocity >= 0.03:
@@ -300,14 +298,7 @@ class SingleLegController:
         else:
             if p is None:
                 p = self.init_pos
-                rospy.loginfo(self.name + ": move_leg_to p = " + str(p) + " = init_pos = " + str(self.init_pos))
-            else:
-                rospy.loginfo(self.name + ": move_leg_to p = " + str(p))
-            if self.init_pos[0] != p[0] or self.init_pos[1] != p[1] or self.init_pos[2] != p[2]:
-                rospy.logerr("move leg to " + str(p) + " but init pose is set to " + str(self.init_pos))
             angles = self.leg.compute_inverse_kinematics(p)
-            rospy.loginfo(
-                    self.name + ": move_leg_to inverse kinematic. for position " + str(p) + " angles = " + str(angles))
             self.leg.set_command(angles)
 
 
