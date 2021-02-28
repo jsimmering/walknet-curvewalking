@@ -120,6 +120,8 @@ class RobotController:
             for leg in self.robot.legs:
                 leg.set_delay_1b(data.speed_fact)
             self.walk_motivation = True
+        else:
+            self.walk_motivation = False
 
     def init_body_model(self):
         for leg in self.robot.legs:
@@ -151,7 +153,7 @@ class RobotController:
         rate = rospy.Rate(RSTATIC.controller_frequency)
         ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
-        while ready_status.__contains__(False):
+        while not rospy.is_shutdown() and ready_status.__contains__(False):
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
