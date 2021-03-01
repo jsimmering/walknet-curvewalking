@@ -12,7 +12,7 @@ from walknet_curvewalking_project.support import stability
 
 class RobotController:
     def __init__(self, name, note_handle):
-        self.debug = True
+        self.debug = False
         self.rate = rospy.Rate(RSTATIC.controller_frequency)
         self.rate_leg = rospy.Rate(RSTATIC.controller_frequency)
         self.rate_body = rospy.Rate(RSTATIC.controller_frequency)
@@ -145,7 +145,7 @@ class RobotController:
             # if (self.motivationNetLegs[i].swing_motivation.output_value > 0.5):
             if self.robot.legs[i].swing:
                 self.robot.body_model.lift_leg_from_ground(i)
-                rospy.loginfo("lift leg " + str(i))
+                #rospy.loginfo("lift leg " + str(i))
 
         self.robot.body_model.mmc_iteration_step()
 

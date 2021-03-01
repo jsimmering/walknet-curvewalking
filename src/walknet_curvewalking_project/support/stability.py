@@ -17,8 +17,9 @@ def plane_fit(points):
     """
     points = numpy.reshape(points, (numpy.shape(points)[0], -1))  # Collapse trialing dimensions
     points = points.T
-    assert points.shape[0] <= points.shape[1], "There are only {} points in {} dimensions.".format(points.shape[1],
-            points.shape[0])
+    if points.shape[0] > points.shape[1]:
+        print("There are only {} points in {} dimensions.".format(points.shape[1], points.shape[0]))
+        return None, None
     ctr = points.mean(axis=1)
     x = points - ctr[:, numpy.newaxis]
     M = numpy.dot(x, x.T)  # Could also use np.cov(x) here.
@@ -26,6 +27,9 @@ def plane_fit(points):
 
 def project_com_onto_ground_plane(points, com):
     plane_centroid, normal = plane_fit(list(points))
+    if plane_centroid is None or normal is None:
+        print("plane fit failed")
+        return None
 
     v = com - plane_centroid
     dist = numpy.dot(v, normal)
