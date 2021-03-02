@@ -15,9 +15,11 @@ class Robot:
     def __init__(self, name, nh):
         self.name = name
         self.viz = False
+        self.log_data = False
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
+        self.last_state_stable = True
 
         self.body_model = mmcBodyModelStance(self)
 
@@ -28,18 +30,18 @@ class Robot:
                 # swing = True
                 self.legs.append(SingleLegController(name, nh, swing, self))
             if name == 'lm' or name == 'rf' or name == 'rr':
-                swing = True
+                # swing = True
                 self.legs.append(SingleLegController(name, nh, swing, self))
 
-        rospy.loginfo("################################# ROBOT INIT")
-        time = datetime.datetime.now()
-        self.file_name = "logs/walknet_stability_" + str(time.month) + "-" + str(time.day) + "_" + str(time.hour) + \
-                         "-" + str(time.minute) + "-" + str(time.second)
-        print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
-        with open(self.file_name, "a") as f_handle:
-            f_handle.write(
-                    "time;lf x;lf y;lf z;rf x;rf y;rf z;lm x;lm y;lm z;rm x;rm y;rm z;lr x;lr y;lr z;rr x;rr y;rr z;com x;com y;com z;pcom x;pcom y;pcom z;vec1 x;vec1 y;vec1 z;vec2 x;vec2 y;vec2 z;vec3 x;vec3 y;vec3 z;vec4 x;vec4 y;vec4 z;vec5 x;vec5 y;vec5 z;vec6 x;vec6 y;vec6 z\n")
-            # 'lf', 'rf', 'lm', 'rm', 'lr', 'rr'
+        if self.log_data:
+            time = datetime.datetime.now()
+            self.file_name = "logs/walknet_stability_" + str(time.month) + "-" + str(time.day) + "_" + str(time.hour) + \
+                             "-" + str(time.minute) + "-" + str(time.second)
+            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
+            with open(self.file_name, "a") as f_handle:
+                # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
+                f_handle.write(
+                        "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z;pcom x;pcom y;pcom z;vec1 x;vec1 y;vec1 z;vec2 x;vec2 y;vec2 z;vec3 x;vec3 y;vec3 z;vec4 x;vec4 y;vec4 z;vec5 x;vec5 y;vec5 z;vec6 x;vec6 y;vec6 z\n")
 
         if self.viz:
             self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
@@ -119,7 +121,8 @@ class Robot:
 
             projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
             if projected_com is None:
-                rospy.logwarn("Unstable!")
+                self.last_state_stable = False
+                rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
                 str_list.append("\n")
                 self.write_stability_data_to_file(''.join(str_list))
                 return
@@ -127,12 +130,15 @@ class Robot:
             str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
             # If the center of mass lies inside the support polygon
             if stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
-                rospy.loginfo("stable")
+                if not self.last_state_stable:
+                    rospy.loginfo("back to stable state\n\n")
+                    self.last_state_stable = True
                 shortest_vectors = stability.shortest_vectors_to_convex_hull(convex_hull_points, projected_com)
                 for vector in shortest_vectors:
                     str_list.append(";{x};{y};{z}".format(x=vector[0], y=vector[1], z=vector[2]))
                 self.pub_shortest_vectors(shortest_vectors, projected_com)
             else:
+                self.last_state_stable = False
                 rospy.logwarn("Unstable!")
                 self.pub_shortest_vectors([], projected_com)
         str_list.append("\n")
@@ -140,5 +146,6 @@ class Robot:
 
     def write_stability_data_to_file(self, data):
         #rospy.loginfo("write to file: " + data)
-        with open(self.file_name, 'a') as f_handle:
-            f_handle.write(data)
+        if self.log_data:
+            with open(self.file_name, 'a') as f_handle:
+                f_handle.write(data)
