@@ -412,5 +412,5 @@ class SingleLeg:
         else:
             # rospy.loginfo(self.name + ": set angles " + str(next_angles))
             self._alpha_pub.publish(next_angles[0])
-            self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
+            self._beta_pub.publish(next_angles[1])
