@@ -5,6 +5,7 @@
 # modified for PhantomX Robot
 
 import math
+
 import numpy
 import rospy
 from geometry_msgs.msg import Point
@@ -70,8 +71,7 @@ class mmcBodyModelStance:
     # assumed in the air, so an update of the legs is forced in the first iteration)
     def __init__(self, robot):  # , motiv_net, stab_thr):
         # set up marker publisher for rviz visualization
-        self.visualization_pub = rospy.Publisher('/mmcBodyModel', Marker,
-                queue_size=1)
+        self.visualization_pub = rospy.Publisher('/mmcBodyModel', Marker, queue_size=1)
         self.points = Marker()
         self.leg_lines = Marker()
         self.front_lines = Marker()
@@ -101,14 +101,14 @@ class mmcBodyModelStance:
         # Here a height net might be introduced?
         # The body model is now always enforcing this specific height.
         self.height = RSTATIC.stance_height
-        self.width = RSTATIC.default_stance_width + 0.04
+        width = RSTATIC.default_stance_width
 
-        self.ee_positions = [numpy.array([0.26, (self.width - 0.1), self.height]),
-                             numpy.array([0.26, -(self.width - 0.1), self.height]),
-                             numpy.array([0.0, self.width, self.height]),
-                             numpy.array([0.0, -self.width, self.height]),
-                             numpy.array([-0.26, (self.width - 0.1), self.height]),
-                             numpy.array([-0.26, -(self.width - 0.1), self.height])]
+        self.ee_positions = [numpy.array([0.26, (width - 0.1), self.height]),
+                             numpy.array([0.26, -(width - 0.1), self.height]),
+                             numpy.array([0.0, width, self.height]),
+                             numpy.array([0.0, -width, self.height]),
+                             numpy.array([-0.26, (width - 0.1), self.height]),
+                             numpy.array([-0.26, -(width - 0.1), self.height])]
 
         front_segment_start = [0.12, 0.0, 0.0]
 
