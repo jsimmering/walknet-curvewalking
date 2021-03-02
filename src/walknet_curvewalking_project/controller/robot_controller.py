@@ -6,8 +6,6 @@ from walknet_curvewalking.msg import robot_control
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.phantomx.Robot import Robot
-from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
-from walknet_curvewalking_project.support import stability
 
 
 class RobotController:
@@ -37,37 +35,46 @@ class RobotController:
                 self.rate.sleep()
         rospy.loginfo("legs connected move to init pos")
         for leg in self.robot.legs:
-            if leg.swing and (leg.name == "lf" or leg.name == "rf"):
+            if leg.name == "lf":
+                # init_pos = RSTATIC.front_initial_pep.copy()
                 init_pos = RSTATIC.front_initial_pep.copy()
-                # init_pos = (RSTATIC.front_initial_aep.copy() + RSTATIC.front_initial_pep.copy()) / 2.0
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 # leg.swing = False
                 # leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
-            elif not leg.swing and (leg.name == "lf" or leg.name == "rf"):
-                init_pos = RSTATIC.front_initial_aep.copy()
+            elif leg.name == "rf":
+                #init_pos = RSTATIC.front_initial_aep.copy()
+                init_pos = RSTATIC.front_initial_pep.copy()
+                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 leg.set_init_pos(init_pos)
-            elif leg.swing and (leg.name == "lm" or leg.name == "rm"):
+            elif leg.name == "lm":
+                # init_pos = RSTATIC.middle_initial_pep.copy()
                 init_pos = RSTATIC.middle_initial_pep.copy()
-                # init_pos = (RSTATIC.middle_initial_aep.copy() + RSTATIC.middle_initial_pep.copy()) / 2.0
+                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 # leg.swing = False
                 # leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
-            elif not leg.swing and (leg.name == "lm" or leg.name == "rm"):
-                init_pos = RSTATIC.middle_initial_aep.copy()
+            elif leg.name == "rm":
+                # init_pos = RSTATIC.middle_initial_aep.copy()
+                init_pos = RSTATIC.middle_initial_pep.copy()
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 leg.set_init_pos(init_pos)
-            elif leg.swing and (leg.name == "lr" or leg.name == "rr"):
+            elif leg.name == "lr":
+                # init_pos = RSTATIC.hind_initial_pep.copy()
                 init_pos = RSTATIC.hind_initial_pep.copy()
-                # init_pos = (RSTATIC.hind_initial_aep.copy() + RSTATIC.hind_initial_pep.copy()) / 2.0
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 # leg.swing = False
                 # leg.last_stance_activation = rospy.Time.now()
                 leg.set_init_pos(init_pos)
-            elif not leg.swing and (leg.name == "lr" or leg.name == "rr"):
-                init_pos = RSTATIC.hind_initial_aep.copy()
+            elif leg.name == "rr":
+                # init_pos = RSTATIC.hind_initial_aep.copy()
+                init_pos = RSTATIC.hind_initial_pep.copy()
+                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 leg.set_init_pos(init_pos)
 
@@ -145,7 +152,7 @@ class RobotController:
             # if (self.motivationNetLegs[i].swing_motivation.output_value > 0.5):
             if self.robot.legs[i].swing:
                 self.robot.body_model.lift_leg_from_ground(i)
-                #rospy.loginfo("lift leg " + str(i))
+                # rospy.loginfo("lift leg " + str(i))
 
         self.robot.body_model.mmc_iteration_step()
 
