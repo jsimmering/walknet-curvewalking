@@ -68,6 +68,7 @@ class StanceMovementBodyModel:
             target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
                 self.leg_controller.leg.name)
             next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
+            # rospy.loginfo(self.leg_controller.name + " target height = " + str(target_vec[2]))
             self.leg_controller.leg.set_command(next_angles)
         except ValueError:
             rospy.logerr("ValueError in " + str(self.leg_controller.leg.name) +

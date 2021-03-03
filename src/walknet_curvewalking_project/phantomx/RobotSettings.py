@@ -68,18 +68,19 @@ body_c1_tf = (lf, rf, lm, rm, lr, rr)
 
 # == with changed joint ranges
 default_stance_distance = 0.08  # 0.10 pep_shifted to aep_shifted
-stance_height = -0.11
-default_stance_width = 0.24
-middle_stance_width = 0.31
+stance_height = -0.09
+default_stance_width = 0.23
+middle_leg_offset = 0.04176
+#middle_stance_width = 0.31
 
 front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
 # front_initial_aep = numpy.array([0.23, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
         [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array([0.05, middle_stance_width, stance_height])  # for forward walking
+middle_initial_aep = numpy.array([0.05, (default_stance_width + middle_leg_offset), stance_height])  # for forward walking
 # middle_initial_aep = numpy.array([0.02, 0.31, stance_height])  # for forward walking
 middle_initial_pep = numpy.array(
-        [middle_initial_aep[0] - default_stance_distance, middle_stance_width, stance_height])  # -0.07# for forward walking
+        [middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset), stance_height])  # -0.07# for forward walking
 hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
 # hind_initial_aep = numpy.array([-0.19, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
@@ -98,4 +99,4 @@ initial_aep = (front_initial_aep, front_initial_aep,
 # a leg is predicted as in gc - is given as a percentage
 # (good value: 0.8, means when leg is having a height of 0.8 * the
 # intended height control value it is already assumed as having ground contact
-predicted_ground_contact_height_factor = 0.8
+predicted_ground_contact_height_factor = 0.95
