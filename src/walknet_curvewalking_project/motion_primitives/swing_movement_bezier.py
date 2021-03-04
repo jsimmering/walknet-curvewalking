@@ -390,6 +390,9 @@ class SwingMovementBezier:
             # rospy.loginfo("ee pos  = " + str(self.leg.ee_position()))
             # rospy.loginfo("angles  = " + str(self.leg.get_current_angles()))
             # rospy.loginfo("targets = " + str(self.leg.get_current_targets()))
+            if self.swing_velocity != CONST.DEFAULT_SWING_VELOCITY:
+                #rospy.logwarn("swing velocity adjusted using " + str(CONST.DEFAULT_SWING_VELOCITY))
+                self.swing_velocity = CONST.DEFAULT_SWING_VELOCITY
             target_position, target_parameter = self.trajectory_generator.compute_next_target(
                     desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                     current_position=self.leg.ee_position())

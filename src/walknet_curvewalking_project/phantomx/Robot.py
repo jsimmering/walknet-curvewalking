@@ -15,13 +15,16 @@ class Robot:
     def __init__(self, name, nh):
         self.name = name
         self.viz = False
-        self.log_data = False
+        self.log_data = True
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
         self.last_state_stable = True
 
         self.body_model = mmcBodyModelStance(self)
+        self.stance_speed = 0.0
+        self.direction = 0.0
+        self.file_name = ""
 
         self.legs = []
         for name in RSTATIC.leg_names:
@@ -32,16 +35,6 @@ class Robot:
             if name == 'lm' or name == 'rf' or name == 'rr':
                 # swing = True
                 self.legs.append(SingleLegController(name, nh, swing, self))
-
-        if self.log_data:
-            time = datetime.datetime.now()
-            self.file_name = "logs/walknet_stability_" + str(time.month) + "-" + str(time.day) + "_" + str(time.hour) + \
-                             "-" + str(time.minute) + "-" + str(time.second)
-            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
-            with open(self.file_name, "a") as f_handle:
-                # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
-                f_handle.write(
-                        "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z;pcom x;pcom y;pcom z;vec1 x;vec1 y;vec1 z;vec2 x;vec2 y;vec2 z;vec3 x;vec3 y;vec3 z;vec4 x;vec4 y;vec4 z;vec5 x;vec5 y;vec5 z;vec6 x;vec6 y;vec6 z\n")
 
         if self.viz:
             self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
@@ -149,3 +142,16 @@ class Robot:
         if self.log_data:
             with open(self.file_name, 'a') as f_handle:
                 f_handle.write(data)
+
+    def initialize_stability_data_file(self):
+        if self.log_data:
+            time = datetime.datetime.now()
+            self.file_name = "logs/walknet_stability_" + str(RSTATIC.controller_frequency) + "hz_" + \
+                             str(self.stance_speed) + "s_" + str(self.direction) + "dir_on_" + str(time.month) + "-" + \
+                             str(time.day) + "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
+            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
+            with open(self.file_name, "a") as f_handle:
+                # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
+                f_handle.write(
+                        "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z;pcom x;pcom y;pcom z;vec1 x;vec1 y;vec1 z;vec2 x;vec2 y;vec2 z;vec3 x;vec3 y;vec3 z;vec4 x;vec4 y;vec4 z;vec5 x;vec5 y;vec5 z;vec6 x;vec6 y;vec6 z\n")
+

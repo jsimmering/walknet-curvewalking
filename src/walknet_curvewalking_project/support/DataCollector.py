@@ -11,18 +11,20 @@ class DataCollector:
         self.walking = False
         self.init_stability = False
         #self.init_position = False
-
-        time = datetime.datetime.now()
-        self.file_name = "logs/walknet_position_" + str(time.month) + "-" + str(time.day) + "_" + str(time.hour) + \
-                         "-" + str(time.minute) + "-" + str(time.second)
-        print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
-        with open(self.file_name, "a") as f_handle:
-            f_handle.write(
-                    "time;point x;point y;point z;quaternion x;quaternion y;quaternion z;quaternion w;linear x;linear y;linear z;angular x;angular y;angular z\n")
+        self.file_name = ""
 
     def control_callback(self, data):
         rospy.loginfo(rospy.get_caller_id() + " control_callback heard %s", data)
         if data.speed_fact > 0:
+            time = datetime.datetime.now()
+            self.file_name = "logs/walknet_position_" + str(data.speed_fact) + "s_" + str(data.pull_angle) + \
+                             "dir_on_" + str(time.month) + "-" + str(time.day) + "_at_" + str(time.hour) + "-" + \
+                             str(time.minute) + "-" + str(time.second)
+            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
+            with open(self.file_name, "a") as f_handle:
+                f_handle.write(
+                        "time;point x;point y;point z;quaternion x;quaternion y;quaternion z;quaternion w;linear x;linear y;linear z;angular x;angular y;angular z\n")
+
             self.walking = True
         else:
             self.walking = False

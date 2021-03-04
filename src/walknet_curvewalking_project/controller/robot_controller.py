@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import threading
 
 import rospy
 from walknet_curvewalking.msg import robot_control
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
+import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
@@ -126,9 +126,18 @@ class RobotController:
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
                 leg.set_delay_1b(data.speed_fact)
+            if data.speed_fact * 10 > 0.75:
+                CONST.DEFAULT_SWING_VELOCITY = 0.8
+            self.robot.stance_speed = data.speed_fact
+            self.robot.direction = data.pull_angle
+            self.robot.initialize_stability_data_file()
             self.walk_motivation = True
         else:
             self.walk_motivation = False
+            self.robot.stance_speed = 0.0
+            self.robot.direction = 0.0
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
+            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
 
     def init_body_model(self):
         for leg in self.robot.legs:
