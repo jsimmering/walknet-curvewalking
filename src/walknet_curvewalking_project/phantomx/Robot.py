@@ -15,7 +15,7 @@ class Robot:
     def __init__(self, name, nh):
         self.name = name
         self.viz = False
-        self.log_data = True
+        self.log_data = False
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
@@ -118,7 +118,7 @@ class Robot:
                 rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
                 str_list.append("\n")
                 self.write_stability_data_to_file(''.join(str_list))
-                return
+                return False
 
             str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
             # If the center of mass lies inside the support polygon
@@ -134,8 +134,12 @@ class Robot:
                 self.last_state_stable = False
                 rospy.logwarn("Unstable!")
                 self.pub_shortest_vectors([], projected_com)
+                str_list.append("\n")
+                self.write_stability_data_to_file(''.join(str_list))
+                return False
         str_list.append("\n")
         self.write_stability_data_to_file(''.join(str_list))
+        return True
 
     def write_stability_data_to_file(self, data):
         #rospy.loginfo("write to file: " + data)

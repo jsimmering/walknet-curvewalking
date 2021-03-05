@@ -157,10 +157,10 @@ class RobotController:
 
         self.robot.body_model.updateLegStates()
 
-        for i in range(0, 6):
+        #for i in range(0, 6):
             # if (self.motivationNetLegs[i].swing_motivation.output_value > 0.5):
-            if self.robot.legs[i].swing:
-                self.robot.body_model.lift_leg_from_ground(i)
+            #if self.robot.legs[i].swing:
+                #self.robot.body_model.lift_leg_from_ground(i)
                 # rospy.loginfo("lift leg " + str(i))
 
         self.robot.body_model.mmc_iteration_step()
@@ -176,12 +176,14 @@ class RobotController:
             rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and self.walk_motivation:
             self.update_stance_body_model()
-            self.robot.check_stability()
+            legs_in_swing = self.robot.body_model.gc.count(False)
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
                     break
                 # input("press any key to performe the next step.")
-                leg.manage_walk()
+                legs_in_swing = leg.manage_walk(legs_in_swing)
+            if not self.robot.check_stability():
+                rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             rate.sleep()
 
     def walk_body_model_two_threads(self):

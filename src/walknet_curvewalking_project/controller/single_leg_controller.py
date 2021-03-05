@@ -84,8 +84,10 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
         # publish pep visualization
-        #th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
-        #th.start()
+        self.pep_viz = False
+        if self.pep_viz:
+            th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
+            th.start()
 
         self.rule1 = True
         self.rule2_ipsi = True
@@ -175,6 +177,8 @@ class SingleLegController:
         #               str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
         shift_distance = 0.0
+        if self.name == "lr" or self.name == "rr":
+            shift_distance += data.rule1
         if self.rule2_contra:
             shift_distance += data.rule2_contralateral
         if self.rule3_contra:
@@ -193,22 +197,22 @@ class SingleLegController:
             self.rate.sleep()
 
     # function for executing a single step in a stance movement.
-    def manage_walk(self):
+    def manage_walk(self, legs_in_swing):
         # if not self.robot.walk_motivation or rospy.is_shutdown():
         #     rospy.loginfo("no moving motivation or shutdown...")
         #     return
         # else:
         # start = rospy.Time.now()
         if self.swing:
-            self.execute_swing_step()
+            return self.execute_swing_step(legs_in_swing)
         else:
-            self.execute_stance_step()
+            return self.execute_stance_step(legs_in_swing)
         # end = rospy.Time.now()
         # duration = end - start
         # rospy.logwarn(self.name + " execute body model step " + str(self.robot.body_model.step) +
         #               " step duration = " + str(duration.to_sec()) + " sec. ")
 
-    def execute_stance_step(self):
+    def execute_stance_step(self, legs_in_swing):
         # rospy.loginfo(self.name + ": execute stance step.")
         if RSTATIC.DEBUG:
             rospy.loginfo("time since last_stance_activation = now (" + str(
@@ -242,13 +246,18 @@ class SingleLegController:
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
-        if self.leg.reached_pep():
+        if (self.leg.reached_pep() and legs_in_swing < 3):
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
             self.swing = True
+            legs_in_swing = legs_in_swing + 1
+        elif self.leg.reached_pep() and legs_in_swing >= 3:
+            rospy.logwarn(self.name + ": delayed swing start.")
+            #self.delayed_swing = True
+        return legs_in_swing
 
-    def execute_swing_step(self):
+    def execute_swing_step(self, legs_in_swing):
         # rospy.loginfo(self.name + ": execute swing step.")
         if self.temp.swing_start_point is None:
             # rospy.loginfo(self.name + ": reset swing")
@@ -274,8 +283,10 @@ class SingleLegController:
             self.temp.swing_start_point = None
             # self.rate.sleep()
             self.swing = False
+            legs_in_swing = legs_in_swing - 1
             self.last_stance_activation = rospy.Time.now()
             # rospy.loginfo(self.name + 'swing is finished switch to stance.')
+        return legs_in_swing
 
     # function for executing a single step in a stance movement.
     def manage_stance(self):
