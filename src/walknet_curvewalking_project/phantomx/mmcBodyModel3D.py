@@ -4,6 +4,7 @@
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/BodymodelStance/mmcBodyModel3D.py
 # modified for PhantomX Robot
 
+import datetime
 import math
 
 import numpy
@@ -384,8 +385,7 @@ class mmcBodyModelStance:
         equation_counter = 1
         # new_front_vect = -self.delta_front[leg_nr // 2] - self.segm_post_ant[leg_nr // 2] + self.leg_vect[leg_nr] - \
         #                 self.segm_leg_post[leg_nr]  # 3 segments
-        new_front_vect = -self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - \
-                         self.segm_leg_post[leg_nr]
+        new_front_vect = -self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr]
         new_front_vect += self.damping * self.front_vect[leg_nr]
         equation_counter += self.damping
         # Computations of connections between legs in ground contacts
@@ -401,6 +401,72 @@ class mmcBodyModelStance:
                 new_front_vect += part_vec
                 equation_counter += 1
         return new_front_vect / equation_counter
+
+    ##	Compute the front vectors: For all standing legs
+    #	the new front vectors are computed, summed and the mean is calculated
+    #	(the old value is also integrated, weighted by the damping value)
+    def compute_front_computations_and_integrate_matrix(self):
+        # rospy.loginfo("compute_front_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
+        equation_counter = numpy.full(6, self.damping + 1)
+
+        # new_front_vect = -self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr]
+        # new_front_vect += self.damping * self.front_vect[leg_nr]
+        # equation_counter += self.damping
+
+        # new_front_vect = numpy.array(
+        #         [[1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
+        #          [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
+        #          [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0]])
+        new_front_vect = numpy.array([1, self.damping, 0, 0, 0, 0, 0, 0] * 6).reshape((6, 8))
+        matrix2 = numpy.array(
+                [[-self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr] for leg_nr
+                  in range(0, 6)], [self.front_vect[leg_nr] for leg_nr in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
+                        self.front_vect[target_leg]) for target_leg in range(0, 6)]])
+        # matrix1a = numpy.stack((numpy.full(6, 1), numpy.full(6, self.damping)))
+        # matrix1b = numpy.zeros((6, 6))
+        # matrix1 = numpy.concatenate((matrix1a, matrix1b))
+        # matrix2 = numpy.zeros((6, 8, 3))
+        # for leg_nr in range(0, 6):
+        #     front_vec = [-self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr], self.front_vect[leg_nr]]
+        #     rear_vec = [self.front_vect[target_leg] for target_leg in range(0, 6)]
+        #     matrix2[leg_nr, :] = numpy.concatenate((front_vec, rear_vec))
+        # Computations of connections between legs in ground contacts
+        # Compute equations to all other standing legs using the footdiag
+        # print("new_front_vect = " + str(new_front_vect))
+        for leg_nr in range(0, len(self.gc)):
+            for target_leg in range(0, len(self.gc)):
+                if self.gc[target_leg] and target_leg != leg_nr:
+                    new_front_vect[leg_nr][target_leg + 2] = 1
+                    # matrix1[target_leg][leg_nr] = 1
+
+                    # part_vec = numpy.array(self.front_vect[target_leg])
+                    # part_vec += self.get_segm_vectors_between_front(leg_nr, target_leg)
+                    if target_leg < leg_nr:
+                        matrix2[leg_nr + 2, target_leg, :] -= self.footdiag[leg_nr][target_leg]
+                        # part_vec -= self.footdiag[leg_nr][target_leg]
+                    elif target_leg > leg_nr:
+                        matrix2[target_leg + 2, leg_nr, :] += self.footdiag[target_leg][leg_nr]
+                        # part_vec += self.footdiag[target_leg][leg_nr]
+                    # new_front_vect += part_vec
+                    # equation_counter += 1
+                    equation_counter[leg_nr] += 1
+
+        #print("new_front_vect = " + str(new_front_vect))
+        # print("matrix1 = " + str(matrix1))
+        # print("matrix2 = " + str(matrix2[:,:,0]))
+        # print("equation_counter = " + str(equation_counter))
+        # return new_front_vect / equation_counter
+        # return numpy.array([(numpy.matmul(new_front_vect, matrix2[:, :, i]) / equation_counter) for i in range(0, 3)])
+        # print("matmul new_front, matrix2 = " + str((numpy.matmul(new_front_vect, matrix2[:, :, 0]))))
+        return numpy.array([(numpy.matmul(new_front_vect, matrix2[:, :, i]) / equation_counter) for i in range(0, 3)])
+        # print("matmul new_front, matrix2 = " + str((numpy.matmul(matrix2[:, :, 0], matrix1))))
+        # return numpy.array([(numpy.matmul(matrix2[:, :, i], matrix1) / equation_counter) for i in range(0, 3)])
+        # return numpy.array([((matrix2[:, :, i] * matrix1) / equation_counter) for i in range(0, 4)])
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
@@ -483,7 +549,17 @@ class mmcBodyModelStance:
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 
+        before = datetime.datetime.now()
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
+        after = datetime.datetime.now()
+        rospy.loginfo("time normal = " + str((after - before).total_seconds()))
+        rospy.loginfo("new front_vect old    = " + str(front_vect))
+        before_matrix = datetime.datetime.now()
+        new_front_vect = numpy.diagonal(self.compute_front_computations_and_integrate_matrix())
+        after_matrix = datetime.datetime.now()
+        rospy.loginfo("time matrix = " + str((after_matrix - before_matrix).total_seconds()))
+        rospy.loginfo("new front_vect matrix = " + str(new_front_vect))
+        rospy.loginfo("---------------------------------------------------------------------------------------")
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
