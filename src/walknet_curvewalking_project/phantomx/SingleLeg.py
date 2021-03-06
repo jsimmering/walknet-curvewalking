@@ -85,20 +85,20 @@ class SingleLeg:
         # self.pub_pep_threshold()
 
     def pub_pep_threshold(self):
-        while not rospy.is_shutdown():
-            self.pep_thresh_line.points.clear()
-            point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-            point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-            self.pep_thresh_line.points.append(point1)
-            self.pep_thresh_line.points.append(point2)
+        #while not rospy.is_shutdown():
+        self.pep_thresh_line.points.clear()
+        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        self.pep_thresh_line.points.append(point1)
+        self.pep_thresh_line.points.append(point2)
 
-            for i in range(0, 3):
-                if rospy.is_shutdown():
-                    break
-                self.visualization_pub.publish(self.aep_line)
-                self.visualization_pub.publish(self.pep_init_thresh_line)
-                self.visualization_pub.publish(self.pep_thresh_line)
-                self.viz_pub_rate.sleep()
+        #for i in range(0, 3):
+            #if rospy.is_shutdown():
+                #break
+        self.visualization_pub.publish(self.aep_line)
+        self.visualization_pub.publish(self.pep_init_thresh_line)
+        self.visualization_pub.publish(self.pep_thresh_line)
+        #self.viz_pub_rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None

@@ -407,34 +407,24 @@ class mmcBodyModelStance:
     #	(the old value is also integrated, weighted by the damping value)
     def compute_front_computations_and_integrate_matrix(self):
         # rospy.loginfo("compute_front_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
-        equation_counter = numpy.full(6, self.damping + 1)
+        equation_counter = numpy.full((6, 3), self.damping + 1)
 
-        # new_front_vect = -self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr]
-        # new_front_vect += self.damping * self.front_vect[leg_nr]
-        # equation_counter += self.damping
+        # before = datetime.datetime.now()
+        new_front_vect = numpy.array(
+                [[1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
+                 [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
+                 [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0]])
+        # after = datetime.datetime.now()
+        # rospy.loginfo("time new_front_vect = " + str((after - before).total_seconds()))
 
-        # new_front_vect = numpy.array(
-        #         [[1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
-        #          [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0],
-        #          [1, self.damping, 0, 0, 0, 0, 0, 0], [1, self.damping, 0, 0, 0, 0, 0, 0]])
-        new_front_vect = numpy.array([1, self.damping, 0, 0, 0, 0, 0, 0] * 6).reshape((6, 8))
-        matrix2 = numpy.array(
-                [[-self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr] for leg_nr
-                  in range(0, 6)], [self.front_vect[leg_nr] for leg_nr in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)], [numpy.array(
-                        self.front_vect[target_leg]) for target_leg in range(0, 6)]])
-        # matrix1a = numpy.stack((numpy.full(6, 1), numpy.full(6, self.damping)))
-        # matrix1b = numpy.zeros((6, 6))
-        # matrix1 = numpy.concatenate((matrix1a, matrix1b))
-        # matrix2 = numpy.zeros((6, 8, 3))
-        # for leg_nr in range(0, 6):
-        #     front_vec = [-self.delta_front - self.segm_post_ant + self.leg_vect[leg_nr] - self.segm_leg_post[leg_nr], self.front_vect[leg_nr]]
-        #     rear_vec = [self.front_vect[target_leg] for target_leg in range(0, 6)]
-        #     matrix2[leg_nr, :] = numpy.concatenate((front_vec, rear_vec))
+        # before = datetime.datetime.now()
+        matrix2 = numpy.array([
+            -self.delta_front - self.segm_post_ant + self.leg_vect - self.segm_leg_post, self.front_vect,
+            numpy.array(self.front_vect), numpy.array(self.front_vect), numpy.array(self.front_vect),
+            numpy.array(self.front_vect), numpy.array(self.front_vect), numpy.array(self.front_vect)])
+        # after = datetime.datetime.now()
+        # rospy.loginfo("time matrix2a = " + str((after - before).total_seconds()))
+
         # Computations of connections between legs in ground contacts
         # Compute equations to all other standing legs using the footdiag
         # print("new_front_vect = " + str(new_front_vect))
@@ -456,17 +446,9 @@ class mmcBodyModelStance:
                     # equation_counter += 1
                     equation_counter[leg_nr] += 1
 
-        #print("new_front_vect = " + str(new_front_vect))
-        # print("matrix1 = " + str(matrix1))
-        # print("matrix2 = " + str(matrix2[:,:,0]))
-        # print("equation_counter = " + str(equation_counter))
-        # return new_front_vect / equation_counter
         # return numpy.array([(numpy.matmul(new_front_vect, matrix2[:, :, i]) / equation_counter) for i in range(0, 3)])
-        # print("matmul new_front, matrix2 = " + str((numpy.matmul(new_front_vect, matrix2[:, :, 0]))))
-        return numpy.array([(numpy.matmul(new_front_vect, matrix2[:, :, i]) / equation_counter) for i in range(0, 3)])
-        # print("matmul new_front, matrix2 = " + str((numpy.matmul(matrix2[:, :, 0], matrix1))))
-        # return numpy.array([(numpy.matmul(matrix2[:, :, i], matrix1) / equation_counter) for i in range(0, 3)])
-        # return numpy.array([((matrix2[:, :, i] * matrix1) / equation_counter) for i in range(0, 4)])
+        # return numpy.transpose(numpy.array([(numpy.einsum('ij,ji->i', new_front_vect, matrix2[:, :, i]) / equation_counter) for i in range(0, 3)]))
+        return numpy.array((numpy.einsum('ij,jik->ik', new_front_vect, matrix2) / equation_counter))
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
@@ -481,7 +463,41 @@ class mmcBodyModelStance:
         new_segm_leg_ant += self.segm_leg_ant[leg_nr] * self.damping
         equation_counter += self.damping
         new_segm_leg_ant = new_segm_leg_ant / equation_counter
-        return ((self.segm_leg_ant_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_ant)) * new_segm_leg_ant)
+        # print("leg " + str(leg_nr) + " normal = " + str(numpy.linalg.norm(new_segm_leg_ant)))
+        return (self.segm_leg_ant_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_ant)) * new_segm_leg_ant
+
+    ##	Compute the segment vectors:
+    #	Using equations including the two legs connected to the segment,
+    #	integrating the explicit displacement given as delta
+    #	and the recurrent old value of the vector.
+    def compute_segment_leg_ant_computations_and_integrate_matrix(self):
+        # equation_counter = 1
+
+        # new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant
+        # Neighboring leg with respect to leg_nr
+        # new_segm_leg_ant += self.segm_leg_ant[leg_nr] * self.damping
+        # equation_counter += self.damping
+        # new_segm_leg_ant = new_segm_leg_ant / equation_counter
+
+        new_segm_leg_ant = numpy.array([[1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)]])
+        # print("new_segm_leg_ant shape = " + str(new_segm_leg_ant.shape))
+
+        matrix2 = numpy.array([self.segm_leg_post + self.segm_post_ant, self.segm_leg_ant])
+        # print("matrix2 shape = " + str(matrix2.shape))
+
+        matrix = numpy.einsum('ij,jik->ik', new_segm_leg_ant, matrix2)
+        # print("matrix shape = " + str(matrix.shape))
+        # print("matrix = " + str(matrix))
+
+        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
+
+        # return ((self.segm_leg_ant_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_ant)) * new_segm_leg_ant)
+        return numpy.einsum('j,jk->jk', numpy.array(self.segm_leg_ant_norm) / normals, matrix)
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
@@ -495,7 +511,34 @@ class mmcBodyModelStance:
         new_segm_leg_post += self.segm_leg_post[leg_nr] * self.damping
         equation_counter += self.damping
         new_segm_leg_post = new_segm_leg_post / equation_counter
+        # print("leg " + str(leg_nr) + " normal = " + str(numpy.linalg.norm(new_segm_leg_post)))
         return (self.segm_leg_post_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_post)) * new_segm_leg_post
+
+    ##	Compute the segment vectors:
+    #	Using equations including the two legs connected to the segment,
+    #	integrating the explicit displacement given as delta
+    #	and the recurrent old value of the vector.
+    def compute_segment_leg_post_computations_and_integrate_matrix(self):
+        # equation_counter = 1
+        # new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant
+        # new_segm_leg_post += self.segm_leg_post[leg_nr] * self.damping
+        # quation_counter += self.damping
+        # new_segm_leg_post = new_segm_leg_post / equation_counter
+        new_segm_leg_post = numpy.array([[1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)]])
+        # print("new_segm_leg_ant shape = " + str(new_segm_leg_ant.shape))
+
+        matrix2 = numpy.array([self.segm_leg_ant - self.segm_post_ant, self.segm_leg_post])
+        # print("matrix2 shape = " + str(matrix2.shape))
+        matrix = numpy.einsum('ij,jik->ik', new_segm_leg_post, matrix2)
+        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
+        # print("normals = " + str(normals))
+        # return (self.segm_leg_post_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_post)) * new_segm_leg_post
+        return numpy.einsum('j,jk->jk', numpy.array(self.segm_leg_post_norm) / normals, matrix)
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
@@ -536,6 +579,32 @@ class mmcBodyModelStance:
         new_segm_diag = new_segm_diag / equation_counter
         return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
 
+    ##	Compute the segment vectors:
+    #	Using equations including the two legs connected to the segment,
+    #	integrating the explicit displacement given as delta
+    #	and the recurrent old value of the vector.
+    def compute_segm_diag_computations_and_integrate_matrix(self):  # , joint_nr):
+        # equation_counter = 2
+        # new_segm_diag = self.segm_leg_post[2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[1 + joint_nr * 2]
+        # new_segm_diag -= self.segm_leg_post[1 + 2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[joint_nr * 2]
+        # new_segm_diag += self.damping * self.segm_diag_to_right[joint_nr]
+        # equation_counter += self.damping
+        # new_segm_diag = new_segm_diag / equation_counter
+        new_segm_diag = numpy.array(
+                [[1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
+                 [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
+                 [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)]])  # ,
+        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
+        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
+        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)]])
+        matrix2 = numpy.array([self.segm_leg_post[0::2] + self.segm_post_ant - self.segm_leg_ant[1::2],
+                               self.segm_leg_post[1::2] + self.segm_post_ant - self.segm_leg_ant[0::2],
+                               self.segm_diag_to_right])
+        matrix = numpy.einsum('ij,jik->ik', new_segm_diag, matrix2)
+        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
+        #return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
+        return numpy.einsum('j,jk->jk', numpy.array(self.segm_diag_norm) / normals, matrix)
+
     ##	The MMC Method:
     #	- the multiple computations are computed for each variable
     #	- the mean for each variable is calculated
@@ -549,22 +618,30 @@ class mmcBodyModelStance:
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 
-        before = datetime.datetime.now()
+        # before = datetime.datetime.now()
+        # front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
+        # after = datetime.datetime.now()
+        # rospy.loginfo("time normal = " + str((after - before).total_seconds()))
+        # #rospy.loginfo("new front_vect old    = " + str(front_vect))
+        # before_matrix = datetime.datetime.now()
+        # new_front_vect = self.compute_front_computations_and_integrate_matrix()
+        # after_matrix = datetime.datetime.now()
+        # rospy.loginfo("time matrix = " + str((after_matrix - before_matrix).total_seconds()))
+        # #rospy.loginfo("new front_vect matrix = " + str(new_front_vect))
+        # rospy.loginfo("---------------------------------------------------------------------------------------")
+
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
-        after = datetime.datetime.now()
-        rospy.loginfo("time normal = " + str((after - before).total_seconds()))
-        rospy.loginfo("new front_vect old    = " + str(front_vect))
-        before_matrix = datetime.datetime.now()
-        new_front_vect = numpy.diagonal(self.compute_front_computations_and_integrate_matrix())
-        after_matrix = datetime.datetime.now()
-        rospy.loginfo("time matrix = " + str((after_matrix - before_matrix).total_seconds()))
-        rospy.loginfo("new front_vect matrix = " + str(new_front_vect))
-        rospy.loginfo("---------------------------------------------------------------------------------------")
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
+        # segm_leg_ant = self.compute_segment_leg_ant_computations_and_integrate_matrix()
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
-        segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-        segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        # new_segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
+        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
+        #segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
+        #segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        # new_segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER!
+
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
@@ -574,10 +651,49 @@ class mmcBodyModelStance:
         # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
         # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
         # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        #self.segm_diag_to_right[0] = segm_diag_to_right[0]
         # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
         #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
-        self.segm_post_ant = segm_post_ant
+        #self.segm_post_ant = segm_post_ant
+        # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
+
+        self.step += 1
+
+    ##	The MMC Method:
+    #	- the multiple computations are computed for each variable
+    #	- the mean for each variable is calculated
+    #	The new values are appended to the list of element values.
+    #	For each variable new values are calculated through
+    #	different equations.
+    ##
+    def mmc_iteration_step_matrix(self):
+        # rospy.loginfo(
+        #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
+        self.delta_front = self.pull_front
+        self.delta_back = self.pull_back
+
+        front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
+        leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
+        # segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
+        segm_leg_ant = self.compute_segment_leg_ant_computations_and_integrate_matrix()
+        # segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
+        segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
+        # segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
+        for i in range(0, 6):
+            self.segm_leg_ant[i] = segm_leg_ant[i]
+            self.segm_leg_post[i] = segm_leg_post[i]
+            self.front_vect[i] = front_vect[i]
+            self.leg_vect[i] = leg_vect[i]
+        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
+        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
+        # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
+        # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
+        #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
+        #self.segm_post_ant = segm_post_ant
         # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1

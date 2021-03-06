@@ -85,9 +85,9 @@ class SingleLegController:
                                                              '/rules', rules, self.contralateral_rules_callback)
         # publish pep visualization
         self.pep_viz = False
-        if self.pep_viz:
-            th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
-            th.start()
+        # if self.pep_viz:
+        #     th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
+        #     th.start()
 
         self.rule1 = True
         self.rule2_ipsi = True
@@ -203,6 +203,8 @@ class SingleLegController:
         #     return
         # else:
         # start = rospy.Time.now()
+        if self.pep_viz:
+            self.leg.pub_pep_threshold()
         if self.swing:
             return self.execute_swing_step(legs_in_swing)
         else:

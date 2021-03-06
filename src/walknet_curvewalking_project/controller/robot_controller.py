@@ -127,7 +127,7 @@ class RobotController:
             for leg in self.robot.legs:
                 leg.set_delay_1b(data.speed_fact)
             if data.speed_fact * 10 > 0.75:
-                CONST.DEFAULT_SWING_VELOCITY = 0.8
+                CONST.DEFAULT_SWING_VELOCITY += 0.2
             self.robot.stance_speed = data.speed_fact
             self.robot.direction = data.pull_angle
             self.robot.initialize_stability_data_file()
@@ -163,7 +163,8 @@ class RobotController:
                 #self.robot.body_model.lift_leg_from_ground(i)
                 # rospy.loginfo("lift leg " + str(i))
 
-        self.robot.body_model.mmc_iteration_step()
+        #self.robot.body_model.mmc_iteration_step()
+        self.robot.body_model.mmc_iteration_step_matrix()
 
     def walk_body_model(self):
         rate = rospy.Rate(RSTATIC.controller_frequency)
