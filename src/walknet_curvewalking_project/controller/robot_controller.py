@@ -126,8 +126,9 @@ class RobotController:
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
                 leg.set_delay_1b(data.speed_fact)
-            if data.speed_fact * 10 > 0.75:
-                CONST.DEFAULT_SWING_VELOCITY += 0.2
+            #if data.speed_fact * 10 > 0.70:
+            if data.speed_fact * 10 >= 0.60:
+                CONST.DEFAULT_SWING_VELOCITY += 0.3
             self.robot.stance_speed = data.speed_fact
             self.robot.direction = data.pull_angle
             self.robot.initialize_stability_data_file()
