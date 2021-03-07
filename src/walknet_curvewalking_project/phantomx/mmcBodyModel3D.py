@@ -602,7 +602,7 @@ class mmcBodyModelStance:
                                self.segm_diag_to_right])
         matrix = numpy.einsum('ij,jik->ik', new_segm_diag, matrix2)
         normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
-        #return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
+        # return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
         return numpy.einsum('j,jk->jk', numpy.array(self.segm_diag_norm) / normals, matrix)
 
     ##	The MMC Method:
@@ -612,7 +612,7 @@ class mmcBodyModelStance:
     #	For each variable new values are calculated through
     #	different equations.
     ##
-    def mmc_iteration_step(self):
+    def mmc_iteration_step(self, reset_segments):
         # rospy.loginfo(
         #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
@@ -637,9 +637,9 @@ class mmcBodyModelStance:
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
         # new_segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
-        #segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+        # segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
-        #segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
         # new_segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER!
 
         for i in range(0, 6):
@@ -651,10 +651,16 @@ class mmcBodyModelStance:
         # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
         # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
         # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        #self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        if reset_segments:
+            segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+            self.segm_post_ant = segm_post_ant
+            # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+            # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
+            # self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
         # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
         #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
-        #self.segm_post_ant = segm_post_ant
+        # self.segm_post_ant = segm_post_ant
         # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1
@@ -666,7 +672,7 @@ class mmcBodyModelStance:
     #	For each variable new values are calculated through
     #	different equations.
     ##
-    def mmc_iteration_step_matrix(self):
+    def mmc_iteration_step_matrix(self, reset_segments):
         # rospy.loginfo(
         #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
@@ -678,9 +684,6 @@ class mmcBodyModelStance:
         segm_leg_ant = self.compute_segment_leg_ant_computations_and_integrate_matrix()
         # segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
-        # segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-        # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
@@ -690,10 +693,15 @@ class mmcBodyModelStance:
         # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
         # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
         # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
+
+        if reset_segments:
+            segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+            self.segm_post_ant = segm_post_ant
+            # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+            # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
+            # self.segm_diag_to_right[0] = segm_diag_to_right[0]
         # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
         #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
-        #self.segm_post_ant = segm_post_ant
         # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1

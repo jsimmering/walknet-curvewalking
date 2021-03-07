@@ -15,7 +15,7 @@ class Robot:
     def __init__(self, name, nh):
         self.name = name
         self.viz = False
-        self.log_data = False
+        self.log_data = True
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
