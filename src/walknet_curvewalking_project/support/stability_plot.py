@@ -60,13 +60,17 @@ def plot_stability_data():
 
             polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
             if len(values) >= 24:
+                stable = False
                 marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
                 for i in range(0, len(polygon_list)):  # polygon in polygon_list:
                     # print("check bin " + str(polygon_list.index(polygon)))
                     if check_stability([values[22], values[23]], polygon_list[i]):
                         bins[i] += 1
+                        stable = True
                         # print("increase bin " + str(polygon_list.index(polygon)))
                         break
+                if not stable:
+                    bins[5] += 1
                 plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
             else:
                 bins[5] += 1
