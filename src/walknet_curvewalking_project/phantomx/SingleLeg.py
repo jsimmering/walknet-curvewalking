@@ -28,6 +28,10 @@ class SingleLeg:
         self.gamma = None
         self._c1_static_transform = RSTATIC.body_c1_tf[RSTATIC.leg_names.index(self.name)].copy()
 
+        self.alpha_command = None
+        self.beta_command = None
+        self.gamma_command = None
+
         self.alpha_target = None
         self.beta_target = None
         self.gamma_target = None
@@ -52,53 +56,61 @@ class SingleLeg:
         #     self.pep_thresh = RSTATIC.middle_initial_pep[0].copy()
         # if self.name == "lr" or self.name == "rr":
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
-        self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
-        self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
+        self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
+        self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
 
-        self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
-        self.pep_thresh_line = Marker()
-        self.pep_init_thresh_line = Marker()
-        self.aep_line = Marker()
-        self.pep_thresh_line.header.frame_id = self.aep_line.header.frame_id = self.pep_init_thresh_line.header.frame_id = "MP_BODY"
-        self.pep_thresh_line.header.stamp = self.aep_line.header.stamp = self.pep_init_thresh_line.header.stamp = rospy.Time.now()
-        self.pep_thresh_line.ns = self.aep_line.ns = self.pep_init_thresh_line.ns = self.name + "_points_and_lines"
-        self.pep_thresh_line.action = self.aep_line.action = self.pep_init_thresh_line.action = Marker.ADD
-        self.pep_thresh_line.pose.orientation.w = self.aep_line.pose.orientation.w = self.pep_init_thresh_line.pose.orientation.w = 1.0
-        self.pep_init_thresh_line.id = 4
-        self.aep_line.id = 5 + RSTATIC.leg_names.index(self.name)
-        self.pep_thresh_line.id = 11 + RSTATIC.leg_names.index(self.name)
-        self.pep_thresh_line.type = self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
-        self.pep_thresh_line.scale.x = self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
-        self.pep_init_thresh_line.color.g = 1.0
-        self.aep_line.color.b = 1.0
-        self.pep_thresh_line.color.r = 1.0
-        self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
-        self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
-        self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
-        point1 = Point(self.aep_thresh, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.aep_thresh, self.movement_dir * 0.35, -0.1)
-        self.aep_line.points.append(point1)
-        self.aep_line.points.append(point2)
-        # self.pub_pep_threshold()
+        default_gamma_pos = self.c1_rotation(0, self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
+        default_beta_pos = self.c1_rotation(0, self.c1_thigh_transformation(0))
+        self.thigh_tibia_angle = -atan2(default_gamma_pos[0] - default_beta_pos[0], -default_gamma_pos[1] + default_beta_pos[1])  # 0.2211...
+        self.tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
+        rospy.logwarn(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
+
+        self.viz = False
+        if self.viz:
+            self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
+            self.pep_thresh_line = Marker()
+            self.pep_init_thresh_line = Marker()
+            self.aep_line = Marker()
+            self.pep_thresh_line.header.frame_id = self.aep_line.header.frame_id = self.pep_init_thresh_line.header.frame_id = "MP_BODY"
+            self.pep_thresh_line.header.stamp = self.aep_line.header.stamp = self.pep_init_thresh_line.header.stamp = rospy.Time.now()
+            self.pep_thresh_line.ns = self.aep_line.ns = self.pep_init_thresh_line.ns = self.name + "_points_and_lines"
+            self.pep_thresh_line.action = self.aep_line.action = self.pep_init_thresh_line.action = Marker.ADD
+            self.pep_thresh_line.pose.orientation.w = self.aep_line.pose.orientation.w = self.pep_init_thresh_line.pose.orientation.w = 1.0
+            self.pep_init_thresh_line.id = 4
+            self.aep_line.id = 5 + RSTATIC.leg_names.index(self.name)
+            self.pep_thresh_line.id = 11 + RSTATIC.leg_names.index(self.name)
+            self.pep_thresh_line.type = self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
+            self.pep_thresh_line.scale.x = self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
+            self.pep_init_thresh_line.color.g = 1.0
+            self.aep_line.color.b = 1.0
+            self.pep_thresh_line.color.r = 1.0
+            self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
+            self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
+            self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
+            point1 = Point(self.aep_thresh, self.movement_dir * 0.20, -0.1)
+            point2 = Point(self.aep_thresh, self.movement_dir * 0.35, -0.1)
+            self.aep_line.points.append(point1)
+            self.aep_line.points.append(point2)
+            # self.pub_pep_threshold()
 
     def pub_pep_threshold(self):
-        #while not rospy.is_shutdown():
+        # while not rospy.is_shutdown():
         self.pep_thresh_line.points.clear()
         point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
         point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
         self.pep_thresh_line.points.append(point1)
         self.pep_thresh_line.points.append(point2)
 
-        #for i in range(0, 3):
-            #if rospy.is_shutdown():
-                #break
+        # for i in range(0, 3):
+        # if rospy.is_shutdown():
+        # break
         self.visualization_pub.publish(self.aep_line)
         self.visualization_pub.publish(self.pep_init_thresh_line)
         self.visualization_pub.publish(self.pep_thresh_line)
-        #self.viz_pub_rate.sleep()
+        # self.viz_pub_rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -129,7 +141,7 @@ class SingleLeg:
         self.ee_pos = self.compute_forward_kinematics()
 
     def leg_center_of_mass(self):
-        #if isinstance(self._center_of_mass, (type(None))):
+        # if isinstance(self._center_of_mass, (type(None))):
         self.update_com_position()
         return self._center_of_mass
 
@@ -142,24 +154,32 @@ class SingleLeg:
     #   simply decide if the leg should touch ground
     #   (very stable, but works only on flat terrain).
     def predicted_ground_contact(self):
-        if self.name == "lf" or self.name == "rf":
-            if self.ee_position()[2] < (RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor):
-                # and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
-                # rospy.loginfo("predict ground contact for front leg")
-                return 1
-        if self.name == "lm" or self.name == "rm":
-            if (self.ee_position()[2] < (
-                    RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)) \
-                    and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.005:
-                # rospy.loginfo("predict ground contact for middle leg")
-                return 1
-        if self.name == "lr" or self.name == "rr":
-            if self.ee_position()[2] < (RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor):
-                # and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
-                # rospy.loginfo("predict ground contact for rear leg")
-                return 1
+        # if self.name == "lf" or self.name == "rf":
+        #     return self.ee_position()[2] < (
+        #                 RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
+        #     # and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
+        #     # rospy.loginfo("predict ground contact for front leg")
+        #     # return 1
+        # if self.name == "lm" or self.name == "rm":
+        #     # rospy.loginfo(self.name +
+        #     #               " self.ee_position()[2] {} < (RSTATIC.middle_initial_aep[2] {} * gc_height_factor 0.9) {}".format(
+        #     #                       self.ee_position()[2], RSTATIC.middle_initial_aep[2],
+        #     #                       (RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)))
+        #     return self.ee_position()[2] < (
+        #                 RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
+        #     # and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.005:
+        #     # rospy.loginfo("predict ground contact for middle leg")
+        #     # return 1
+        # if self.name == "lr" or self.name == "rr":
+        #     return self.ee_position()[2] < (
+        #                 RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
+        #     # and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
+        #     # rospy.loginfo("predict ground contact for rear leg")
+        #     # return 1
 
-        return 0
+        return self.ee_position()[2] < (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][2] *
+                                        RSTATIC.predicted_ground_contact_height_factor)
+        # return False
 
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
@@ -174,7 +194,7 @@ class SingleLeg:
         self.shift_pep()
 
     def shift_pep(self):
-        pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy() + \
+        pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
                      self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
         if pep_thresh > self.aep_thresh - 0.01:
             self.pep_thresh = self.aep_thresh - 0.01
@@ -317,9 +337,9 @@ class SingleLeg:
             p = self.ee_position()
         if len(p) == 3:
             p = numpy.append(p, [1])
-        p_temp = copy.copy(p)
+        # p_temp = copy.copy(p)
+        #c1_pos = self.apply_c1_static_transform()
 
-        c1_pos = self.apply_c1_static_transform()
         # alpha_angle: float = -atan2(p[1], (p[0]))
         # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
         c1_static_rotation_inverse = numpy.array([
@@ -340,49 +360,55 @@ class SingleLeg:
         alpha_angle = -atan2(p_c1[2], -p_c1[1])
 
         beta_pos = self.c1_rotation(alpha_angle, self.c1_thigh_transformation(0))
-        lct = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform(beta_pos))
+        beta_to_ee = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform(beta_pos))
 
-        default_gamma_pos = self.c1_rotation(alpha_angle,
-                self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
-        thigh_tibia_angle = -atan2(default_gamma_pos[0] - beta_pos[0], -default_gamma_pos[1] + beta_pos[1])  # 0.2211...
-        tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
+        gamma_flipped = False
+
         try:
-            cos_gamma = (pow(self._segment_lengths[2], 2) + pow(self._segment_lengths[1], 2) - pow(lct, 2)) / (
+            cos_gamma = (pow(self._segment_lengths[2], 2) + pow(self._segment_lengths[1], 2) - pow(beta_to_ee, 2)) / (
                     2 * self._segment_lengths[1] * self._segment_lengths[2])
             # Avoid running in numerical rounding error
             if cos_gamma < -1:
                 gamma_inner = pi
             else:
                 gamma_inner = (acos(cos_gamma))
-            gamma_angle = gamma_inner - pi - tibia_z_angle
-            # if RSTATIC.joint_angle_limits[2][0] > gamma_angle: # if gamma angle not in range
-            if p[2] > 0:
-                gamma_angle = pi - gamma_inner - tibia_z_angle
+            gamma_angle = gamma_inner - pi - self.tibia_z_angle
+            if RSTATIC.joint_angle_limits[2][0] >= gamma_angle and p[2] > 0:  # if gamma angle not in range
+                rospy.logerr(self.name + " gamma limit = " + str(
+                        RSTATIC.joint_angle_limits[2][0]) + " > gamma = " + str(gamma_angle))
+                gamma_angle = pi - gamma_inner - self.tibia_z_angle
+                gamma_flipped = True
+                rospy.logerr(self.name + " flip gamma_angle. gamma new = " + str(gamma_angle))
 
-            cos_beta_inner = (pow(self._segment_lengths[1], 2) + pow(lct, 2) - pow(self._segment_lengths[2], 2)) / (
-                    2 * self._segment_lengths[1] * lct)
+            cos_beta_inner = (pow(self._segment_lengths[1], 2) + pow(beta_to_ee, 2) - pow(self._segment_lengths[2], 2)) / (
+                    2 * self._segment_lengths[1] * beta_to_ee)
             # Avoid running in numerical rounding error
             if cos_beta_inner > 1:
                 h1 = 0
             else:
                 h1 = (acos(cos_beta_inner))
 
-            vector_c1_ee = numpy.linalg.norm(p[0:3] - c1_pos)
-            cos_beta = (pow(lct, 2) + pow(self._segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
-                    2 * lct * self._segment_lengths[0])
+            vector_c1_ee = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform())
+            cos_beta = (pow(beta_to_ee, 2) + pow(self._segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
+                    2 * beta_to_ee * self._segment_lengths[0])
             # Avoid running in numerical rounding error
             if cos_beta < -1.:
                 h2 = pi
             else:
                 h2 = (acos(cos_beta))
         except ValueError:
-            raise ValueError('The provided position (' + str(p_temp[0]) + ', ' + str(p_temp[1]) + ', ' + str(
-                    p_temp[2]) + ') is not valid for the given geometry for leg ' + self.name)
-        # if RSTATIC.joint_angle_limits[1][0] > gamma_angle:
-        if p[2] >= 0:
-            beta_angle = h1 + h2 - pi - thigh_tibia_angle
-        else:
-            beta_angle = pi - (h1 + h2 + thigh_tibia_angle)
+            raise ValueError('The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' + str(
+                    p[2]) + ') is not valid for the given geometry for leg ' + self.name)
+
+        beta_angle = pi - (h1 + h2 + self.thigh_tibia_angle)
+        if RSTATIC.joint_angle_limits[1][0] >= beta_angle:
+            rospy.logerr(self.name + " beta limit = " + str(
+                    RSTATIC.joint_angle_limits[1][0]) + " > beta = " + str(beta_angle))
+            if not gamma_flipped:
+                rospy.logerr(self.name + ": gamma not flipped ")
+            # if p[2] >= 0:
+            beta_angle = h1 + h2 - pi - self.thigh_tibia_angle
+            rospy.logerr(self.name + " flip beta_angle. beta new = " + str(beta_angle))
 
         return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
@@ -404,6 +430,14 @@ class SingleLeg:
                       str(self.alpha_reached and self.beta_reached and self.gamma_reached))
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
+    def is_target_set(self):
+        if self.name == "lr":
+            rospy.logerr(self.name + ": alpha_target (" + str(self.alpha_target) + ") == alpha_command (" + str(
+                    self.alpha_command) + ") and beta_target (" + str(self.beta_target) + ") == beta_command (" + str(
+                    self.beta_command) + ") and gamma_target (" + str(self.gamma_target) + ") == gamma_command (" + str(
+                    self.gamma_command) + ")")
+        return self.alpha_target == self.alpha_command and self.beta_target == self.beta_command and self.gamma_target == self.gamma_command
+
     def set_command(self, next_angles):
         # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
         #               str(self.get_current_angles()))
@@ -414,3 +448,17 @@ class SingleLeg:
             self._alpha_pub.publish(next_angles[0])
             self._gamma_pub.publish(next_angles[2])
             self._beta_pub.publish(next_angles[1])
+
+    def set_command_and_target(self, next_angles):
+        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
+        #                self.get_current_angles()))
+        if not self.check_joint_ranges(next_angles):
+            rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
+        else:
+            # rospy.loginfo(self.name + ": set angles " + str(next_angles))
+            self._alpha_pub.publish(next_angles[0])
+            self._beta_pub.publish(next_angles[1])
+            self._gamma_pub.publish(next_angles[2])
+            self.alpha_command = next_angles[0]
+            self.beta_command = next_angles[1]
+            self.gamma_command = next_angles[2]

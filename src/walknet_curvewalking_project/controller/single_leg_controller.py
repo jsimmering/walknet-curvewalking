@@ -51,7 +51,7 @@ class SingleLegController:
             self.displ_leg = 0.03
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
-        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)][0].copy()
+        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)//2][0].copy()
 
         if self.robot is None:
             self.stance_net = None
@@ -109,7 +109,7 @@ class SingleLegController:
             self.delay_1b = 0
         else:
             self.delay_1b = delay
-        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)][0].copy()
+        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)//2][0].copy()
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
                     1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
@@ -312,7 +312,7 @@ class SingleLegController:
             if p is None:
                 p = self.init_pos
             angles = self.leg.compute_inverse_kinematics(p)
-            self.leg.set_command(angles)
+            self.leg.set_command_and_target(angles)
 
 
 if __name__ == '__main__':

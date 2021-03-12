@@ -85,12 +85,8 @@ hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
 # hind_initial_aep = numpy.array([-0.19, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
-initial_pep = (front_initial_pep, front_initial_pep,
-               middle_initial_pep, middle_initial_pep,
-               hind_initial_pep, hind_initial_pep)
-initial_aep = (front_initial_aep, front_initial_aep,
-               middle_initial_aep, middle_initial_aep,
-               hind_initial_aep, hind_initial_aep)
+initial_pep = (front_initial_pep, middle_initial_pep, hind_initial_pep)
+initial_aep = (front_initial_aep, middle_initial_aep, hind_initial_aep)
 
 # == Ground Contact Parameters ========
 # =====================================
