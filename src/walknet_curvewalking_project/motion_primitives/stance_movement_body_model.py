@@ -64,6 +64,7 @@ class StanceMovementBodyModel:
             self.bodyModelStance.put_leg_on_ground(self.leg_controller.name,
                 self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
             self.init_stance_footpoint = True
+        target_vec = None
         try:
             target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
                 self.leg_controller.leg.name)
@@ -71,9 +72,8 @@ class StanceMovementBodyModel:
             # rospy.loginfo(self.leg_controller.name + " target height = " + str(target_vec[2]))
             self.leg_controller.leg.set_command(next_angles)
         except ValueError:
-            rospy.logerr("ValueError in " + str(self.leg_controller.leg.name) +
-                         " during inverse kinematics computation.\n Tried to reach position " +
-                         str(self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name)) +
+            rospy.logerr("modulated_routine_function_call: ValueError in " + str(self.leg_controller.leg.name) +
+                         " during inverse kinematics computation.\n Tried to reach position " + str(target_vec) +
                          "\ncurrent position is: " + str(self.leg_controller.leg.ee_position()) +
                          "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
                          "\nMaintaining current angles.")

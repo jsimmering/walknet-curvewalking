@@ -417,7 +417,7 @@ class SwingMovementBezier:
                     rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))
                 self.leg.set_command(next_angles)
             except ValueError:
-                rospy.logerr("ValueError in " + str(
+                rospy.logerr("move_to_next_point: ValueError in " + str(
                         self.leg.name) + " during inverse kinematics computation.\n Tried to reach position " + str(
                         target_position) + "\ncurrent angles are: " + str(self.leg.get_current_angles()) +
                              "\nMaintaining current angles.")
