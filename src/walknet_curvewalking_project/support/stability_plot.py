@@ -1,6 +1,7 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from walknet_curvewalking_project.support import stability
 
@@ -23,7 +24,12 @@ def check_stability(projected_com, foot_positions):
 def plot_stability_data():
     # X, Y = [], []
     bins = [0, 0, 0, 0, 0, 0]
+    max_pcom_err = 0
+    min_pcom_err = float('inf')
+    average_pcom_err = 0
+    step_count = 0
     first_line = True
+    plot = False
     plt.figure()
     plt.xlim(-0.3, 0.3)
     plt.ylim(-0.4, 0.4)
@@ -41,6 +47,7 @@ def plot_stability_data():
             first_leg = -1
             count = 1
             while count < 19:
+                #print("count = {}, len(values) = {}".format(count, len(values)))
                 if values[count] != 0.0 and values[count + 1] != 0.0:
                     if first_leg == -1:
                         first_leg = count
@@ -51,17 +58,20 @@ def plot_stability_data():
                 count += 3
             # append_value_to_plot_polygons(values[first_leg], values[first_leg + 1], X, Y, A, B, C, D, E, F, G, H)
 
-            marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
-            plt.plot(marker.T[:, 0], marker.T[:, 1], 'xb')
-
             centroid_pt = centroid(foot_polygon)
-            marker = np.matrix(centroid_pt).T
-            plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
+
+            if plot:
+                marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
+                plt.plot(marker.T[:, 0], marker.T[:, 1], 'xb')
+                marker = np.matrix(centroid_pt).T
+                plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
 
             polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
             if len(values) >= 24:
                 stable = False
-                marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
+                if plot:
+                    marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
+                    plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
                 for i in range(0, len(polygon_list)):  # polygon in polygon_list:
                     # print("check bin " + str(polygon_list.index(polygon)))
                     if check_stability([values[22], values[23]], polygon_list[i]):
@@ -71,55 +81,64 @@ def plot_stability_data():
                         break
                 if not stable:
                     bins[5] += 1
-                plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
+
+                pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
+                if pcom_err > max_pcom_err:
+                    max_pcom_err = pcom_err
+                if pcom_err < min_pcom_err:
+                    min_pcom_err = pcom_err
+                average_pcom_err += pcom_err
+                step_count += 1
+                #print("count = " + str(step_count))
             else:
+                print("unstable len(values) " + str(len(values)) + " >= 24")
                 bins[5] += 1
                 # print("unstable")
 
-            # plt.plot(X, Y)
-            # plt.plot(A, B)
-            # plt.plot(C, D)
-            # plt.plot(E, F)
-            # plt.plot(G, H)
-            A = [point[0] for point in polygon_list[4]]
-            A.append(polygon_list[4][0][0])
-            A2 = [point[1] for point in polygon_list[4]]
-            A2.append(polygon_list[4][0][1])
-            B = [point[0] for point in polygon_list[3]]
-            B.append(polygon_list[3][0][0])
-            B2 = [point[1] for point in polygon_list[3]]
-            B2.append(polygon_list[3][0][1])
-            C = [point[0] for point in polygon_list[2]]
-            C.append(polygon_list[2][0][0])
-            C2 = [point[1] for point in polygon_list[2]]
-            C2.append(polygon_list[2][0][1])
-            D = [point[0] for point in polygon_list[1]]
-            D.append(polygon_list[1][0][0])
-            D2 = [point[1] for point in polygon_list[1]]
-            D2.append(polygon_list[1][0][1])
-            E = [point[0] for point in polygon_list[0]]
-            E.append(polygon_list[0][0][0])
-            E2 = [point[1] for point in polygon_list[0]]
-            E2.append(polygon_list[0][0][1])
-            plt.plot(A, A2)
-            plt.plot(B, B2)
-            plt.plot(C, C2)
-            plt.plot(D, D2)
-            plt.plot(E, E2)
+            if plot:
+                A = [point[0] for point in polygon_list[4]]
+                A.append(polygon_list[4][0][0])
+                A2 = [point[1] for point in polygon_list[4]]
+                A2.append(polygon_list[4][0][1])
+                B = [point[0] for point in polygon_list[3]]
+                B.append(polygon_list[3][0][0])
+                B2 = [point[1] for point in polygon_list[3]]
+                B2.append(polygon_list[3][0][1])
+                C = [point[0] for point in polygon_list[2]]
+                C.append(polygon_list[2][0][0])
+                C2 = [point[1] for point in polygon_list[2]]
+                C2.append(polygon_list[2][0][1])
+                D = [point[0] for point in polygon_list[1]]
+                D.append(polygon_list[1][0][0])
+                D2 = [point[1] for point in polygon_list[1]]
+                D2.append(polygon_list[1][0][1])
+                E = [point[0] for point in polygon_list[0]]
+                E.append(polygon_list[0][0][0])
+                E2 = [point[1] for point in polygon_list[0]]
+                E2.append(polygon_list[0][0][1])
+                plt.plot(A, A2)
+                plt.plot(B, B2)
+                plt.plot(C, C2)
+                plt.plot(D, D2)
+                plt.plot(E, E2)
 
-            # for i in range(25, len(values), 3):
-            #    plt.plot([round(values[22], 4), round(values[i], 4)], [round(values[23], 4), round(values[i + 1], 4)])
+                # for i in range(25, len(values), 3):
+                #    plt.plot([round(values[22], 4), round(values[i], 4)], [round(values[23], 4), round(values[i + 1], 4)])
 
-            plt.xlim(-0.3, 0.3)
-            plt.ylim(-0.4, 0.4)
+                plt.xlim(-0.3, 0.3)
+                plt.ylim(-0.4, 0.4)
 
-            plt.draw()
-            plt.pause(0.0001)
+                plt.draw()
+                plt.pause(0.0001)
 
-            # input('Press ENTER to continue...')
+                # input('Press ENTER to continue...')
 
+    average_pcom_err = average_pcom_err/step_count
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))
+    print("average pcom error = {}, max pcom error = {} min pcom error = {}".format(average_pcom_err, max_pcom_err,
+            min_pcom_err))
+    print("count = " + str(step_count))
 
 
 def centroid(vertexes):
