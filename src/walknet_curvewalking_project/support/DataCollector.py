@@ -17,9 +17,9 @@ class DataCollector:
         rospy.loginfo(rospy.get_caller_id() + " control_callback heard %s", data)
         if data.speed_fact > 0:
             time = datetime.datetime.now()
-            self.file_name = "logs/walknet_position_" + str(data.speed_fact) + "s_" + str(data.pull_angle) + \
-                             "dir_on_" + str(time.month) + "-" + str(time.day) + "_at_" + str(time.hour) + "-" + \
-                             str(time.minute) + "-" + str(time.second)
+            self.file_name = "logs/walknet_position_" + str(round(data.speed_fact, 3)) + "s_" + \
+                             str(round(data.pull_angle, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
+                             "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
             print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
             with open(self.file_name, "a") as f_handle:
                 f_handle.write(

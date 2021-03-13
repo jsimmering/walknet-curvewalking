@@ -151,7 +151,7 @@ class Robot:
         if self.log_data:
             time = datetime.datetime.now()
             self.file_name = "logs/walknet_stability_" + str(RSTATIC.controller_frequency) + "hz_" + \
-                             str(self.stance_speed) + "s_" + str(self.direction) + "dir_on_" + str(time.month) + "-" + \
+                             str(round(self.stance_speed, 3)) + "s_" + str(round(self.direction, 3)) + "dir_on_" + str(time.month) + "-" + \
                              str(time.day) + "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
             print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
             with open(self.file_name, "a") as f_handle:
