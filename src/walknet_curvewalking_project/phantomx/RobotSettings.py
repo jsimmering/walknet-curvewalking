@@ -18,7 +18,7 @@ segment_coms = numpy.array([[0, -0.02633, 0], [0, 0, 0], [0, 0, 0]])
 
 # adjusted joint ranges in robot description
 # joint_angle_limits = [[-0.5, 0.5], [-1.5, 1.2], [-1.5, 0.6]]
-joint_angle_limits = [[-0.6, 0.6], [-2.0, 2.0], [-2.5, 0.75]]
+joint_angle_limits = [[-1.0, 1.0], [-2.25, 2.25], [-2.75, 1.0]]
 # ((c1 - alpha: (lower, upper), thigh - beta: (lower, upper), tibia - gamme: (lower, upper))
 
 lm = numpy.array([[0, 0, 1, 0],

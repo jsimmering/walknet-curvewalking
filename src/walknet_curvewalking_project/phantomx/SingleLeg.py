@@ -66,7 +66,7 @@ class SingleLeg:
         default_beta_pos = self.c1_rotation(0, self.c1_thigh_transformation(0))
         self.thigh_tibia_angle = -atan2(default_gamma_pos[0] - default_beta_pos[0], -default_gamma_pos[1] + default_beta_pos[1])  # 0.2211...
         self.tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
-        rospy.logwarn(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
+        #rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
 
         self.viz = False
         if self.viz:
@@ -397,8 +397,8 @@ class SingleLeg:
             else:
                 h2 = (acos(cos_beta))
         except ValueError:
-            raise ValueError('The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' + str(
-                    p[2]) + ') is not valid for the given geometry for leg ' + self.name)
+            raise ValueError(self.name + ': The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' + str(
+                    p[2]) + ') is not valid for the given geometry')
 
         beta_angle = pi - (h1 + h2 + self.thigh_tibia_angle)
         if RSTATIC.joint_angle_limits[1][0] >= beta_angle:
@@ -431,11 +431,11 @@ class SingleLeg:
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def is_target_set(self):
-        if self.name == "lr":
-            rospy.logerr(self.name + ": alpha_target (" + str(self.alpha_target) + ") == alpha_command (" + str(
-                    self.alpha_command) + ") and beta_target (" + str(self.beta_target) + ") == beta_command (" + str(
-                    self.beta_command) + ") and gamma_target (" + str(self.gamma_target) + ") == gamma_command (" + str(
-                    self.gamma_command) + ")")
+        # if self.name == "lr":
+        #     rospy.loginfo(self.name + ": alpha_target (" + str(self.alpha_target) + ") == alpha_command (" + str(
+        #             self.alpha_command) + ") and beta_target (" + str(self.beta_target) + ") == beta_command (" + str(
+        #             self.beta_command) + ") and gamma_target (" + str(self.gamma_target) + ") == gamma_command (" + str(
+        #             self.gamma_command) + ")")
         return self.alpha_target == self.alpha_command and self.beta_target == self.beta_command and self.gamma_target == self.gamma_command
 
     def set_command(self, next_angles):
