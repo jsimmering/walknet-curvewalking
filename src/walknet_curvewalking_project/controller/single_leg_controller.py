@@ -81,9 +81,6 @@ class SingleLegController:
                                                              '/rules', rules, self.contralateral_rules_callback)
         # publish pep visualization
         self.pep_viz = False
-        # if self.pep_viz:
-        #     th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
-        #     th.start()
 
     def set_init_pos(self, p):
         self.init_pos = p
