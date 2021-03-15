@@ -21,6 +21,25 @@ def check_stability(projected_com, foot_positions):
     return True
 
 
+def calculate_projected_com(values, com):
+    #print("original values = " + str(values))
+    #ee_on_ground = values.remove(0.0)
+    ee_on_ground = [x for x in values if x != 0.0]
+    #print("ee on ground = " + str(ee_on_ground))
+    temp_foot_positions = np.reshape(ee_on_ground, (-1, 3))
+    #print("temp_foot_positions = " + str(temp_foot_positions))
+    projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
+    if projected_com is None:
+        #print("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
+        return False
+
+    # pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
+    # rospy.loginfo("pcom xy error: pcom = {} pcom xy = {}, com = {} com xy = {} pcom xy error = {}".format(projected_com, projected_com[:-1], com, com[:-1], pcom_error))
+    # str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
+    # if not stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
+    return projected_com[0], projected_com[1]
+
+
 def plot_stability_data():
     # X, Y = [], []
     bins = [0, 0, 0, 0, 0, 0]
@@ -28,6 +47,7 @@ def plot_stability_data():
     min_pcom_err = float('inf')
     average_pcom_err = 0
     step_count = 0
+    last_unstable = -1
     first_line = True
     plot = False
     plt.figure()
@@ -45,17 +65,17 @@ def plot_stability_data():
             values = [float(s) for s in line.split(";")]
             foot_polygon = []
             first_leg = -1
-            count = 1
-            while count < 19:
-                #print("count = {}, len(values) = {}".format(count, len(values)))
-                if values[count] != 0.0 and values[count + 1] != 0.0:
+            column_idx = 1
+            while column_idx < 19:
+                # print("column_idx = {}, len(values) = {}".format(column_idx, len(values)))
+                if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
                     if first_leg == -1:
-                        first_leg = count
-                    # append_value_to_plot_polygons(values[count], values[count + 1], X, Y, A, B, C, D, E, F, G, H)
-                    foot_polygon.append([values[count], values[count + 1]])
-                    # append_foot_position_to_polygons(values[count], values[count + 1], foot_positions_poly1,
+                        first_leg = column_idx
+                    # append_value_to_plot_polygons(values[column_idx], values[column_idx + 1], X, Y, A, B, C, D, E, F, G, H)
+                    foot_polygon.append([values[column_idx], values[column_idx + 1]])
+                    # append_foot_position_to_polygons(values[column_idx], values[column_idx + 1], foot_positions_poly1,
                     #        foot_positions_poly2, foot_positions_poly3, foot_positions_poly4, foot_positions_poly5)
-                count += 3
+                column_idx += 3
             # append_value_to_plot_polygons(values[first_leg], values[first_leg + 1], X, Y, A, B, C, D, E, F, G, H)
 
             centroid_pt = centroid(foot_polygon)
@@ -67,33 +87,41 @@ def plot_stability_data():
                 plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
 
             polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
-            if len(values) >= 24:
-                stable = False
-                if plot:
-                    marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
-                    plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
-                for i in range(0, len(polygon_list)):  # polygon in polygon_list:
-                    # print("check bin " + str(polygon_list.index(polygon)))
-                    if check_stability([values[22], values[23]], polygon_list[i]):
-                        bins[i] += 1
-                        stable = True
-                        # print("increase bin " + str(polygon_list.index(polygon)))
-                        break
-                if not stable:
-                    bins[5] += 1
-
-                pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
-                if pcom_err > max_pcom_err:
-                    max_pcom_err = pcom_err
-                if pcom_err < min_pcom_err:
-                    min_pcom_err = pcom_err
-                average_pcom_err += pcom_err
-                step_count += 1
-                #print("count = " + str(step_count))
-            else:
-                print("unstable len(values) " + str(len(values)) + " >= 24")
+            # if len(values) >= 24:
+            #print("values = " + str(values))
+            p_com_x, p_com_y = calculate_projected_com(values[1:19], [values[19], values[20], values[21]])
+            stable = False
+            if plot:
+                # marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
+                # marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
+                marker = np.matrix([round(p_com_x, 4), round(p_com_y, 4)]).T
+                plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
+            for i in range(0, len(polygon_list)):  # polygon in polygon_list:
+                # print("check bin " + str(polygon_list.index(polygon)))
+                # if check_stability([values[22], values[23]], polygon_list[i]):
+                #if check_stability([values[19], values[20]], polygon_list[i]):
+                if check_stability([p_com_x, p_com_y], polygon_list[i]):
+                    bins[i] += 1
+                    stable = True
+                    # print("increase bin " + str(polygon_list.index(polygon)))
+                    break
+            if not stable:
                 bins[5] += 1
-                # print("unstable")
+                last_unstable = step_count
+
+            # pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
+            # if pcom_err > max_pcom_err:
+            #     max_pcom_err = pcom_err
+            # if pcom_err < min_pcom_err:
+            #     min_pcom_err = pcom_err
+            # average_pcom_err += pcom_err
+            step_count += 1
+            # print("step_count = " + str(step_count))
+            # else:
+            #     print("unstable len(values) " + str(len(values)) + " >= 24")
+            #     bins[5] += 1
+            #     last_unstable = step_count
+            #     # print("unstable")
 
             if plot:
                 A = [point[0] for point in polygon_list[4]]
@@ -133,12 +161,13 @@ def plot_stability_data():
 
                 # input('Press ENTER to continue...')
 
-    average_pcom_err = average_pcom_err/step_count
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))
-    print("average pcom error = {}, max pcom error = {} min pcom error = {}".format(average_pcom_err, max_pcom_err,
-            min_pcom_err))
-    print("count = " + str(step_count))
+    # average_pcom_err = average_pcom_err / step_count
+    # print("average pcom error = {}, max pcom error = {} min pcom error = {}".format(average_pcom_err, max_pcom_err,
+    #         min_pcom_err))
+    print("step_count = " + str(step_count))
+    print("last unstable controller step was " + str(last_unstable))
 
 
 def centroid(vertexes):
