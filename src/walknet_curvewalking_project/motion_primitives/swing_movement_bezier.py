@@ -152,21 +152,21 @@ class TrajectoryGenerator:
                     rospy.loginfo(
                             "+++RETURN delta_parameter found that produces a point = " + str(self.last_target_position))
 
-                return (self.last_target_position, test_parameter)
+                return self.last_target_position, test_parameter
 
             # adapt the delta_parameter for the next iteration
             delta_parameter = delta_parameter / (
                     numpy.linalg.norm(test_target_position - current_position) / desired_distance)
-            if (delta_parameter / (
-                    numpy.linalg.norm(test_target_position - current_position) / desired_distance)) < 0.0001:
-                rospy.logerr("delta_parameter = " + str(delta_parameter) + " to small! set to 0.0001")
-                delta_parameter = 0.0001
-                if RSTATIC.DEBUG:
-                    rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" +
-                                  str(delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" +
-                                  str(test_target_position) + ") - current_position (" + str(current_position) +
-                                  ")) (" + str(numpy.linalg.norm(test_target_position - current_position)) +
-                                  ") \n/ desired_distance (" + str(desired_distance) + "))")
+            # if (delta_parameter / (
+            #         numpy.linalg.norm(test_target_position - current_position) / desired_distance)) < 0.0001:
+            #     rospy.logerr("delta_parameter = " + str(delta_parameter) + " to small! set to 0.0001")
+            #     delta_parameter = 0.0001
+            #     if RSTATIC.DEBUG:
+            #         rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" +
+            #                       str(delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" +
+            #                       str(test_target_position) + ") - current_position (" + str(current_position) +
+            #                       ")) (" + str(numpy.linalg.norm(test_target_position - current_position)) +
+            #                       ") \n/ desired_distance (" + str(desired_distance) + "))")
 
             # TODO can be done only once after for??
             # variables containing a parameter, position and the corresponding distance that is slightly smaller than

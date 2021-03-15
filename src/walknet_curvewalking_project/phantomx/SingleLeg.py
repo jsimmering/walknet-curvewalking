@@ -425,9 +425,9 @@ class SingleLeg:
     def is_target_reached(self):
         if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
             return None
-        rospy.loginfo(self.name + ": self.alpha_reached (" + str(self.alpha_reached) + ") and self.beta_reached (" +
-                      str(self.beta_reached) + ") and self.gamma_reached (" + str(self.gamma_reached) + ") = " +
-                      str(self.alpha_reached and self.beta_reached and self.gamma_reached))
+        # rospy.loginfo(self.name + ": self.alpha_reached (" + str(self.alpha_reached) + ") and self.beta_reached (" +
+        #               str(self.beta_reached) + ") and self.gamma_reached (" + str(self.gamma_reached) + ") = " +
+        #               str(self.alpha_reached and self.beta_reached and self.gamma_reached))
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def is_target_set(self):

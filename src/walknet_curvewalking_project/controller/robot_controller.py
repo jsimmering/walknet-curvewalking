@@ -109,6 +109,7 @@ class RobotController:
             # if data.speed_fact * 10 > 0.70:
             if data.speed_fact * 10 >= 0.60:
                 CONST.DEFAULT_SWING_VELOCITY += 0.3
+            rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
             self.robot.stance_speed = data.speed_fact
             self.robot.direction = data.pull_angle
             self.robot.initialize_stability_data_file()
@@ -120,6 +121,8 @@ class RobotController:
             self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
+            self.running = False
+            self.robot.write_all_stability_data_to_file()
         self.update_stance_body_model(True)
 
     def init_body_model(self):
@@ -150,17 +153,10 @@ class RobotController:
         self.robot.body_model.mmc_iteration_step_matrix(reset_segments)
 
     def walk_body_model(self):
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-        rospy.loginfo("ready status = " + str(ready_status))
-        while not rospy.is_shutdown() and ready_status.__contains__(False):
-            rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
-            ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-            rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and self.walk_motivation and self.running:
             if self.walk_duration is not None and rospy.Time.now() - self.walk_start_time > self.walk_duration:
                 self.running = False
+                self.robot.write_all_stability_data_to_file()
             self.update_stance_body_model(False)
             legs_in_swing = self.robot.body_model.gc.count(False)
             for leg in reversed(self.robot.legs):
@@ -170,8 +166,8 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            rate.sleep()
-        rate.sleep()
+            self.rate.sleep()
+        self.rate.sleep()
 
     def walk_body_model_two_threads(self):
         ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
@@ -230,16 +226,35 @@ class RobotController:
             rospy.loginfo("leg_status = " + str(leg_status))
 
 
+def talker():
+    if not rospy.is_shutdown():
+        msg = robot_control()
+        msg.speed_fact = 0.0
+        msg.pull_angle = 0.0
+        rospy.loginfo("publish msg: " + str(msg))
+        pub.publish(msg)
+
+
 if __name__ == '__main__':
+    pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     nh = rospy.init_node('robot_controller', anonymous=True)
-    #robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(90))
+    # robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(3 * 60))
     robot_controller = RobotController('robot', nh)
     try:
         robot_controller.move_legs_into_init_pos()
         # robot_controller.move_body_cohesive()
+        ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
+        rospy.loginfo("ready status = " + str(ready_status))
+        while not rospy.is_shutdown() and ready_status.__contains__(False):
+            rospy.loginfo("leg not connected yet! wait...")
+            robot_controller.rate.sleep()
+            ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
+            rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and robot_controller.running:
             robot_controller.walk_body_model()
             # robot_controller.walk_body_model_two_threads()
             # robot_controller.walk_body_model_7_threads()
+        talker()
+        rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
     except rospy.ROSInterruptException:
         pass
