@@ -204,12 +204,14 @@ class SingleLegController:
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
         if self.leg.reached_pep() and legs_in_swing < 3:
+        #if self.leg.reached_step_length() and legs_in_swing < 3:
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
             self.swing = True
             legs_in_swing = legs_in_swing + 1
         elif self.leg.reached_pep() and legs_in_swing >= 3:
+        #elif self.leg.reached_step_length() and legs_in_swing >= 3:
             rospy.logwarn(self.name + ": delayed swing start.")
             #self.delayed_swing = True
         return legs_in_swing

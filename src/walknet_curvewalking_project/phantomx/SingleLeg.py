@@ -58,6 +58,11 @@ class SingleLeg:
         #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
+
+        self.default_step_length = RSTATIC.default_stance_distance
+        self.step_length = RSTATIC.default_stance_distance
+        self.default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
@@ -184,14 +189,17 @@ class SingleLeg:
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
+        #self.shift_step_length()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
         self.shift_pep()
+        #self.shift_step_length()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
         self.shift_pep()
+        # self.shift_step_length()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
@@ -200,6 +208,25 @@ class SingleLeg:
             self.pep_thresh = self.aep_thresh - 0.01
         else:
             self.pep_thresh = pep_thresh
+
+    def shift_step_length_ipsilateral(self, distance):
+        self.pep_shift_ipsilateral = distance
+        self.shift_step_length()
+
+    def shift_step_length_ipsilateral_from_front(self, distance):
+        self.pep_shift_ipsilateral_front = distance
+        self.shift_step_length()
+
+    def shift_step_length_contralateral(self, distance):
+        self.pep_shift_contralateral = distance
+        self.shift_step_length()
+
+    def shift_step_length(self):
+        step_length = self.default_step_length + self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
+        if step_length < 0.01:
+            self.step_length = 0.01
+        else:
+            self.step_length = step_length
 
     ##
     #   Estimate ground ground_contact:
@@ -211,6 +238,17 @@ class SingleLeg:
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
         return self.ee_position()[0] < self.pep_thresh
+
+    ##
+    #   Estimate ground ground_contact:
+    #   Predict current leg position (using fw kinematics) and
+    #   simply decide if the leg should touch ground
+    #   (very stable, but works only on flat terrain).
+    def reached_step_length(self):
+        # TODO find min pep_thresh for warning in case the leg has to move to far away.
+        # if self.pep_thresh == self.min_pep:
+        #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
+        return numpy.linalg.norm(self.default_aep - self.ee_position()) < self.step_length
 
     def check_joint_ranges(self, angles):
         return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][
