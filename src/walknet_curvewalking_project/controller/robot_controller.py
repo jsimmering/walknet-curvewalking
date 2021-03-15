@@ -20,15 +20,10 @@ class RobotController:
         self.robot = Robot(self.name, self.nh)
         self.walk_motivation = False
         self.walk_start_time = None
-        # self.leg_threads_list = []
         self.running = True
         self.started = False
         self.walk_duration = duration
 
-        # for leg in self.legs:
-        #     self.leg_threads_list.append(threading.Thread(target=leg.walking_thread, daemon=True))
-        # self.th = threading.Thread(target=self.leg_thread, daemon=True)
-        # self.th_body = threading.Thread(target=self.body_thread, daemon=True)
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
 
     def move_legs_into_init_pos(self):
@@ -72,34 +67,6 @@ class RobotController:
                     self.rate.sleep()
         rospy.loginfo("reached init positions")
 
-    def leg_thread(self):
-        # self.started = True
-        while not rospy.is_shutdown() and self.walk_motivation:
-            # self.updateStanceBodyModel()
-            for leg in self.robot.legs:
-                if rospy.is_shutdown():
-                    break
-                # input("press any key to performe the next step.")
-                leg.manage_walk()
-            self.rate_leg.sleep()
-
-    def body_thread(self):
-        # self.started = True
-        while not rospy.is_shutdown() and self.walk_motivation:
-            self.update_stance_body_model(False)
-            self.rate_body.sleep()
-
-    def leg_threads(self):
-        # self.started = True
-        # while not rospy.is_shutdown() and self.walk_motivation:
-        # self.updateStanceBodyModel()
-        for leg in self.leg_threads_list:
-            if rospy.is_shutdown():
-                break
-            # input("press any key to performe the next step.")
-            leg.start()
-        # self.rate.sleep()
-
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, data.speed_fact)
@@ -133,7 +100,7 @@ class RobotController:
         self.robot.body_model.updateLegStates()
 
     # Update all the leg networks.
-    # Main Processing Step?
+    # Main Processing Step
     def update_stance_body_model(self, reset_segments):
         if self.debug:
             mleg = self.robot.legs[4]
@@ -168,43 +135,6 @@ class RobotController:
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             self.rate.sleep()
         self.rate.sleep()
-
-    def walk_body_model_two_threads(self):
-        ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-        rospy.loginfo("ready status = " + str(ready_status))
-        while ready_status.__contains__(False):
-            rospy.loginfo("leg not connected yet! wait...")
-            self.rate.sleep()
-            ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-            rospy.loginfo("ready status = " + str(ready_status))
-
-        while not rospy.is_shutdown():
-            if not self.started and self.walk_motivation:
-                self.started = True
-                self.th.start()
-                self.th_body.start()
-            if self.started and not self.walk_motivation:
-                # TODO check in thread if finished.
-                pass
-            # rospy.logwarn("robot controller updated body model. step = " + str(self.body_model.step))
-            self.rate.sleep()
-
-    def walk_body_model_7_threads(self):
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-        rospy.loginfo("ready status = " + str(ready_status))
-        while ready_status.__contains__(False):
-            rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
-            ready_status = [leg.leg.is_ready() for leg in self.robot.legs]
-            rospy.loginfo("ready status = " + str(ready_status))
-        while not rospy.is_shutdown() and self.walk_motivation:
-            self.update_stance_body_model(False)
-            if not self.started:
-                self.started = True
-                self.leg_threads()
-            # rospy.logwarn("robot controller updated body model. step = " + str(self.body_model.step))
-            rate.sleep()
 
     def move_body_cohesive(self):
         rate = rospy.Rate(RSTATIC.controller_frequency)
@@ -252,8 +182,7 @@ if __name__ == '__main__':
             rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and robot_controller.running:
             robot_controller.walk_body_model()
-            # robot_controller.walk_body_model_two_threads()
-            # robot_controller.walk_body_model_7_threads()
+
         talker()
         rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
     except rospy.ROSInterruptException:

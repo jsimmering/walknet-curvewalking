@@ -35,11 +35,7 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = None
         self.threshold_rule3_contralateral = None
 
-        # self.target_pos = None
-        # TODO possibly needs to be adjusted with velocity? 4cm steps 0.01 velocity 0.02; 0.075 - 0.1 velocity 0.033?
-        #self.displ_leg_ipsilateral = 0.0425
         self.displ_leg_ipsilateral = 0.041
-        # self.displ_leg_ipsilateral = 0.035
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
             self.displ_leg = 0.025
@@ -89,12 +85,6 @@ class SingleLegController:
         #     th = threading.Thread(target=self.leg.pub_pep_threshold, daemon=True)
         #     th.start()
 
-        self.rule1 = True
-        self.rule2_ipsi = True
-        self.rule2_contra = True
-        self.rule3_ipsi = True
-        self.rule3_contra = True
-
     def set_init_pos(self, p):
         self.init_pos = p
 
@@ -141,7 +131,7 @@ class SingleLegController:
         self.swing = False
 
     def pub_rules(self, rules_msg):
-        now = rospy.Time.now()
+        # now = rospy.Time.now()
         # rospy.loginfo(self.name + ' start swing publish rule 1 at ' + str(now.secs) + ' sec and ' + str(now.nsecs) +
         #              'nsecs')
         self._rules_pub.publish(rules_msg)
@@ -150,41 +140,26 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = 0.0
-        if self.rule1:
-            shift_distance += data.rule1
-        if self.rule2_ipsi:
-            shift_distance += data.rule2_ipsilateral
+        shift_distance = data.rule1 + data.rule2_ipsilateral
         self.leg.shift_pep_ipsilateral(shift_distance)
 
     def ipsilateral_rules_from_front_callback(self, data):
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = 0.0
-        if self.rule3_ipsi:
-            shift_distance += data.rule3_ipsilateral
+        shift_distance = data.rule3_ipsilateral
         self.leg.shift_pep_ipsilateral_from_front(shift_distance)
 
     def contralateral_rules_callback(self, data):
         # rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
         #               str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = 0.0
+        shift_distance = data.rule2_contralateral + data.rule3_contralateral
         if self.name == "lr" or self.name == "rr":
             shift_distance += data.rule1
-        if self.rule2_contra:
-            shift_distance += data.rule2_contralateral
-        if self.rule3_contra:
-            shift_distance += data.rule3_contralateral
         #if self.name == "lr" or self.name == "rr":
         #    shift_distance += data.rule1
         self.leg.shift_pep_contralateral(shift_distance)
-
-    def walking_thread(self):
-        while not rospy.is_shutdown():
-            self.manage_walk()
-            self.rate.sleep()
 
     # function for executing a single step in a stance movement.
     def manage_walk(self, legs_in_swing):
@@ -231,7 +206,7 @@ class SingleLegController:
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
-        if (self.leg.reached_pep() and legs_in_swing < 3):
+        if self.leg.reached_pep() and legs_in_swing < 3:
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
