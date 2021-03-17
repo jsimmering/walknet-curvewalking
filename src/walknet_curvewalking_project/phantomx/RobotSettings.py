@@ -3,7 +3,7 @@ import numpy
 # Settings for the Phantom robot objects: defining leg namings, joint_limits.
 
 # ====== simulation parameters ========
-controller_frequency = 80
+controller_frequency = 50
 DEBUG = False
 
 # ========== naming objects ========
