@@ -76,28 +76,22 @@ class Robot:
 
         return center_of_mass
 
-    def pub_shortest_vectors(self, vecs, com):
+    def pub_com_vectors(self, com):
         if not self.viz:
             return
-        self.shortest_vectors.points.clear()
-        point1 = Point(com[0], com[1], com[2])
-        for vec in vecs:
-            point2 = Point(com[0] + vec[0], com[1] + vec[1], com[2] + vec[2])
-            self.shortest_vectors.points.append(point1)
-            self.shortest_vectors.points.append(point2)
 
         self.com_point.points.clear()
         self.com_point.color.b += 0.05
-        self.com_point.points.append(point1)
+        self.com_point.points.append(Point(com[0], com[1], com[2]))
 
         self.visualization_pub.publish(self.com_point)
-        self.visualization_pub.publish(self.shortest_vectors)
+        #self.visualization_pub.publish(self.shortest_vectors)
 
     def check_stability(self):
         com = self._get_center_of_mass()
         # rospy.loginfo("Center of Mass = " + str(com))
         temp_foot_positions = []
-        #str_list = ["{}".format(rospy.Time.now().to_sec())]
+        # str_list = ["{}".format(rospy.Time.now().to_sec())]
         self.str_list.extend(str(rospy.Time.now().to_sec()))
         leg_list = [RSTATIC.leg_names.index('lf'), RSTATIC.leg_names.index('lm'), RSTATIC.leg_names.index('lr'),
                     RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf'), ]
@@ -117,31 +111,31 @@ class Robot:
 
             # removed com projection, pcom usually less than 0.004meters = 4mm away from com and
             # can be calculated afterwards from com and ee data ⇒ remove pcom computation and logging from walknet
-            # projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
-            # if projected_com is None:
-            #     self.last_state_stable = False
-            #     rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
-            #     str_list.append("\n")
-            #     self.write_stability_data_to_file(''.join(str_list))
-            #     return False
+            projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
+            if projected_com is None:
+                self.last_state_stable = False
+                rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
+                # str_list.append("\n")
+                # self.write_stability_data_to_file(''.join(str_list))
+                return False
 
-            #pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
-            #rospy.loginfo("pcom xy error: pcom = {} pcom xy = {}, com = {} com xy = {} pcom xy error = {}".format(projected_com, projected_com[:-1], com, com[:-1], pcom_error))
-            #str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
-            #if not stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
-            if not stability.is_point_inside_convex_hull(convex_hull_points, com):
+            # pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
+            # rospy.loginfo("pcom xy error: pcom = {} pcom xy = {}, com = {} com xy = {} pcom xy error = {}".format(projected_com, projected_com[:-1], com, com[:-1], pcom_error))
+            self.str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
+            if not stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
+                # if not stability.is_point_inside_convex_hull(convex_hull_points, com):
                 self.last_state_stable = False
                 rospy.logwarn("Unstable!")
-                #self.pub_shortest_vectors([], projected_com)
+                #self.pub_com_vectors(projected_com)
                 self.str_list.extend("\n")
-                #self.write_stability_data_to_file(''.join(self.str_list))
+                # self.write_stability_data_to_file(''.join(self.str_list))
                 return False
             # If the center of mass lies inside the support polygon
             elif not self.last_state_stable:
                 rospy.loginfo("back to stable state\n\n")
                 self.last_state_stable = True
         self.str_list.extend("\n")
-        #self.write_stability_data_to_file(''.join(self.str_list))
+        # self.write_stability_data_to_file(''.join(self.str_list))
         return True
 
     def write_stability_data_to_file(self, data):
@@ -160,9 +154,9 @@ class Robot:
         if self.log_data:
             time = datetime.datetime.now()
             self.file_name = "logs/walknet_stability_" + str(RSTATIC.controller_frequency) + "hz_" + \
-                             str(round(self.stance_speed, 4)) + "s_" + str(round(self.direction, 3)) + "dir_on_" + str(
-                    time.month) + "-" + \
-                             str(time.day) + "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
+                             str(round(self.stance_speed, 4)) + "s_" + str(round(self.direction, 3)) + "dir_on_" + \
+                             str(time.month) + "-" + str(time.day) + "_at_" + str(time.hour) + "-" + \
+                             str(time.minute) + "-" + str(time.second)
             print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
             with open(self.file_name, "a") as f_handle:
                 # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
