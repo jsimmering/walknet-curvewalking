@@ -69,14 +69,16 @@ class RobotController:
 
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
-            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, data.speed_fact)
+            stance_speed = data.speed_fact / RSTATIC.controller_frequency
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, stance_speed)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
-                leg.set_delay_1b(data.speed_fact)
+                leg.set_delay_1b(stance_speed)
             # if data.speed_fact * 10 > 0.70:
-            if data.speed_fact * 10 >= 0.60:
-                CONST.DEFAULT_SWING_VELOCITY += 0.3
+            # if data.speed_fact * 10 >= 0.60:
+            #     CONST.DEFAULT_SWING_VELOCITY += 0.3
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
+            rospy.loginfo("STANCE SPEED = " + str(stance_speed))
             self.robot.stance_speed = data.speed_fact
             self.robot.direction = data.pull_angle
             self.robot.initialize_stability_data_file()
@@ -168,8 +170,8 @@ def talker():
 if __name__ == '__main__':
     pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     nh = rospy.init_node('robot_controller', anonymous=True)
-    # robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(3 * 60))
-    robot_controller = RobotController('robot', nh)
+    robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(3 * 60))
+    # robot_controller = RobotController('robot', nh)
     try:
         robot_controller.move_legs_into_init_pos()
         # robot_controller.move_body_cohesive()

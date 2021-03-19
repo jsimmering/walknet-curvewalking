@@ -165,8 +165,8 @@ class SingleLegController:
         #     return
         # else:
         # start = rospy.Time.now()
-        # if self.pep_viz:
-        #     self.leg.pub_pep_threshold()
+        if self.pep_viz:
+            self.leg.pub_pep_threshold()
         if self.swing:
             return self.execute_swing_step(legs_in_swing)
         else:
