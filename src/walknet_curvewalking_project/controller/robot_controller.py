@@ -69,7 +69,9 @@ class RobotController:
 
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
-            stance_speed = data.speed_fact / RSTATIC.controller_frequency
+            stance_speed = (data.speed_fact * (
+                        -109.5 * data.speed_fact + 0.0145 / data.speed_fact + 31.53)) / RSTATIC.controller_frequency
+            # stance_speed = (data.speed_fact * 28) / RSTATIC.controller_frequency
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, stance_speed)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
