@@ -69,9 +69,10 @@ class SingleLeg:
 
         default_gamma_pos = self.c1_rotation(0, self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
         default_beta_pos = self.c1_rotation(0, self.c1_thigh_transformation(0))
-        self.thigh_tibia_angle = -atan2(default_gamma_pos[0] - default_beta_pos[0], -default_gamma_pos[1] + default_beta_pos[1])  # 0.2211...
+        self.thigh_tibia_angle = -atan2(default_gamma_pos[0] - default_beta_pos[0],
+                                        -default_gamma_pos[1] + default_beta_pos[1])  # 0.2211...
         self.tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
-        #rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
+        # rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
 
         self.viz = False
         if self.viz:
@@ -189,12 +190,12 @@ class SingleLeg:
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
-        #self.shift_step_length()
+        # self.shift_step_length()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
         self.shift_pep()
-        #self.shift_step_length()
+        # self.shift_step_length()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
@@ -376,7 +377,7 @@ class SingleLeg:
         if len(p) == 3:
             p = numpy.append(p, [1])
         # p_temp = copy.copy(p)
-        #c1_pos = self.apply_c1_static_transform()
+        # c1_pos = self.apply_c1_static_transform()
 
         # alpha_angle: float = -atan2(p[1], (p[0]))
         # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
@@ -417,9 +418,13 @@ class SingleLeg:
                 gamma_angle = pi - gamma_inner - self.tibia_z_angle
                 gamma_flipped = True
                 rospy.logerr(self.name + " flip gamma_angle. gamma new = " + str(gamma_angle))
+        except ValueError:
+            raise ValueError(self.name + ': gamma: The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' +
+                             str(p[2]) + ') is not valid for the given geometry')
 
-            cos_beta_inner = (pow(self._segment_lengths[1], 2) + pow(beta_to_ee, 2) - pow(self._segment_lengths[2], 2)) / (
-                    2 * self._segment_lengths[1] * beta_to_ee)
+        try:
+            cos_beta_inner = (pow(self._segment_lengths[1], 2) + pow(beta_to_ee, 2) -
+                              pow(self._segment_lengths[2], 2)) / (2 * self._segment_lengths[1] * beta_to_ee)
             # Avoid running in numerical rounding error
             if cos_beta_inner > 1:
                 h1 = 0
@@ -435,8 +440,8 @@ class SingleLeg:
             else:
                 h2 = (acos(cos_beta))
         except ValueError:
-            raise ValueError(self.name + ': The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' + str(
-                    p[2]) + ') is not valid for the given geometry')
+            raise ValueError(self.name + ': beta: The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' +
+                             str(p[2]) + ') is not valid for the given geometry.')
 
         beta_angle = pi - (h1 + h2 + self.thigh_tibia_angle)
         if RSTATIC.joint_angle_limits[1][0] >= beta_angle:

@@ -62,21 +62,22 @@ class StanceMovementBodyModel:
             #     stance_foot_pos[0] = self.leg_controller.pep_shifted[0] + 0.02
             # self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.compute_forward_kinematics_c1())  #self.leg_controller.leg.ee_position())
             self.bodyModelStance.put_leg_on_ground(self.leg_controller.name,
-                self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
+                    self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
             self.init_stance_footpoint = True
         target_vec = None
         try:
             target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
-                self.leg_controller.leg.name)
+                    self.leg_controller.leg.name)
             next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
             # rospy.loginfo(self.leg_controller.name + " target height = " + str(target_vec[2]))
             self.leg_controller.leg.set_command(next_angles)
-        except ValueError:
-            rospy.logerr("modulated_routine_function_call: ValueError in " + str(self.leg_controller.leg.name) +
-                         " during inverse kinematics computation.\n Tried to reach position " + str(target_vec) +
-                         "\ncurrent position is: " + str(self.leg_controller.leg.ee_position()) +
-                         "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
-                         "\nMaintaining current angles.")
+        except ValueError as ve:
+            rospy.logerr("modulated_routine_function_call: ValueError during inverse kinematics computation: " +
+                         str(ve))
+            # + "\n Tried to reach position " + str(target_vec) +
+            # "\ncurrent position is: " + str(self.leg_controller.leg.ee_position()) +
+            # "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
+            # "\nMaintaining current angles.")
             self.leg_controller.leg.set_command(self.leg_controller.leg.get_current_angles())
 
         # current_angles = numpy.array(self.leg_controller.leg.ee_position())

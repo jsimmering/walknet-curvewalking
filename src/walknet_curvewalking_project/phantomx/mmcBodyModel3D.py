@@ -718,6 +718,7 @@ class mmcBodyModelStance:
         pull_angle_BM = pull_angle + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
         self.pull_front[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_front[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
+        rospy.loginfo("pull_front = " + str(self.pull_front))
 
     ##	Pull the body model into a direction relative to the last body
     #	segment. Takes an angle (0 means straight backwards) and a velocity factor
