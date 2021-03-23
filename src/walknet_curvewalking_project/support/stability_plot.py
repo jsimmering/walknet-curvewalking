@@ -62,7 +62,15 @@ def plot_stability_data():
             plt.clf()
 
             line = line.rstrip("\n")
-            values = [float(s) for s in line.split(";")]
+            try:
+                values = [float(s) for s in line.split(";")]
+            except ValueError:
+                tmp = line.split(";")
+                #print("time = " + str(tmp[0]))
+                tmp_time = tmp[0].split(".")
+                tmp[0] = tmp_time[0] + '.' + tmp_time[2]
+                #print("time = " + str(tmp[0]))
+                values = [float(s) for s in tmp]
             foot_polygon = []
             first_leg = -1
             column_idx = 1
