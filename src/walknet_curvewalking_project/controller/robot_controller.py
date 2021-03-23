@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 
 import rospy
 from walknet_curvewalking.msg import robot_control
@@ -165,15 +166,24 @@ def talker():
         msg = robot_control()
         msg.speed_fact = 0.0
         msg.pull_angle = 0.0
-        rospy.loginfo("publish msg: " + str(msg))
+        rospy.loginfo("robot_controller publish msg: " + str(msg))
         pub.publish(msg)
 
 
 if __name__ == '__main__':
     pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     nh = rospy.init_node('robot_controller', anonymous=True)
-    robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(3 * 60))
-    # robot_controller = RobotController('robot', nh)
+
+    walk = rospy.get_param('~walk', True)
+
+    if rospy.has_param('~duration'):
+        duration = rospy.get_param('~duration')
+        robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(duration * 60))
+        rospy.loginfo("Walk for {} seconds.".format(duration * 60))
+    else:
+        robot_controller = RobotController('robot', nh)  # executing until stop command
+        rospy.loginfo("Walk until stop command")
+
     try:
         robot_controller.move_legs_into_init_pos()
         # robot_controller.move_body_cohesive()
@@ -184,10 +194,13 @@ if __name__ == '__main__':
             robot_controller.rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
             rospy.loginfo("ready status = " + str(ready_status))
-        while not rospy.is_shutdown() and robot_controller.running:
+        while not rospy.is_shutdown() and robot_controller.running and walk:
             robot_controller.walk_body_model()
 
         talker()
-        rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
+        if robot_controller.walk_start_time:
+            rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
+        else:
+            rospy.loginfo("DURATION = 0. No walk command received")
     except rospy.ROSInterruptException:
         pass
