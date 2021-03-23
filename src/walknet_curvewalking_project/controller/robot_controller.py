@@ -93,7 +93,7 @@ class RobotController:
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.running = False
-            self.robot.write_all_stability_data_to_file()
+            #self.robot.write_all_stability_data_to_file()
         self.update_stance_body_model(True)
 
     def init_body_model(self):
@@ -127,7 +127,7 @@ class RobotController:
         while not rospy.is_shutdown() and self.walk_motivation and self.running:
             if self.walk_duration is not None and rospy.Time.now() - self.walk_start_time > self.walk_duration:
                 self.running = False
-                self.robot.write_all_stability_data_to_file()
+                #self.robot.write_all_stability_data_to_file()
             self.update_stance_body_model(False)
             legs_in_swing = self.robot.body_model.gc.count(False)
             for leg in reversed(self.robot.legs):

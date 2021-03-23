@@ -16,7 +16,7 @@ class Robot:
         self.name = name
         self.viz = False
         self.log_data = True
-        self.str_list = []
+        #self.str_list = []
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
@@ -91,8 +91,9 @@ class Robot:
         com = self._get_center_of_mass()
         # rospy.loginfo("Center of Mass = " + str(com))
         temp_foot_positions = []
-        # str_list = ["{}".format(rospy.Time.now().to_sec())]
-        self.str_list.extend(str(rospy.Time.now().to_sec()))
+        str_list = ["{}".format(rospy.Time.now().to_sec())]
+        #self.str_list.extend(str(rospy.Time.now().to_sec()))
+        #str_list.extend(str(rospy.Time.now().to_sec()))
         leg_list = [RSTATIC.leg_names.index('lf'), RSTATIC.leg_names.index('lm'), RSTATIC.leg_names.index('lr'),
                     RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf'), ]
         for i in leg_list:
@@ -100,12 +101,15 @@ class Robot:
                 temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
                         self.legs[i].leg.name)
                 temp_foot_positions.append(temp_foot_position)
-                self.str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
+                #self.str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
+                str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
                         z=temp_foot_position[2]))
             else:
-                self.str_list.extend(";{x};{y};{z}".format(x=0.0, y=0.0, z=0.0))
+                # self.str_list.extend(";{x};{y};{z}".format(x=0.0, y=0.0, z=0.0))
+                str_list.extend(";{x};{y};{z}".format(x=0.0, y=0.0, z=0.0))
 
-        self.str_list.extend(";{x};{y};{z}".format(x=com[0], y=com[1], z=com[2]))
+        # self.str_list.extend(";{x};{y};{z}".format(x=com[0], y=com[1], z=com[2]))
+        str_list.extend(";{x};{y};{z}".format(x=com[0], y=com[1], z=com[2]))
         if len(temp_foot_positions) > 0:
             convex_hull_points = stability.convex_hull(list(temp_foot_positions))
 
@@ -115,27 +119,30 @@ class Robot:
             if projected_com is None:
                 self.last_state_stable = False
                 rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
-                # str_list.append("\n")
-                # self.write_stability_data_to_file(''.join(str_list))
+                str_list.append("\n")
+                self.write_stability_data_to_file(''.join(str_list))
                 return False
 
             # pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
             # rospy.loginfo("pcom xy error: pcom = {} pcom xy = {}, com = {} com xy = {} pcom xy error = {}".format(projected_com, projected_com[:-1], com, com[:-1], pcom_error))
-            self.str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
+            # self.str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
+            str_list.append(";{x};{y};{z}".format(x=projected_com[0], y=projected_com[1], z=projected_com[2]))
             if not stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
                 # if not stability.is_point_inside_convex_hull(convex_hull_points, com):
                 self.last_state_stable = False
                 rospy.logwarn("Unstable!")
                 #self.pub_com_vectors(projected_com)
-                self.str_list.extend("\n")
-                # self.write_stability_data_to_file(''.join(self.str_list))
+                # self.str_list.extend("\n")
+                str_list.extend("\n")
+                self.write_stability_data_to_file(''.join(str_list))
                 return False
             # If the center of mass lies inside the support polygon
             elif not self.last_state_stable:
                 rospy.loginfo("back to stable state\n\n")
                 self.last_state_stable = True
-        self.str_list.extend("\n")
-        # self.write_stability_data_to_file(''.join(self.str_list))
+        #self.str_list.extend("\n")
+        str_list.extend("\n")
+        self.write_stability_data_to_file(''.join(str_list))
         return True
 
     def write_stability_data_to_file(self, data):
