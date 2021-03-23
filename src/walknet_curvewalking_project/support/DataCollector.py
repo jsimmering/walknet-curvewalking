@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import sys
 
 import rospy
 from gazebo_msgs.msg import ModelStates
@@ -7,11 +8,16 @@ from walknet_curvewalking.msg import robot_control
 
 
 class DataCollector:
-    def __init__(self):
+    def __init__(self, circles):
+        self.running = True
         self.walking = False
         self.init_stability = False
-        #self.init_position = False
         self.file_name = ""
+        self.circles_to_walk = circles
+        self.circle_count = 0
+        self.last_in_origin_area = None
+        self.current_position = [0, 0, 0]
+        self.rate = rospy.Rate(2)
 
     def control_callback(self, data):
         rospy.loginfo(rospy.get_caller_id() + " control_callback heard %s", data)
@@ -26,57 +32,86 @@ class DataCollector:
                         "time;point x;point y;point z;quaternion x;quaternion y;quaternion z;quaternion w;linear x;linear y;linear z;angular x;angular y;angular z\n")
 
             self.walking = True
+            self.last_in_origin_area = rospy.Time.now()
         else:
             self.walking = False
-
-    def stability_callback(self, data):
-        if not self.init_stability:
-            rospy.loginfo(rospy.get_caller_id() + " stability_callback heard %s", data)
-            self.init_stability = True
-        if self.walking:
-            rospy.loginfo(rospy.get_caller_id() + " stability_callback heard %s", data)
-            # with open(self.file_name, 'ba') as f_handle:
-            # Save an array to a text file.
-            # np.savetxt(f_handle, np.atleast_2d(mu_activation_data), fmt='%1.3f')
+            self.running = False
 
     def position_callback(self, data):
-        # if not self.init_position:
-        #     # rospy.loginfo(rospy.get_caller_id() + " position_callback heard pose: %s and twist: %s",
-        #     #        data.pose[data.name.index('phantomx')], data.twist[data.name.index('phantomx')])
-        #     self.write_positiion_to_file#(data)
-        #     self.init_position = True
-        if self.walking:
-            # rospy.loginfo(rospy.get_caller_id() + " position_callback heard pose: %s and twist: %s",
-            #        data.pose[data.name.index('phantomx')], data.twist[data.name.index('phantomx')])
-            self.write_positiion_to_file(data)
+        if self.walking and self.running:
+            robot_position = data.pose[data.name.index('phantomx')]
+            self.current_position = [robot_position.position.x,
+                                     robot_position.position.y]
+            self.write_positiion_to_file(robot_position, data.twist[data.name.index('phantomx')])
+        elif not self.running:
+            rospy.signal_shutdown("Run finished done collecting Data! Shutting down")
 
-    def write_positiion_to_file(self, data):
+    def write_positiion_to_file(self, pose, twist):
         with open(self.file_name, 'a') as f_handle:
             f_handle.write(
                     "{time};{point_x};{point_y};{point_z};{quaternion_x};{quaternion_y};{quaternion_z};{quaternion_w};{linear_x};{linear_y};{linear_z};{angular_x};{angular_y};{angular_z}\n".format(
                             time=rospy.Time.now().to_sec(),
-                            point_x=data.pose[data.name.index('phantomx')].position.x,
-                            point_y=data.pose[data.name.index('phantomx')].position.y,
-                            point_z=data.pose[data.name.index('phantomx')].position.z,
-                            quaternion_x=data.pose[data.name.index('phantomx')].orientation.x,
-                            quaternion_y=data.pose[data.name.index('phantomx')].orientation.y,
-                            quaternion_z=data.pose[data.name.index('phantomx')].orientation.z,
-                            quaternion_w=data.pose[data.name.index('phantomx')].orientation.w,
-                            linear_x=data.twist[data.name.index('phantomx')].linear.x,
-                            linear_y=data.twist[data.name.index('phantomx')].linear.y,
-                            linear_z=data.twist[data.name.index('phantomx')].linear.z,
-                            angular_x=data.twist[data.name.index('phantomx')].angular.x,
-                            angular_y=data.twist[data.name.index('phantomx')].angular.y,
-                            angular_z=data.twist[data.name.index('phantomx')].angular.z))
+                            point_x=pose.position.x,
+                            point_y=pose.position.y,
+                            point_z=pose.position.z,
+                            quaternion_x=pose.orientation.x,
+                            quaternion_y=pose.orientation.y,
+                            quaternion_z=pose.orientation.z,
+                            quaternion_w=pose.orientation.w,
+                            linear_x=twist.linear.x,
+                            linear_y=twist.linear.y,
+                            linear_z=twist.linear.z,
+                            angular_x=twist.angular.x,
+                            angular_y=twist.angular.y,
+                            angular_z=twist.angular.z))
+
+    def check_if_circle_finished(self):
+        while not rospy.is_shutdown():
+            if self.walking and self.running:
+                if self.current_position[0] > 0 and self.current_position[1] > 0:
+                    now = rospy.Time.now()
+                    if now - self.last_in_origin_area > rospy.Duration(60):
+                        self.circle_count += 1
+                        if self.circle_count >= self.circles_to_walk:
+                            self.brodcast_stop_walking()
+                    else:
+                        self.last_in_origin_area = now
+            self.rate.sleep()
+
+    def brodcast_stop_walking(self):
+        if not rospy.is_shutdown():
+            msg = robot_control()
+            msg.speed_fact = 0.0
+            msg.pull_angle = 0.0
+            rospy.loginfo("DataCollector publish msg: " + str(msg))
+            pub.publish(msg)
 
 
 if __name__ == '__main__':
+    circles = 0
+    if len(sys.argv) > 1:
+        rospy.loginfo("walk " + sys.argv[1] + "circles")
+        try:
+            circles = int(sys.argv[1])
+        except ValueError:
+            rospy.loginfo("wrong usage. Use: rosrun walknet_curvewalking DataCollector.py <number_of_circles>")
+            rospy.loginfo("walking until stop command")
+
+    if circles == 0:
+        rospy.loginfo("walking until stop command")
+
+    pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     rospy.init_node('data_collector')
 
-    data_collector = DataCollector()
+    data_collector = DataCollector(circles)
 
     rospy.Subscriber('/control_robot', robot_control, data_collector.control_callback)
-    # rospy.Subscriber('/com', Marker, data_collector.stability_callback)
     rospy.Subscriber('/gazebo/model_states', ModelStates, data_collector.position_callback)
 
-    rospy.spin()
+    if circles != 0:
+        try:
+            data_collector.check_if_circle_finished()
+        except rospy.ROSInterruptException:
+            pass
+    else:
+        rospy.spin()
