@@ -21,11 +21,13 @@ class Robot:
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
         self.last_state_stable = True
+        self.unstable_count = 0
 
         self.body_model = mmcBodyModelStance(self)
         self.stance_speed = 0.0
         self.direction = 0.0
-        self.file_name = ""
+        self.file_name = "logs/walknet_stability_"
+        self.file_suffix = ""
 
         self.legs = []
         for name in RSTATIC.leg_names:
@@ -121,6 +123,7 @@ class Robot:
                 rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
                 str_list.append("\n")
                 self.write_stability_data_to_file(''.join(str_list))
+                self.unstable_count += 1
                 return False
 
             # pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
@@ -135,6 +138,7 @@ class Robot:
                 # self.str_list.extend("\n")
                 str_list.extend("\n")
                 self.write_stability_data_to_file(''.join(str_list))
+                self.unstable_count += 1
                 return False
             # If the center of mass lies inside the support polygon
             elif not self.last_state_stable:
@@ -148,24 +152,23 @@ class Robot:
     def write_stability_data_to_file(self, data):
         # rospy.loginfo("write to file: " + data)
         if self.log_data:
-            with open(self.file_name, 'a') as f_handle:
+            with open(self.file_name + self.file_suffix, 'a') as f_handle:
                 f_handle.write(data)
 
     def write_all_stability_data_to_file(self):
         # rospy.loginfo("write to file: " + data)
         if self.log_data:
-            with open(self.file_name, 'a') as f_handle:
+            with open(self.file_name + self.file_suffix, 'a') as f_handle:
                 f_handle.write(''.join(self.str_list))
 
     def initialize_stability_data_file(self):
         if self.log_data:
             time = datetime.datetime.now()
-            self.file_name = "logs/walknet_stability_" + str(RSTATIC.controller_frequency) + "hz_" + \
-                             str(round(self.stance_speed, 4)) + "s_" + str(round(self.direction, 3)) + "dir_on_" + \
-                             str(time.month) + "-" + str(time.day) + "_at_" + str(time.hour) + "-" + \
-                             str(time.minute) + "-" + str(time.second)
-            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
-            with open(self.file_name, "a") as f_handle:
+            self.file_suffix = str(RSTATIC.controller_frequency) + "hz_" + str(round(self.stance_speed, 4)) + "s_" + \
+                               str(round(self.direction, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
+                               "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
+            print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name + self.file_suffix)
+            with open(self.file_name + self.file_suffix, "a") as f_handle:
                 # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
                 f_handle.write(
                         "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z\n")
