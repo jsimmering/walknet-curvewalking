@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import datetime
-import sys
 
+import numpy as np
 import rospy
 from gazebo_msgs.msg import ModelStates
 from walknet_curvewalking.msg import robot_control
 
 
 class DataCollector:
-    def __init__(self, circles):
+    def __init__(self, circles, required_dis):
         self.running = True
         self.walking = False
         self.init_stability = False
@@ -17,7 +17,12 @@ class DataCollector:
         self.circle_count = 0
         self.last_in_origin_area = None
         self.current_position = [0, 0, 0]
+        self.last_position = None
+        self.steps_since_last = 0
+        self.distance = 0
+        self.required_distance = required_dis
         self.rate = rospy.Rate(2)
+        rospy.loginfo("num circles {} distance {}".format(circles, distance))
 
     def control_callback(self, data):
         rospy.loginfo(rospy.get_caller_id() + " control_callback heard %s", data)
@@ -43,6 +48,14 @@ class DataCollector:
             self.current_position = [robot_position.position.x,
                                      robot_position.position.y]
             self.write_positiion_to_file(robot_position, data.twist[data.name.index('phantomx')])
+            if self.steps_since_last % 1000 == 0 and self.required_distance != 0.0:
+                if self.last_position is not None:
+                    dis = np.linalg.norm(np.array(self.current_position) - np.array(self.last_position))
+                    self.distance += dis
+                self.last_position = self.current_position
+                if self.distance >= self.required_distance:
+                    self.brodcast_stop_walking()
+            self.steps_since_last += 1
         elif not self.running:
             rospy.signal_shutdown("Run finished done collecting Data! Shutting down")
 
@@ -88,22 +101,27 @@ class DataCollector:
 
 
 if __name__ == '__main__':
-    circles = 0
-    if len(sys.argv) > 1:
-        rospy.loginfo("walk " + sys.argv[1] + "circles")
-        try:
-            circles = int(sys.argv[1])
-        except ValueError:
-            rospy.loginfo("wrong usage. Use: rosrun walknet_curvewalking DataCollector.py <number_of_circles>")
-            rospy.loginfo("walking until stop command")
-
-    if circles == 0:
-        rospy.loginfo("walking until stop command")
+    rospy.loginfo("IN DATACOLLECTOR")
 
     pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     rospy.init_node('data_collector')
 
-    data_collector = DataCollector(circles)
+    circles = 0
+    if rospy.has_param('~circles'):
+        circles = rospy.get_param('~circles')
+
+    distance = 0.0
+    if rospy.has_param('~distance'):
+        distance = rospy.get_param('~distance')
+
+    if circles == 0 and (distance == 0.0 or distance == 0):
+        rospy.loginfo("Data Collector: walking until stop command")
+    elif distance == 0 or distance == 0.0:
+        rospy.loginfo("Data Collector: walk " + str(circles) + " circles")
+    if circles == 0:
+        rospy.loginfo("Data Collector: walk " + str(distance) + " meter")
+
+    data_collector = DataCollector(circles, distance)
 
     rospy.Subscriber('/control_robot', robot_control, data_collector.control_callback)
     rospy.Subscriber('/gazebo/model_states', ModelStates, data_collector.position_callback)
