@@ -43,6 +43,7 @@ class StanceMovementBodyModel:
         self.init_stance_footpoint = False
         self.bodyModelStance = self.leg_controller.robot.body_model
         self.inverseKinematic_provider = self.leg_controller.leg
+        self.valueError_count = 0
 
     def __del__(self):
         pass
@@ -72,8 +73,8 @@ class StanceMovementBodyModel:
             # rospy.loginfo(self.leg_controller.name + " target height = " + str(target_vec[2]))
             self.leg_controller.leg.set_command(next_angles)
         except ValueError as ve:
-            rospy.logerr("modulated_routine_function_call: ValueError during inverse kinematics computation: " +
-                         str(ve))
+            rospy.logerr("STANCE: ValueError during inverse kinematics computation: " + str(ve))
+            self.valueError_count += 1
             # + "\n Tried to reach position " + str(target_vec) +
             # "\ncurrent position is: " + str(self.leg_controller.leg.ee_position()) +
             # "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
