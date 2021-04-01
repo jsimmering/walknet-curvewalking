@@ -174,7 +174,7 @@ class RobotController:
         file_suffix = self.robot.file_suffix
         if file_suffix == "":
             time = datetime.datetime.now()
-            file_suffix = str(RSTATIC.controller_frequency) + "hz_" + str(round(self.stance_speed, 4)) + "s_" + \
+            file_suffix = str(RSTATIC.controller_frequency) + "hz_" + str(round(self.velocity, 4)) + "s_" + \
                           str(round(self.pull_angle, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
                           "_till_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
         print("DATA COLLECTOR MODEL ROBOT NAME: ", file_name + file_suffix)

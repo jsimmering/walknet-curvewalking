@@ -1,4 +1,3 @@
-import copy
 from math import sin, cos, atan2, pow, pi, acos, radians
 
 import numpy
@@ -61,7 +60,8 @@ class SingleLeg:
 
         self.default_step_length = RSTATIC.default_stance_distance
         self.step_length = RSTATIC.default_stance_distance
-        self.default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+        default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+        self.default_aep = numpy.array([default_aep[0], self.movement_dir * default_aep[1], default_aep[2]])
 
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
@@ -105,8 +105,10 @@ class SingleLeg:
     def pub_pep_threshold(self):
         # while not rospy.is_shutdown():
         self.pep_thresh_line.points.clear()
-        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
+        point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
         self.pep_thresh_line.points.append(point1)
         self.pep_thresh_line.points.append(point2)
 
@@ -189,18 +191,18 @@ class SingleLeg:
 
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
-        self.shift_pep()
-        # self.shift_step_length()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
-        self.shift_pep()
-        # self.shift_step_length()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
-        self.shift_pep()
-        # self.shift_step_length()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
@@ -210,20 +212,8 @@ class SingleLeg:
         else:
             self.pep_thresh = pep_thresh
 
-    def shift_step_length_ipsilateral(self, distance):
-        self.pep_shift_ipsilateral = distance
-        self.shift_step_length()
-
-    def shift_step_length_ipsilateral_from_front(self, distance):
-        self.pep_shift_ipsilateral_front = distance
-        self.shift_step_length()
-
-    def shift_step_length_contralateral(self, distance):
-        self.pep_shift_contralateral = distance
-        self.shift_step_length()
-
     def shift_step_length(self):
-        step_length = self.default_step_length + self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
+        step_length = self.default_step_length - self.pep_shift_ipsilateral - self.pep_shift_ipsilateral_front - self.pep_shift_contralateral
         if step_length < 0.01:
             self.step_length = 0.01
         else:
@@ -249,7 +239,15 @@ class SingleLeg:
         # TODO find min pep_thresh for warning in case the leg has to move to far away.
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
-        return numpy.linalg.norm(self.default_aep - self.ee_position()) < self.step_length
+        step_length = numpy.linalg.norm(self.default_aep - self.ee_position())
+        # if step_length > self.step_length:
+        #     rospy.loginfo(self.name + ": aep = {} ee = {} ".format(self.default_aep, self.ee_position()))
+        #     rospy.loginfo(self.name + ": step_length = {} > set step_length = {}?".format(step_length, self.step_length))
+        #     rospy.logwarn(self.name + ": stance done")
+        #     return True
+        # else:
+        #     return False
+        return step_length > self.step_length
 
     def check_joint_ranges(self, angles):
         return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][

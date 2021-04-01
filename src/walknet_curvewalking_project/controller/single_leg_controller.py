@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import threading
 from math import fabs, exp
 
+import numpy
 import rospy
 from control_msgs.msg import JointControllerState
 from walknet_curvewalking.msg import rules
@@ -25,7 +25,7 @@ class SingleLegController:
             rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, self.movement_dir)
-        self.temp = SwingMovementBezier(self.leg)
+        self.swing_generator = SwingMovementBezier(self.leg)
         self.swing = swing
         self.init_pos = None
         self.last_stance_activation = None
@@ -47,7 +47,8 @@ class SingleLegController:
             self.displ_leg = 0.03
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
-        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)//2][0].copy()
+        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
+        self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
 
         if self.robot is None:
             self.stance_net = None
@@ -82,6 +83,12 @@ class SingleLegController:
         # publish pep visualization
         self.pep_viz = False
 
+        self.rule1 = True
+        self.rule2_contra = True
+        self.rule2_ipsi = True
+        self.rule3_contra = True
+        self.rule3_ipsi = True
+
     def set_init_pos(self, p):
         self.init_pos = p
 
@@ -96,34 +103,30 @@ class SingleLegController:
             self.delay_1b = 0
         else:
             self.delay_1b = delay
-        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)//2][0].copy()
+        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
-                    1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
+                1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        rospy.loginfo(self.name + ": aep_x = " + str(self.aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " +
-                      str(fabs(self.aep_x - pep_x)))
-        rospy.loginfo(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral))
-        rospy.loginfo(self.name + ": threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
 
     def bezier_swing(self):
         while not self.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
             self.rate.sleep()
-        self.temp.swing_start_point = self.leg.ee_position()
+        self.swing_generator.swing_start_point = self.leg.ee_position()
 
-        self.temp.swing_target_point = self.target_pos
+        self.swing_generator.swing_target_point = self.target_pos
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
-        # temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
-        # temp.collision_point = numpy.array([0.8, 0, 0.256])
-        # bezier_points = temp.compute_bezier_points()
-        # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-        self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
-        print(self.temp.trajectory_generator.bezier_points)
+        # swing_generator.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
+        # swing_generator.collision_point = numpy.array([0.8, 0, 0.256])
+        # bezier_points = swing_generator.compute_bezier_points()
+        # self.swing_generator.trajectory_generator.bezier_points = self.swing_generator.compute_bezier_points()
+        self.swing_generator.trajectory_generator.bezier_points = self.swing_generator.compute_bezier_points_with_joint_angles()
+        print(self.swing_generator.trajectory_generator.bezier_points)
         while not rospy.is_shutdown() and not self.leg.predicted_ground_contact():
-            self.temp.move_to_next_point(1)
+            self.swing_generator.move_to_next_point(1)
             self.rate.sleep()
-        self.temp.move_to_next_point(0)
+        self.swing_generator.move_to_next_point(0)
         self.rate.sleep()
         self.swing = False
 
@@ -137,24 +140,34 @@ class SingleLegController:
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule1 + data.rule2_ipsilateral
+        shift_distance = 0
+        if self.rule1:
+            shift_distance += data.rule1
+        if self.rule2_ipsi:
+            shift_distance += data.rule2_ipsilateral
         self.leg.shift_pep_ipsilateral(shift_distance)
 
     def ipsilateral_rules_from_front_callback(self, data):
         # rospy.loginfo(self.name + ' received rule 1 from leg behind ' +
         #               str(RSTATIC.leg_names[RSTATIC.leg_names.index(self.name) + 2]) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule3_ipsilateral
+        shift_distance = 0
+        if self.rule3_ipsi:
+            shift_distance += data.rule3_ipsilateral
         self.leg.shift_pep_ipsilateral_from_front(shift_distance)
 
     def contralateral_rules_callback(self, data):
         # rospy.loginfo(self.name + ' received rule 1 from neighbouring leg ' +
         #               str(RSTATIC.leg_names.index(self.name) + (1 * self.movement_dir)) + ' leg at ' + str(now.secs) +
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
-        shift_distance = data.rule2_contralateral + data.rule3_contralateral
-        if self.name == "lr" or self.name == "rr":
+        shift_distance = 0
+        if self.rule2_contra:
+            shift_distance += data.rule2_contralateral
+        if self.rule3_contra:
+            shift_distance += data.rule3_contralateral
+        if (self.name == "lr" or self.name == "rr") and self.rule1:
             shift_distance += data.rule1
-        #if self.name == "lr" or self.name == "rr":
+        # if self.name == "lr" or self.name == "rr":
         #    shift_distance += data.rule1
         self.leg.shift_pep_contralateral(shift_distance)
 
@@ -187,13 +200,7 @@ class SingleLegController:
             # rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
             rules_msg.rule2_ipsilateral = 0.043
             rules_msg.rule2_contralateral = 0.011
-        stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
-        # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
-        #               ") = self.aep_x (" + str(self.aep_x) + ") - leg.compute_forward_kinematics()[0] (" +
-        #               str(self.leg.compute_forward_kinematics()[0]))
-        # rospy.logerr(self.name + ": self.threshold_rule3_ipsilateral (" + str(self.threshold_rule3_ipsilateral) +
-        #              ") < stance_progress (" + str(stance_progress) + ") < " +
-        #              str(self.threshold_rule3_ipsilateral + 0.01))
+        stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
@@ -203,37 +210,63 @@ class SingleLegController:
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
-        if self.leg.reached_pep() and legs_in_swing < 3:
-        #if self.leg.reached_step_length() and legs_in_swing < 3:
+        # if self.leg.reached_pep() and legs_in_swing < 3:
+        if self.leg.reached_step_length() and legs_in_swing < 3:
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
+            # self.shift_aep()  # TODO
             self.swing = True
             legs_in_swing = legs_in_swing + 1
-        elif self.leg.reached_pep() and legs_in_swing >= 3:
-        #elif self.leg.reached_step_length() and legs_in_swing >= 3:
+        # elif self.leg.reached_pep() and legs_in_swing >= 3:
+        elif self.leg.reached_step_length() and legs_in_swing >= 3:
             rospy.logwarn(self.name + ": delayed swing start.")
-            #self.delayed_swing = True
+            # self.delayed_swing = True
         return legs_in_swing
+
+    def shift_aep(self):
+        ee_pos = self.leg.ee_position()
+        step_vector = ee_pos - self.target_pos
+        step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
+                numpy.array(step_vector))) * step_vector
+        ee_default_step = self.target_pos + step_vector_default_length
+        offset_center_1 = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - \
+                          self.target_pos[1]
+        offset_center_2 = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - \
+                          ee_default_step[1]
+        if abs(offset_center_2 - offset_center_1) < 0.025:
+            return
+        else:
+            # rospy.loginfo(
+            #         self.name + ": step_vector = {}; step_vector_default_length = {}; target_pos = {}; ee_pos = {}; ee_default_step = {}; offset_center_1 = {}; offset_center_2 = {}; abs(offset) = {} < 0.02?".format(
+            #                 step_vector, step_vector_default_length, self.target_pos, ee_pos, ee_default_step, offset_center_1,
+            #                 offset_center_2, abs(offset_center_2 - offset_center_1)))
+            #TODO keeps changing sould stay the same most times?!
+            new_aep_y = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - (
+                    step_vector_default_length[1] / 2)
+            rospy.loginfo(self.name + ": new_aep_y = {} previous aep = {} default aep y = {}".format(new_aep_y,
+                    self.target_pos[1],
+                    RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir))
+            self.target_pos[1] = new_aep_y
 
     def execute_swing_step(self, legs_in_swing):
         # rospy.loginfo(self.name + ": execute swing step.")
-        if self.temp.swing_start_point is None:
+        if self.swing_generator.swing_start_point is None:
             # rospy.loginfo(self.name + ": reset swing")
-            self.temp.swing_start_point = self.leg.ee_position()
-            self.temp.swing_target_point = self.target_pos
-            self.temp.reacht_peak = False
+            self.swing_generator.swing_start_point = self.leg.ee_position()
+            self.swing_generator.swing_target_point = self.target_pos
+            self.swing_generator.reacht_peak = False
             # self.temp.swing_target_point = self.leg.compute_forward_kinematics(
             #                                [self.movement_dir * 0.3, -0.5, -1.2])
             # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
-            self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+            self.swing_generator.trajectory_generator.bezier_points = self.swing_generator.compute_bezier_points_with_joint_angles()
         rules_msg = rules(-0.1, 0.0, 0.0, 0.0, 0.0)
         self.pub_rules(rules_msg)
-        self.temp.move_to_next_point(1)
+        self.swing_generator.move_to_next_point(1)
         # self.rate.sleep()
-        if self.temp.reacht_peak and self.leg.predicted_ground_contact():
-            self.temp.move_to_next_point(0)
-            self.temp.swing_start_point = None
+        if self.swing_generator.reacht_peak and self.leg.predicted_ground_contact():
+            self.swing_generator.move_to_next_point(0)
+            self.swing_generator.swing_start_point = None
             # self.rate.sleep()
             self.swing = False
             legs_in_swing = legs_in_swing - 1
