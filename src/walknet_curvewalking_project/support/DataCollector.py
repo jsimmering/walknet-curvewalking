@@ -21,6 +21,7 @@ class DataCollector:
         self.steps_since_last = 0
         self.distance = 0
         self.required_distance = required_dis
+        rospy.loginfo("Data Collector: required_distance = " + str(self.required_distance))
         self.rate = rospy.Rate(2)
         rospy.loginfo("num circles {} distance {}".format(circles, distance))
 
@@ -48,7 +49,7 @@ class DataCollector:
             self.current_position = [robot_position.position.x,
                                      robot_position.position.y]
             self.write_positiion_to_file(robot_position, data.twist[data.name.index('phantomx')])
-            if self.steps_since_last % 1000 == 0 and self.required_distance != 0.0:
+            if self.steps_since_last % 1000 == 0 and (self.required_distance != 0.0 or self.required_distance != 0):
                 if self.last_position is not None:
                     dis = np.linalg.norm(np.array(self.current_position) - np.array(self.last_position))
                     self.distance += dis
@@ -128,6 +129,7 @@ if __name__ == '__main__':
 
     if circles != 0:
         try:
+            rospy.loginfo("Data Collector: check_if_circle_finished")
             data_collector.check_if_circle_finished()
         except rospy.ROSInterruptException:
             pass

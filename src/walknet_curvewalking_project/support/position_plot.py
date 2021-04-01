@@ -6,6 +6,8 @@ import numpy as np
 
 if len(sys.argv) >= 2:
 
+    plot = True
+
     files = None
     if sys.argv[1] == "-dir":
         files = os.listdir(sys.argv[2])
@@ -29,7 +31,8 @@ if len(sys.argv) >= 2:
         x_dim.append([])
         y_dim.append([])
 
-    #plt.figure()
+    if plot:
+        plt.figure()
 
     for j in range(0, len(files)):
         first_line = True
@@ -92,8 +95,9 @@ if len(sys.argv) >= 2:
 
         x_dim[j].append(x_max - x_min)
         y_dim[j].append(y_max - y_min)
-        #plt.plot(X[j], Y[j])
-        #plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
+        if plot:
+            plt.plot(X[j], Y[j])
+            plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
 
     for i in range(0, len(files)):
         print("steps = " + str(len(velocity[i])))
@@ -106,14 +110,16 @@ if len(sys.argv) >= 2:
     print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
             np.linalg.norm(np.array(last_position) - np.array(first_position))))
 
-    ## --- for height plot
-    # plt.figure()
-    # plt.plot(X, Y)
+    if plot:
+        ## --- for height plot
+        # plt.figure()
+        # plt.plot(X, Y)
 
-    # plt.figure()
-    # plt.plot(Z)
-    ## -----
+        # plt.figure()
+        # plt.plot(Z)
+        ## -----
 
-    #plt.show()
+        plt.grid()
+        plt.show()
 
 
