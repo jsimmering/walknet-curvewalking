@@ -78,7 +78,7 @@ def main():
                 else:
                     print("recorder: Data Collector walk walk until stop")
                     data_collector_p = run(
-                            ["rosrun", "walknet_curvewalking", "DataCollector.py" "_circles:=0", "_distance:=0.0"])
+                            ["rosrun", "walknet_curvewalking", "DataCollector.py", "_circles:=0", "_distance:=0.0"])
 
                 time.sleep(1)
                 print("start walking")
