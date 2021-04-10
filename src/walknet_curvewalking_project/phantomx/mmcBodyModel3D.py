@@ -703,7 +703,7 @@ class mmcBodyModelStance:
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
         # segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
-        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
         # new_segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER!
 
         for i in range(0, 6):
@@ -711,19 +711,13 @@ class mmcBodyModelStance:
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
             self.leg_vect[i] = leg_vect[i]
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
-        # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        if reset_segments:
-            segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-            self.segm_post_ant = segm_post_ant
-            # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-            # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
-            # self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        # if reset_segments:
+        segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+        self.segm_post_ant = segm_post_ant
+        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+        # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
         # self.segm_diag_to_right[0] = segm_diag_to_right[0]
-        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
-        #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
+        self.segm_diag_to_right = segm_diag_to_right
         # self.segm_post_ant = segm_post_ant
         if self.rviz_viz:
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
@@ -788,11 +782,15 @@ class mmcBodyModelStance:
     #	segment. Takes an angle (0 os straight ahead) and a velocity factor
     #	(around 0.1-0.2 should be fine) to come up with a corresponding pull vector.
     def pullBodyModelAtFrontIntoRelativeDirection(self, pull_angle, speed_fact):
-        rospy.loginfo(
-                "pullBodyModelAtFrontIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
+        # rospy.loginfo(
+        #        "pullBodyModelAtFrontIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
         pull_angle_BM = pull_angle + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
         self.pull_front[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_front[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
+
+        # self.pull_front = numpy.array([0.025, 0.01, 0.0])
+        # self.pull_front = numpy.array([0.0075, 0.01, 0.0])
+
         rospy.loginfo("pull_front = " + str(self.pull_front))
 
     ##	Pull the body model into a direction relative to the last body
