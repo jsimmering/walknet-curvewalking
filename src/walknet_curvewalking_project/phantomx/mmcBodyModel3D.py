@@ -8,7 +8,6 @@ import math
 
 import matplotlib.pylab as py
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy
 import rospy
 from geometry_msgs.msg import Point
@@ -73,12 +72,15 @@ class mmcBodyModelStance:
     # but are actually set when a leg is really put on the ground (initially all are
     # assumed in the air, so an update of the legs is forced in the first iteration)
     def __init__(self, robot):  # , motiv_net, stab_thr):
+        self.mathplot_viz = True
+        self.leg_lines = None
+        self.fig_3d = None
         self.rviz_viz = False
         if self.rviz_viz:
             # set up marker publisher for rviz visualization
             self.visualization_pub = rospy.Publisher('/mmcBodyModel', Marker, queue_size=1)
             self.points = Marker()
-            self.leg_lines = Marker()
+            self.leg_lines_rviz = Marker()
             self.front_lines = Marker()
             self.segm_leg_ant_lines = Marker()
             self.segm_leg_post_lines = Marker()
@@ -102,24 +104,20 @@ class mmcBodyModelStance:
         # Used for storing stability calculation in visualization
         # self.temp_stability_fact = 0.
 
-        # The height is currently set to a fixed value
-        # Here a height net might be introduced?
-        # The body model is now always enforcing this specific height.
-        self.height = RSTATIC.stance_height
-        width = RSTATIC.default_stance_width
+        # Ground contact - which feet are on the ground
+        self.gc = [False, False, False, False, False, False]
+        self.old_stance_motivation = [False, False, False, False, False, False]
 
-        self.ee_positions = [numpy.array([0.26, (width - 0.1), self.height]),
-                             numpy.array([0.26, -(width - 0.1), self.height]),
-                             numpy.array([0.0, width, self.height]),
-                             numpy.array([0.0, -width, self.height]),
-                             numpy.array([-0.26, (width - 0.1), self.height]),
-                             numpy.array([-0.26, -(width - 0.1), self.height])]
-
-        front_segment_start = [0.12, 0.0, 0.0]
-
-        # Additional Vectors (from front of a segment to footpoint) estimated based on estimated end effector positions.
-        self.front_vect = [numpy.array([pos[0] - front_segment_start[0], pos[1] - front_segment_start[1],
-                                        pos[2] - front_segment_start[2]]) for pos in self.ee_positions]
+        # The explicit disturbance vectors of the network
+        # self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
+        # self.delta_back = [[numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])]]
+        self.delta_front = numpy.array([0, 0, 0])
+        self.delta_back = numpy.array([0, 0, 0])
+        # These are operated through a pull at the front
+        self.pull_front = numpy.array([0.0, 0.0, 0.0])
+        self.pull_back = numpy.array([0.0, 0.0, 0.0])
+        self.step = 0
+        self.damping = 5
 
         # Segment defining vectors: is constructed as a diamond for the mounting points of
         # the legs: segm_leg_ant = from coxa to front (anterior)
@@ -128,14 +126,58 @@ class mmcBodyModelStance:
         # self.segm_post_ant = [numpy.array([0.22,0.0,0.0]),numpy.array([0.35, 0.0, 0.0]),numpy.array([0.36,0.0,0.0])]
         # self.segm_post_ant = [numpy.array([0.6, 0.0, 0.0]), numpy.array([0.12, 0.0, 0.0]),
         #    numpy.array([0.06, 0.0, 0.0])]
+        self.front_segment_start = [0.12, 0.0, 0.0]
         self.segm_post_ant = numpy.array([0.24, 0.0, 0.0])
         self.segm_post_ant_norm = numpy.linalg.norm(self.segm_post_ant)
 
         # positions of the shoulder c1 joints for calculating real leg vectors
-        self.c1_positions = [numpy.array([0.12, 0.06, 0.0]), numpy.array([0.12, -0.06, 0.0]),
-                             numpy.array([0.0, 0.10, 0.0]),
-                             numpy.array([0.0, -0.10, 0.0]), numpy.array([-0.12, 0.06, 0.0]),
-                             numpy.array([-0.12, -0.06, 0.0])]
+        self.c1_positions = [numpy.array([0.1248, 0.06164, 0.001116]), numpy.array([0.1248, -0.06164, 0.001116]),
+                             numpy.array([0.0, 0.1034, 0.001116]),
+                             numpy.array([0.0, -0.1034, 0.001116]), numpy.array([-0.1248, 0.06164, 0.001116]),
+                             numpy.array([-0.1248, -0.06164, 0.001116])]
+
+        self.ee_positions = None
+
+        # Additional Vectors (from front of a segment to footpoint) estimated based on estimated end effector positions.
+        self.front_vect = None
+
+        # Real Leg vectors
+        self.leg_vect = None
+
+        # segm_leg_ant = from coxa to front (anterior) =
+        #                real leg vector (coax to ee) - front vector (front of a segment to footpoint)
+        self.segm_leg_ant = None
+        self.segm_leg_ant_norm = None
+
+        # segm_leg_post = from coxa to back (posterior)
+        self.segm_leg_post = None
+        self.segm_leg_post_norm = None
+
+        # lines connecting shoulders for normalization of segment length after iteration step
+        self.segm_diag_to_right = None
+        self.segm_diag_norm = None
+
+        # Vectors between footpoints - these are a fixed coordinate system which shall not be altered.
+        # The standing feet are connected through the ground and their relation shall be constant.
+        # The footdiags table has to be adapted whenever the configuration of the walker changes -
+        # when a leg is lifted from the ground this leg vector is not forming closed kinematic chains
+        # with the other legs anymore and the footdiags can not be exploited anymore.
+        # When a leg is touching the ground, new footdiags to the other standing legs have to be established.
+        self.footdiag = [[], [0], [0, 0], [0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0, 0]]
+
+    def initialize_body_model(self, ee_positions):
+        # self.ee_positions = [numpy.array([0.26, (width - 0.1), self.height]),
+        #                      numpy.array([0.26, -(width - 0.1), self.height]),
+        #                      numpy.array([0.0, width, self.height]),
+        #                      numpy.array([0.0, -width, self.height]),
+        #                      numpy.array([-0.26, (width - 0.1), self.height]),
+        #                      numpy.array([-0.26, -(width - 0.1), self.height])]
+        self.ee_positions = ee_positions
+
+        # Additional Vectors (from front of a segment to footpoint) estimated based on estimated end effector positions.
+        self.front_vect = [numpy.array([pos[0] - self.front_segment_start[0], pos[1] - self.front_segment_start[1],
+                                        pos[2] - self.front_segment_start[2]]) for pos in self.ee_positions]
+
         # Real Leg vectors
         # self.leg_vect = [numpy.array([0., self.width, -self.height]), numpy.array([0., -self.width, -self.height]),
         #     numpy.array([0., self.width, -self.height]), numpy.array([0., -self.width, -self.height]),
@@ -165,21 +207,15 @@ class mmcBodyModelStance:
 
         # Help vectors for the drawing routines: We have to keep track of the feet
         # positions in a global coordinate system (and of one segment, too)
-        self.mathplot_viz = True
         if self.mathplot_viz:
-            self.segm1_in_global = numpy.array([-0.02, 0.0, self.height])
+            self.segm1_in_global = numpy.array([-0.02, 0.0, RSTATIC.stance_height])
             self.foot_global = [(self.segm1_in_global + self.front_vect[0]),
                                 (self.segm1_in_global + self.front_vect[1]),
                                 (self.segm1_in_global + self.front_vect[2]),
                                 (self.segm1_in_global + self.front_vect[3]),
                                 (self.segm1_in_global + self.front_vect[4]),
                                 (self.segm1_in_global + self.front_vect[5])]
-
-            (self.leg_lines, self.ax_fig_3d, self.fig_3d) = self.initialise_drawing_window()
-
-        # Ground contact - which feet are on the ground
-        self.gc = [False, False, False, False, False, False]
-        self.old_stance_motivation = [False, False, False, False, False, False]
+            self.leg_lines, self.fig_3d = self.initialise_drawing_window()
 
         # Vectors between footpoints - these are a fixed coordinate system which shall not be altered.
         # The standing feet are connected through the ground and their relation shall be constant.
@@ -187,21 +223,10 @@ class mmcBodyModelStance:
         # when a leg is lifted from the ground this leg vector is not forming closed kinematic chains
         # with the other legs anymore and the footdiags can not be exploited anymore.
         # When a leg is touching the ground, new footdiags to the other standing legs have to be established.
-        self.footdiag = [[], [0], [0, 0], [0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0, 0]]
+        # self.footdiag = [[], [0], [0, 0], [0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0, 0]]
         for i in range(0, len(self.footdiag)):
             for j in range(0, i):
                 self.footdiag[i][j] = self.set_up_foot_diag(i, j)
-
-        # The explicit disturbance vectors of the network
-        # self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
-        # self.delta_back = [[numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])], [numpy.array([0, 0, 0])]]
-        self.delta_front = numpy.array([0, 0, 0])
-        self.delta_back = numpy.array([0, 0, 0])
-        # These are operated through a pull at the front
-        self.pull_front = numpy.array([0.0, 0.0, 0.0])
-        self.pull_back = numpy.array([0.0, 0.0, 0.0])
-        self.step = 0
-        self.damping = 5
 
     """ **** Graphic methods: Simple drawing of the body model **************************
         """
@@ -229,25 +254,25 @@ class mmcBodyModelStance:
     """
 
     def set_up_visualization(self):
-        self.points.header.frame_id = self.leg_lines.header.frame_id = self.front_lines.header.frame_id = \
+        self.points.header.frame_id = self.leg_lines_rviz.header.frame_id = self.front_lines.header.frame_id = \
             self.segm_leg_ant_lines.header.frame_id = self.segm_leg_post_lines.header.frame_id = \
             self.segm_line.header.frame_id = self.segm_diag_to_right_lines.header.frame_id = "MP_BODY"
-        self.points.header.stamp = self.leg_lines.header.stamp = self.front_lines.header.stamp = \
+        self.points.header.stamp = self.leg_lines_rviz.header.stamp = self.front_lines.header.stamp = \
             self.segm_leg_ant_lines.header.stamp = self.segm_leg_post_lines.header.stamp = \
             self.segm_line.header.stamp = self.segm_diag_to_right_lines.header.stamp = rospy.Time.now()
-        self.points.ns = self.leg_lines.ns = self.front_lines.ns = self.segm_leg_ant_lines.ns = \
+        self.points.ns = self.leg_lines_rviz.ns = self.front_lines.ns = self.segm_leg_ant_lines.ns = \
             self.segm_leg_post_lines.ns = self.segm_line.ns = self.segm_diag_to_right_lines.ns = "points_and_lines"
-        self.points.action = self.leg_lines.action = self.front_lines.action = self.segm_leg_ant_lines.action = \
+        self.points.action = self.leg_lines_rviz.action = self.front_lines.action = self.segm_leg_ant_lines.action = \
             self.segm_leg_post_lines.action = self.segm_line.action = self.segm_diag_to_right_lines.action = Marker.ADD
-        self.points.pose.orientation.w = self.leg_lines.pose.orientation.w = self.front_lines.pose.orientation.w = \
+        self.points.pose.orientation.w = self.leg_lines_rviz.pose.orientation.w = self.front_lines.pose.orientation.w = \
             self.segm_leg_ant_lines.pose.orientation.w = self.segm_leg_post_lines.pose.orientation.w = \
             self.segm_line.pose.orientation.w = self.segm_diag_to_right_lines.pose.orientation.w = 1.0
-        self.points.lifetime = self.leg_lines.lifetime = self.front_lines.lifetime = \
+        self.points.lifetime = self.leg_lines_rviz.lifetime = self.front_lines.lifetime = \
             self.segm_leg_ant_lines.lifetime = self.segm_leg_post_lines.lifetime = self.segm_line.lifetime = \
             self.segm_diag_to_right_lines.lifetime = rospy.Duration(1, 0)
 
         self.points.id = 0
-        self.leg_lines.id = 1
+        self.leg_lines_rviz.id = 1
         self.front_lines.id = 2
         self.segm_leg_ant_lines.id = 3
         self.segm_leg_post_lines.id = 4
@@ -255,7 +280,7 @@ class mmcBodyModelStance:
         self.segm_diag_to_right_lines.id = 6
 
         self.points.type = Marker.POINTS
-        self.leg_lines.type = Marker.LINE_LIST
+        self.leg_lines_rviz.type = Marker.LINE_LIST
         self.front_lines.type = Marker.LINE_LIST
         self.segm_leg_ant_lines.type = Marker.LINE_LIST
         self.segm_leg_post_lines.type = Marker.LINE_LIST
@@ -265,7 +290,7 @@ class mmcBodyModelStance:
         self.points.scale.x = 0.005
         self.points.scale.y = 0.005
 
-        self.leg_lines.scale.x = 0.0025
+        self.leg_lines_rviz.scale.x = 0.0025
         self.front_lines.scale.x = 0.0025
         self.segm_leg_ant_lines.scale.x = 0.0025
         self.segm_leg_post_lines.scale.x = 0.0025
@@ -274,14 +299,14 @@ class mmcBodyModelStance:
 
         self.points.color.g = 1.0
         self.points.color.a = 1.0
-        self.leg_lines.color.a = 1.0
+        self.leg_lines_rviz.color.a = 1.0
         self.front_lines.color.a = 1.0
         self.segm_leg_ant_lines.color.a = 1.0
         self.segm_leg_post_lines.color.a = 1.0
         self.segm_line.color.a = 1.0
         self.segm_diag_to_right_lines.color.a = 1.0
 
-        self.leg_lines.color.b = 1.0
+        self.leg_lines_rviz.color.b = 1.0
         self.front_lines.color.r = 1.0
         self.segm_leg_ant_lines.color.g = 1.0
         self.segm_leg_post_lines.color.g = 1.0
@@ -382,25 +407,28 @@ class mmcBodyModelStance:
         leg_nr = RSTATIC.leg_names.index(leg_name)
         if not self.gc[leg_nr]:
             # Set leg and diag vector
-            self.leg_vect[leg_nr] = numpy.array(leg_vec)
+            self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])
             self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
             for i in range(0, leg_nr):
                 self.footdiag[leg_nr][i] = self.set_up_foot_diag(leg_nr, i)
             for i in range(leg_nr + 1, 6):
                 self.footdiag[i][leg_nr] = self.set_up_foot_diag(i, leg_nr)
-            self.gc[leg_nr] = True
+
             # Derive the global position (needed for the graphics output)
             if self.mathplot_viz:
                 for i in range(0, 6):
                     if self.gc[i]:
                         if i > leg_nr:
                             self.foot_global[leg_nr] = self.foot_global[i] + self.footdiag[i][leg_nr]
-                        elif i < leg_nr:
+                        # elif i < leg_nr:
+                        else:
                             # rospy.loginfo("foot_global = {}; idx = {}, i = {}, footdiag = {} idx1 = {}, idx2 = {}".format(
                             #        self.foot_global, leg_nr, i, self.footdiag, leg_nr, i))
                             self.foot_global[leg_nr] = self.foot_global[i] - self.footdiag[leg_nr][i]
                         break
+
+            self.gc[leg_nr] = True
 
     ##	Update the current state of the legs.
     #	Only legs in stance mode are part of the body model (which is used for computation
@@ -677,13 +705,13 @@ class mmcBodyModelStance:
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
             self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
-            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines_rviz)
             self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
                     self.segm_diag_to_right, self.segm_diag_to_right_lines)
             self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1
-        
+
         if self.mathplot_viz:
             self.draw_manipulator()
 
@@ -720,7 +748,7 @@ class mmcBodyModelStance:
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
             self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
-            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines_rviz)
             self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
                     self.segm_diag_to_right, self.segm_diag_to_right_lines)
             self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
@@ -786,11 +814,11 @@ class mmcBodyModelStance:
             py.plot(self.get_leg_triangle(i)[0], self.get_leg_triangle(i)[1], linewidth=1.0, color='gray', marker='o',
                     alpha=0.7, mfc='gray')[0] for i in range(0, 6)]
         py.xlim(-0.5, 1.5)
-        py.ylim(-0.5, 0.5)
+        py.ylim(-0.5, 2.0)
         py.ioff()
         py.draw()
-        plt.pause(0.0001)
-        return leg_lines, 0, fig
+        plt.pause(0.000001)
+        return leg_lines, fig
 
     def draw_manipulator(self):
         """ The draw method for the manipulator leg.
@@ -802,11 +830,10 @@ class mmcBodyModelStance:
             self.leg_lines[i].set_marker('o')
             if self.gc[i]:
                 py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='green', marker='o', alpha=0.7,
-                        mfc='gray')
+                        mfc='gray', visible=True)
             else:
-                py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='gray', marker='o', alpha=0.7,
-                        mfc='gray')
+                py.setp(self.leg_lines[i], visible=False)
             self.leg_lines[i].set_xdata(self.get_leg_triangle(i)[0][0:5])
             self.leg_lines[i].set_ydata(self.get_leg_triangle(i)[1][0:5])
         py.draw()
-        plt.pause(0.0001)
+        plt.pause(0.000001)
