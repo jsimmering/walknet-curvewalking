@@ -4,9 +4,11 @@
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/BodymodelStance/mmcBodyModel3D.py
 # modified for PhantomX Robot
 
-import datetime
 import math
 
+import matplotlib.pylab as py
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy
 import rospy
 from geometry_msgs.msg import Point
@@ -71,16 +73,18 @@ class mmcBodyModelStance:
     # but are actually set when a leg is really put on the ground (initially all are
     # assumed in the air, so an update of the legs is forced in the first iteration)
     def __init__(self, robot):  # , motiv_net, stab_thr):
-        # set up marker publisher for rviz visualization
-        self.visualization_pub = rospy.Publisher('/mmcBodyModel', Marker, queue_size=1)
-        self.points = Marker()
-        self.leg_lines = Marker()
-        self.front_lines = Marker()
-        self.segm_leg_ant_lines = Marker()
-        self.segm_leg_post_lines = Marker()
-        self.segm_line = Marker()
-        self.segm_diag_to_right_lines = Marker()
-        self.set_up_visualization()
+        self.rviz_viz = False
+        if self.rviz_viz:
+            # set up marker publisher for rviz visualization
+            self.visualization_pub = rospy.Publisher('/mmcBodyModel', Marker, queue_size=1)
+            self.points = Marker()
+            self.leg_lines = Marker()
+            self.front_lines = Marker()
+            self.segm_leg_ant_lines = Marker()
+            self.segm_leg_post_lines = Marker()
+            self.segm_line = Marker()
+            self.segm_diag_to_right_lines = Marker()
+            self.set_up_visualization()
 
         # self.motivationNetRobot = motiv_net -- not used for phantomX
         self.robot = robot
@@ -159,6 +163,20 @@ class mmcBodyModelStance:
                                    range(0, len(self.segm_leg_ant) // 2)]
         self.segm_diag_norm = [numpy.linalg.norm(segm_vect) for segm_vect in self.segm_diag_to_right]
 
+        # Help vectors for the drawing routines: We have to keep track of the feet
+        # positions in a global coordinate system (and of one segment, too)
+        self.mathplot_viz = True
+        if self.mathplot_viz:
+            self.segm1_in_global = numpy.array([-0.02, 0.0, self.height])
+            self.foot_global = [(self.segm1_in_global + self.front_vect[0]),
+                                (self.segm1_in_global + self.front_vect[1]),
+                                (self.segm1_in_global + self.front_vect[2]),
+                                (self.segm1_in_global + self.front_vect[3]),
+                                (self.segm1_in_global + self.front_vect[4]),
+                                (self.segm1_in_global + self.front_vect[5])]
+
+            (self.leg_lines, self.ax_fig_3d, self.fig_3d) = self.initialise_drawing_window()
+
         # Ground contact - which feet are on the ground
         self.gc = [False, False, False, False, False, False]
         self.old_stance_motivation = [False, False, False, False, False, False]
@@ -185,6 +203,28 @@ class mmcBodyModelStance:
         self.step = 0
         self.damping = 5
 
+    """ **** Graphic methods: Simple drawing of the body model **************************
+        """
+
+    ##	Extract the global positions of the feet, the segments, diagonals ...
+    def get_leg_triangle(self, leg):
+        if self.mathplot_viz:
+            return ([[self.foot_global[leg][0], (self.foot_global[leg][0] - self.leg_vect[leg][0]),
+                      (self.foot_global[leg][0] - self.leg_vect[leg][0] + self.segm_leg_post[leg][0]),
+                      (self.foot_global[leg][0] - self.leg_vect[leg][0] + self.segm_leg_post[leg][0] +
+                       # self.segm_post_ant[leg // 2][0]), (self.foot_global[leg][0] - self.leg_vect[leg][0])],
+                       self.segm_post_ant[0]), (self.foot_global[leg][0] - self.leg_vect[leg][0])],
+                     [self.foot_global[leg][1], (self.foot_global[leg][1] - self.leg_vect[leg][1]),
+                      (self.foot_global[leg][1] - self.leg_vect[leg][1] + self.segm_leg_post[leg][1]),
+                      (self.foot_global[leg][1] - self.leg_vect[leg][1] + self.segm_leg_post[leg][1] +
+                       # self.segm_post_ant[leg // 2][1]), (self.foot_global[leg][1] - self.leg_vect[leg][1])],
+                       self.segm_post_ant[1]), (self.foot_global[leg][1] - self.leg_vect[leg][1])],
+                     [self.foot_global[leg][2], (self.foot_global[leg][2] - self.leg_vect[leg][2]),
+                      (self.foot_global[leg][2] - self.leg_vect[leg][2] + self.segm_leg_post[leg][2]),
+                      (self.foot_global[leg][2] - self.leg_vect[leg][2] + self.segm_leg_post[leg][2] +
+                       # self.segm_post_ant[leg // 2][2]), (self.foot_global[leg][2] - self.leg_vect[leg][2])]])
+                       self.segm_post_ant[2]), (self.foot_global[leg][2] - self.leg_vect[leg][2])]])
+
     """ **** Graphic methods: For Visualization of the body model in RVIZ **************************
     """
 
@@ -202,6 +242,9 @@ class mmcBodyModelStance:
         self.points.pose.orientation.w = self.leg_lines.pose.orientation.w = self.front_lines.pose.orientation.w = \
             self.segm_leg_ant_lines.pose.orientation.w = self.segm_leg_post_lines.pose.orientation.w = \
             self.segm_line.pose.orientation.w = self.segm_diag_to_right_lines.pose.orientation.w = 1.0
+        self.points.lifetime = self.leg_lines.lifetime = self.front_lines.lifetime = \
+            self.segm_leg_ant_lines.lifetime = self.segm_leg_post_lines.lifetime = self.segm_line.lifetime = \
+            self.segm_diag_to_right_lines.lifetime = rospy.Duration(1, 0)
 
         self.points.id = 0
         self.leg_lines.id = 1
@@ -249,47 +292,57 @@ class mmcBodyModelStance:
         self.segm_diag_to_right_lines.color.g = 1.0
 
     def pub_vecs(self, start, vecs, markers):
-        start_point = Point()
-        start_point.x = start[0]
-        start_point.y = start[1]
-        start_point.z = start[2]
-        self.points.points.append(start_point)
-        for position in vecs:
-            pos = Point()
-            pos.x = start_point.x + position[0]
-            pos.y = start_point.y + position[1]
-            pos.z = start_point.z + position[2]
-            self.points.points.append(pos)
-            markers.points.append(start_point)
-            markers.points.append(pos)
-
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 3):
-            self.visualization_pub.publish(self.points)
-            self.visualization_pub.publish(markers)
-            rate.sleep()
-
-    def pub_relative_vecs(self, start_points, vecs, markers):
-        for idx in range(0, len(vecs)):
+        if self.rviz_viz:
+            if len(self.points.points) >= 20:
+                self.points.points = self.points.points[10:]
+            if len(markers.points) >= 20:
+                markers.points = markers.points[10:]
             start_point = Point()
-            start = start_points[idx]
             start_point.x = start[0]
             start_point.y = start[1]
             start_point.z = start[2]
             self.points.points.append(start_point)
-            pos = Point()
-            pos.x = start_point.x + vecs[idx][0]
-            pos.y = start_point.y + vecs[idx][1]
-            pos.z = start_point.z + vecs[idx][2]
-            self.points.points.append(pos)
-            markers.points.append(start_point)
-            markers.points.append(pos)
+            for position in vecs:
+                pos = Point()
+                pos.x = start_point.x + position[0]
+                pos.y = start_point.y + position[1]
+                pos.z = start_point.z + position[2]
+                self.points.points.append(pos)
+                markers.points.append(start_point)
+                markers.points.append(pos)
 
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        for i in range(0, 3):
-            self.visualization_pub.publish(self.points)
-            self.visualization_pub.publish(markers)
-            rate.sleep()
+            rate = rospy.Rate(RSTATIC.controller_frequency)
+            for i in range(0, 3):
+                self.visualization_pub.publish(self.points)
+                self.visualization_pub.publish(markers)
+                rate.sleep()
+
+    def pub_relative_vecs(self, start_points, vecs, markers):
+        if self.rviz_viz:
+            if len(self.points.points) >= 20:
+                self.points.points = self.points.points[10:]
+            if len(markers.points) >= 20:
+                markers.points = markers.points[10:]
+            for idx in range(0, len(vecs)):
+                start_point = Point()
+                start = start_points[idx]
+                start_point.x = start[0]
+                start_point.y = start[1]
+                start_point.z = start[2]
+                self.points.points.append(start_point)
+                pos = Point()
+                pos.x = start_point.x + vecs[idx][0]
+                pos.y = start_point.y + vecs[idx][1]
+                pos.z = start_point.z + vecs[idx][2]
+                self.points.points.append(pos)
+                markers.points.append(start_point)
+                markers.points.append(pos)
+
+            rate = rospy.Rate(RSTATIC.controller_frequency)
+            for i in range(0, 3):
+                self.visualization_pub.publish(self.points)
+                self.visualization_pub.publish(markers)
+                rate.sleep()
 
     """ **** Set up methods and calculation of vector methods ***************************
     """
@@ -337,6 +390,17 @@ class mmcBodyModelStance:
             for i in range(leg_nr + 1, 6):
                 self.footdiag[i][leg_nr] = self.set_up_foot_diag(i, leg_nr)
             self.gc[leg_nr] = True
+            # Derive the global position (needed for the graphics output)
+            if self.mathplot_viz:
+                for i in range(0, 6):
+                    if self.gc[i]:
+                        if i > leg_nr:
+                            self.foot_global[leg_nr] = self.foot_global[i] + self.footdiag[i][leg_nr]
+                        elif i < leg_nr:
+                            # rospy.loginfo("foot_global = {}; idx = {}, i = {}, footdiag = {} idx1 = {}, idx2 = {}".format(
+                            #        self.foot_global, leg_nr, i, self.footdiag, leg_nr, i))
+                            self.foot_global[leg_nr] = self.foot_global[i] - self.footdiag[leg_nr][i]
+                        break
 
     ##	Update the current state of the legs.
     #	Only legs in stance mode are part of the body model (which is used for computation
@@ -579,32 +643,6 @@ class mmcBodyModelStance:
         new_segm_diag = new_segm_diag / equation_counter
         return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
 
-    ##	Compute the segment vectors:
-    #	Using equations including the two legs connected to the segment,
-    #	integrating the explicit displacement given as delta
-    #	and the recurrent old value of the vector.
-    def compute_segm_diag_computations_and_integrate_matrix(self):  # , joint_nr):
-        # equation_counter = 2
-        # new_segm_diag = self.segm_leg_post[2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[1 + joint_nr * 2]
-        # new_segm_diag -= self.segm_leg_post[1 + 2 * joint_nr] + self.segm_post_ant - self.segm_leg_ant[joint_nr * 2]
-        # new_segm_diag += self.damping * self.segm_diag_to_right[joint_nr]
-        # equation_counter += self.damping
-        # new_segm_diag = new_segm_diag / equation_counter
-        new_segm_diag = numpy.array(
-                [[1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
-                 [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
-                 [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)]])  # ,
-        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
-        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)],
-        # [1 / (self.damping + 2), -1 / (self.damping + 2), self.damping / (self.damping + 2)]])
-        matrix2 = numpy.array([self.segm_leg_post[0::2] + self.segm_post_ant - self.segm_leg_ant[1::2],
-                               self.segm_leg_post[1::2] + self.segm_post_ant - self.segm_leg_ant[0::2],
-                               self.segm_diag_to_right])
-        matrix = numpy.einsum('ij,jik->ik', new_segm_diag, matrix2)
-        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
-        # return (self.segm_diag_norm[joint_nr] / numpy.linalg.norm(new_segm_diag)) * new_segm_diag
-        return numpy.einsum('j,jk->jk', numpy.array(self.segm_diag_norm) / normals, matrix)
-
     ##	The MMC Method:
     #	- the multiple computations are computed for each variable
     #	- the mean for each variable is calculated
@@ -613,57 +651,41 @@ class mmcBodyModelStance:
     #	different equations.
     ##
     def mmc_iteration_step(self, reset_segments):
-        # rospy.loginfo(
-        #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
-
-        # before = datetime.datetime.now()
-        # front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
-        # after = datetime.datetime.now()
-        # rospy.loginfo("time normal = " + str((after - before).total_seconds()))
-        # #rospy.loginfo("new front_vect old    = " + str(front_vect))
-        # before_matrix = datetime.datetime.now()
-        # new_front_vect = self.compute_front_computations_and_integrate_matrix()
-        # after_matrix = datetime.datetime.now()
-        # rospy.loginfo("time matrix = " + str((after_matrix - before_matrix).total_seconds()))
-        # #rospy.loginfo("new front_vect matrix = " + str(new_front_vect))
-        # rospy.loginfo("---------------------------------------------------------------------------------------")
 
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
-        # segm_leg_ant = self.compute_segment_leg_ant_computations_and_integrate_matrix()
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
-        # new_segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
-        # segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
+        segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
         # TODO doesn't seem to change?! therefore doesn't need to be recomputet
-        # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-        # new_segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER!
+        segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
 
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
             self.leg_vect[i] = leg_vect[i]
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
-        # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-        if reset_segments:
-            segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-            self.segm_post_ant = segm_post_ant
-            # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-            # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
-            # self.segm_diag_to_right[0] = segm_diag_to_right[0]
+        # if reset_segments:
+        self.segm_post_ant = segm_post_ant
         # self.segm_diag_to_right[0] = segm_diag_to_right[0]
-        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
-        #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
-        # self.segm_post_ant = segm_post_ant
-        # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
+        self.segm_diag_to_right = segm_diag_to_right
+
+        if self.rviz_viz:
+            self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
+            self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
+            self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
+            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+            self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
+                    self.segm_diag_to_right, self.segm_diag_to_right_lines)
+            self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1
+
+        if self.mathplot_viz:
+            self.draw_manipulator()
 
     ##	The MMC Method:
     #	- the multiple computations are computed for each variable
@@ -673,8 +695,6 @@ class mmcBodyModelStance:
     #	different equations.
     ##
     def mmc_iteration_step_matrix(self, reset_segments):
-        # rospy.loginfo(
-        #        "mmc_iteration_step: pull_front = " + str(self.pull_front) + " pull_back = " + str(self.pull_back))
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 
@@ -689,22 +709,26 @@ class mmcBodyModelStance:
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
             self.leg_vect[i] = leg_vect[i]
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
-        # self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
-        # self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
-
         if reset_segments:
             segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
             self.segm_post_ant = segm_post_ant
-            # segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-            # segm_diag_to_right = self.compute_segm_diag_computations_and_integrate_matrix() # MIGHT BE SLOWER! THAN NORMAL
+            segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
+            self.segm_diag_to_right = segm_diag_to_right
             # self.segm_diag_to_right[0] = segm_diag_to_right[0]
-        # self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
-        #    self.segm_diag_to_right, self.segm_diag_to_right_lines)
-        # self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
+
+        if self.rviz_viz:
+            self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
+            self.pub_relative_vecs(self.c1_positions, self.segm_leg_post, self.segm_leg_post_lines)
+            self.pub_vecs([0.12, 0.0, 0.0], self.front_vect, self.front_lines)
+            self.pub_relative_vecs(self.c1_positions, self.leg_vect, self.leg_lines)
+            self.pub_relative_vecs([self.c1_positions[i * 2] for i in range(0, len(self.c1_positions) // 2)],
+                    self.segm_diag_to_right, self.segm_diag_to_right_lines)
+            self.pub_vecs([-0.12, 0.0, 0.0], [self.segm_post_ant], self.segm_line)
 
         self.step += 1
+
+        if self.mathplot_viz:
+            self.draw_manipulator()
 
     """ **** Get, set methods - connection to the robot simulator ***********************
     """
@@ -713,11 +737,15 @@ class mmcBodyModelStance:
     #	segment. Takes an angle (0 os straight ahead) and a velocity factor
     #	(around 0.1-0.2 should be fine) to come up with a corresponding pull vector.
     def pullBodyModelAtFrontIntoRelativeDirection(self, pull_angle, speed_fact):
-        rospy.loginfo(
-                "pullBodyModelAtFrontIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
+        # rospy.loginfo(
+        #        "pullBodyModelAtFrontIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
         pull_angle_BM = pull_angle + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
         self.pull_front[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_front[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
+
+        # self.pull_front = numpy.array([0.025, 0.01, 0.0])
+        # self.pull_front = numpy.array([0.0075, 0.01, 0.0])
+
         rospy.loginfo("pull_front = " + str(self.pull_front))
 
     ##	Pull the body model into a direction relative to the last body
@@ -741,3 +769,44 @@ class mmcBodyModelStance:
     def get_ground_contact(self, leg_nr):
         # rospy.loginfo("get_ground_contact: " + RSTATIC.leg_names[leg_nr])
         return self.gc[leg_nr]
+
+    """ **** Graphic methods: Simple drawing of the body model **************************
+    """
+
+    def initialise_drawing_window(self):
+        py.ion()
+        fig = plt.figure(figsize=(12, 6))
+        # py.rcParams['figure.figsize'] = 2, 2
+        for i in range(0, 6):
+            print("{}: mmc.get_leg_triangle({})[1] = {}".format(i, i, self.get_leg_triangle(i)[1]))
+            py.plot(self.get_leg_triangle(i)[0], self.get_leg_triangle(i)[1], linestyle=':', linewidth=1.0,
+                    color='gray',
+                    marker='')
+        leg_lines = [
+            py.plot(self.get_leg_triangle(i)[0], self.get_leg_triangle(i)[1], linewidth=1.0, color='gray', marker='o',
+                    alpha=0.7, mfc='gray')[0] for i in range(0, 6)]
+        py.xlim(-0.5, 1.5)
+        py.ylim(-0.5, 0.5)
+        py.ioff()
+        py.draw()
+        plt.pause(0.0001)
+        return leg_lines, 0, fig
+
+    def draw_manipulator(self):
+        """ The draw method for the manipulator leg.
+            It is called from the outside iteration loop.
+        """
+        # Update two dimensional top view
+        # Update current legs
+        for i in range(0, 6):
+            self.leg_lines[i].set_marker('o')
+            if self.gc[i]:
+                py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='green', marker='o', alpha=0.7,
+                        mfc='gray')
+            else:
+                py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='gray', marker='o', alpha=0.7,
+                        mfc='gray')
+            self.leg_lines[i].set_xdata(self.get_leg_triangle(i)[0][0:5])
+            self.leg_lines[i].set_ydata(self.get_leg_triangle(i)[1][0:5])
+        py.draw()
+        plt.pause(0.0001)
