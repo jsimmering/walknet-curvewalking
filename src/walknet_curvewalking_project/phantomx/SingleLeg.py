@@ -249,6 +249,9 @@ class SingleLeg:
         else:
             self.step_length = step_length
 
+    def set_default_step_length(self, length):
+        self.default_step_length = length
+
     ##
     #   Estimate ground ground_contact:
     #   Predict current leg position (using fw kinematics) and

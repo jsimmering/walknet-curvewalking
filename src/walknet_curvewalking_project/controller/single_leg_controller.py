@@ -35,16 +35,19 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = None
         self.threshold_rule3_contralateral = None
 
-        self.displ_leg_ipsilateral = 0.041
+        #self.displ_leg_ipsilateral = 0.041
+        self.displ_leg_ipsilateral = 0.5125  # percent of step length
         if self.name == "lf" or self.name == "rf":
             self.target_pos = RSTATIC.front_initial_aep.copy()
-            self.displ_leg = 0.025
+            # self.displ_leg = 0.025
+            self.displ_leg = 0.3125  # percent of step length
         elif self.name == "lm" or self.name == "rm":
             self.target_pos = RSTATIC.middle_initial_aep.copy()
             self.displ_leg = 0.0
         elif self.name == "lr" or self.name == "rr":
             self.target_pos = RSTATIC.hind_initial_aep.copy()
-            self.displ_leg = 0.03
+            # self.displ_leg = 0.03
+            self.displ_leg = 0.375  # percent of step length
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
         self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
@@ -82,10 +85,14 @@ class SingleLegController:
                                                              '/rules', rules, self.contralateral_rules_callback)
 
         self.rule1 = True
+        # self.rule2_contra = False
         self.rule2_contra = True
         self.rule2_ipsi = True
+        # self.rule3_contra = False
         self.rule3_contra = True
         self.rule3_ipsi = True
+
+        self.default_step_length = RSTATIC.default_stance_distance
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -108,6 +115,14 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
                 1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
+        # if angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
+        #     self.default_step_length -= 0.03
+        #     self.leg.set_default_step_length(self.default_step_length)
+        # if angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
+        #     self.default_step_length -= 0.03
+        #     self.leg.set_default_step_length(self.default_step_length)
+        if self.leg.viz:
+            self.leg.pub_default_pep_threshold()
 
     def bezier_swing(self):
         while not self.leg.is_ready() and not rospy.is_shutdown():
@@ -145,7 +160,7 @@ class SingleLegController:
         if self.rule1:
             shift_distance += data.rule1
         if self.rule2_ipsi:
-            shift_distance += data.rule2_ipsilateral
+            shift_distance += self.default_step_length * data.rule2_ipsilateral
         self.leg.shift_pep_ipsilateral(shift_distance)
 
     def ipsilateral_rules_from_front_callback(self, data):
@@ -154,7 +169,7 @@ class SingleLegController:
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
         shift_distance = 0
         if self.rule3_ipsi:
-            shift_distance += data.rule3_ipsilateral
+            shift_distance += self.default_step_length * data.rule3_ipsilateral
         self.leg.shift_pep_ipsilateral_from_front(shift_distance)
 
     def contralateral_rules_callback(self, data):
@@ -163,9 +178,9 @@ class SingleLegController:
         #               ' sec and ' + str(now.nsecs) + 'nsecs. shift target.')
         shift_distance = 0
         if self.rule2_contra:
-            shift_distance += data.rule2_contralateral
+            shift_distance += self.default_step_length * data.rule2_contralateral
         if self.rule3_contra:
-            shift_distance += data.rule3_contralateral
+            shift_distance += self.default_step_length * data.rule3_contralateral
         if (self.name == "lr" or self.name == "rr") and self.rule1:
             shift_distance += data.rule1
         # if self.name == "lr" or self.name == "rr":
@@ -201,8 +216,10 @@ class SingleLegController:
             rules_msg.rule1 = -0.027
         if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.4):
             # rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
-            rules_msg.rule2_ipsilateral = 0.043
-            rules_msg.rule2_contralateral = 0.011
+            # rules_msg.rule2_ipsilateral = 0.043
+            rules_msg.rule2_ipsilateral = 0.5375  # ~54 percent of step length
+            # rules_msg.rule2_contralateral = 0.011
+            rules_msg.rule2_contralateral = 0.1375  # ~14 percent of step length
         stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
