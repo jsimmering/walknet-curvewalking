@@ -188,7 +188,7 @@ class SingleLegController:
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.
-    def manage_walk(self, legs_in_swing):
+    def manage_walk(self, legs_in_swing, swing):
         # if not self.robot.walk_motivation or rospy.is_shutdown():
         #     rospy.loginfo("no moving motivation or shutdown...")
         #     return
@@ -197,9 +197,11 @@ class SingleLegController:
         if self.leg.viz:
             self.leg.pub_pep_threshold()
         if self.swing:
-            return self.execute_swing_step(legs_in_swing)
-            #self.robot.running = False
-            #return legs_in_swing
+            if swing:
+                return self.execute_swing_step(legs_in_swing)
+            else:
+                self.robot.running = False
+                return legs_in_swing
         else:
             return self.execute_stance_step(legs_in_swing)
         # end = rospy.Time.now()

@@ -11,12 +11,13 @@ from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
 class RobotController:
-    def __init__(self, name, note_handle, duration=None):
+    def __init__(self, name, note_handle, swing, duration=None):
         self.debug = False
         self.rate = rospy.Rate(RSTATIC.controller_frequency)
         self.rate_leg = rospy.Rate(RSTATIC.controller_frequency)
         self.rate_body = rospy.Rate(RSTATIC.controller_frequency)
         self.nh = note_handle
+        self.swing = swing
 
         self.name = name
         self.robot = Robot(self.name, self.nh)
@@ -42,14 +43,18 @@ class RobotController:
             init_pos = RSTATIC.initial_pep[RSTATIC.leg_names.index(leg.name) // 2].copy()
             if leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
                 # init_pos = RSTATIC.front_initial_pep.copy()
-                # init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
-                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
+                if self.swing:
+                    init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
+                else:
+                    init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 leg.set_init_pos(init_pos)
             elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
                 # init_pos = RSTATIC.front_initial_pep.copy()
-                # init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
-                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
+                if self.swing:
+                    init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
+                else:
+                    init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
                 init_pos[1] = init_pos[1] * leg.movement_dir
                 leg.set_init_pos(init_pos)
 
@@ -146,7 +151,7 @@ class RobotController:
                 if rospy.is_shutdown():
                     break
                 # input("press any key to performe the next step.")
-                legs_in_swing = leg.manage_walk(legs_in_swing)
+                legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             # self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
@@ -199,16 +204,16 @@ if __name__ == '__main__':
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
 
+    swing = True
     if duration != 0:
-        robot_controller = RobotController('robot', nh, rospy.Duration.from_sec(duration * 60))
+        robot_controller = RobotController('robot', nh, swing, rospy.Duration.from_sec(duration * 60))
         rospy.loginfo("Robot Controller: Walk for {} seconds.".format(duration * 60))
     else:
-        robot_controller = RobotController('robot', nh)  # executing until stop command
+        robot_controller = RobotController('robot', nh, swing)  # executing until stop command
         rospy.loginfo("Robot Controller: Walk until stop command")
 
     try:
         robot_controller.move_legs_into_init_pos()
-        # robot_controller.move_body_cohesive()
         ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and ready_status.__contains__(False):
@@ -227,5 +232,6 @@ if __name__ == '__main__':
         else:
             rospy.loginfo("DURATION = 0. No walk command received")
         rospy.loginfo("CONTROLLER STEPS = " + str(robot_controller.controller_steps))
+        #input()
     except rospy.ROSInterruptException:
         pass
