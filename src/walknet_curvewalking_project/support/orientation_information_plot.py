@@ -31,6 +31,7 @@ def plot_orientation_data(axs, start_time, stop_time):
         first_line = True
         last_time = None
         last_orientation = None
+        initial_orientation = None
 
         line_number = 0
         used_lines = 0
@@ -60,7 +61,10 @@ def plot_orientation_data(axs, start_time, stop_time):
 
                 angles = tf_trans.euler_from_quaternion([values[4], values[5], values[6], values[7]])
                 # print("angles = " + str(angles))
-                if not last_orientation is None:
+                if last_orientation is not None:
+                    if initial_orientation is None:
+                        initial_orientation = angles[2]
+                    # orientation_z[j].append(angles[2] - initial_orientation)
                     orientation_z[j].append(angles[2])
                     if abs(angles[2] - last_orientation) <= 0.00002:
                         orientation_diff[j].append(0)
@@ -76,8 +80,10 @@ def plot_orientation_data(axs, start_time, stop_time):
         # print("time = " + str(time))
         # plt.plot(time[j], orientation_z[j])
         axs[0].plot(time[j], orientation_z[j])
+        axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
         # plt.plot(time[j], orientation_diff[j])
         axs[1].plot(time[j], orientation_diff[j])
+        axs[1].axis(ymax=0.00007, ymin=-0.0001)
         plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
 
     # plt.figure()
@@ -143,8 +149,9 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         # marked_step = [6, 5, 4, 1, 2, 3]
-        marked_step = [1, 1, 1, 0, 0, 0]  # 0.01s 0.0 dir
-        # marked_step = [2, 2, 2, 0, 1, 1] # 0.01s 0.5 dir
+        marked_step = [2, 1, 1, 0, 0, 1]
+        # marked_step = [1, 1, 1, 0, 1, 1]  # 0.01s 0.0 dir
+        # marked_step = [2, 2, 2, 0, 1, 1]  # 0.01s 0.5 dir
         # marked_step = [2, 2, 2, 1, 1, 1] # 0.02s 0.5 dir
         # marked_step = [3, 2, 2, 0, 1, 1] # 0.05s 0.5dir
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
@@ -176,10 +183,11 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
-        start_duration = 210
-        stop_duration = 225
-        # stop_duration = 0
-        # stop_duration = 45 # 0.05s 0.5dir
+        # start_duration = 45
+        start_duration = 30
+        # stop_duration = 60
+        stop_duration = 0
+        # stop_duration = 45  # 0.05s 0.5dir
         fig, axs = plt.subplots(3)
         plt.setp(axs, xticks=range(0, stop_duration, 2))
 
