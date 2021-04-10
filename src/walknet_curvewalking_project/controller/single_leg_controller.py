@@ -247,23 +247,29 @@ class SingleLegController:
     def shift_aep(self):
         ee_pos = self.leg.ee_position()
         step_vector = ee_pos - self.target_pos
-        step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
+        # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
+        #         numpy.array(step_vector))) * step_vector
+        step_vector_default_length = (self.default_step_length / numpy.linalg.norm(
                 numpy.array(step_vector))) * step_vector
         ee_default_step = self.target_pos + step_vector_default_length
-        offset_center_1 = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - \
-                          self.target_pos[1]
+        offset_center_1 = self.target_pos[1] - RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[
+            1] * self.movement_dir
         offset_center_2 = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - \
                           ee_default_step[1]
         if abs(offset_center_2 - offset_center_1) < 0.025:
             return
         else:
-            # rospy.loginfo(
-            #         self.name + ": step_vector = {}; step_vector_default_length = {}; target_pos = {}; ee_pos = {}; ee_default_step = {}; offset_center_1 = {}; offset_center_2 = {}; abs(offset) = {} < 0.02?".format(
-            #                 step_vector, step_vector_default_length, self.target_pos, ee_pos, ee_default_step, offset_center_1,
-            #                 offset_center_2, abs(offset_center_2 - offset_center_1)))
-            #TODO keeps changing sould stay the same most times?!
-            new_aep_y = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - (
-                    step_vector_default_length[1] / 2)
+            debug = False
+            if debug:
+                rospy.loginfo(self.name + ": abs(offset_center_2 - offset_center_1) = " + str(
+                        abs(offset_center_2 - offset_center_1)))
+                rospy.loginfo(self.name + ": step_vector = {} length = {}".format(step_vector,
+                        numpy.linalg.norm(step_vector)))
+                rospy.loginfo(self.name + ": step_vector normalized = {} length normalized = {}".format(
+                        step_vector_default_length, numpy.linalg.norm(step_vector_default_length)))
+                rospy.loginfo("offset_center_1 = {} offset_center_2 = {}".format(offset_center_1, offset_center_2))
+            new_aep_y = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir - \
+                        (step_vector_default_length[1] / 2)
             rospy.loginfo(self.name + ": new_aep_y = {} previous aep = {} default aep y = {}".format(new_aep_y,
                     self.target_pos[1],
                     RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir))
