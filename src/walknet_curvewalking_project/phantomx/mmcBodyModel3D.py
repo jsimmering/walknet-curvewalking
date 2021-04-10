@@ -687,6 +687,9 @@ class mmcBodyModelStance:
         if self.mathplot_viz:
             self.draw_manipulator()
 
+        if self.mathplot_viz:
+            self.draw_manipulator()
+
     ##	The MMC Method:
     #	- the multiple computations are computed for each variable
     #	- the mean for each variable is calculated
