@@ -74,6 +74,7 @@ class SingleLeg:
         self.tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
         # rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
 
+        # publish pep visualization
         self.viz = False
         if self.viz:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -88,12 +89,15 @@ class SingleLeg:
             self.pep_init_thresh_line.id = 4
             self.aep_line.id = 5 + RSTATIC.leg_names.index(self.name)
             self.pep_thresh_line.id = 11 + RSTATIC.leg_names.index(self.name)
-            self.pep_thresh_line.type = self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
-            self.pep_thresh_line.scale.x = self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
+            self.pep_thresh_line.type = Marker.CYLINDER
+            self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
+            self.pep_thresh_line.scale.z = 0.005
+            self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
             self.pep_init_thresh_line.color.g = 1.0
             self.aep_line.color.b = 1.0
             self.pep_thresh_line.color.r = 1.0
-            self.pep_thresh_line.color.a = self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
+            self.pep_thresh_line.color.a = 0.5
+            self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
             self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
             self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
             point1 = Point(self.aep_thresh, self.movement_dir * 0.20, -0.1)
@@ -102,15 +106,41 @@ class SingleLeg:
             self.aep_line.points.append(point2)
             # self.pub_pep_threshold()
 
-    def pub_pep_threshold(self):
+    def pub_default_pep_threshold(self):
         # while not rospy.is_shutdown():
-        self.pep_thresh_line.points.clear()
+        #self.pep_thresh_line.points.clear()
+        self.pep_init_thresh_line.points.append(
+                Point(self.default_aep[0] - self.default_step_length, self.movement_dir * 0.20, -0.1))
+        self.pep_init_thresh_line.points.append(
+                Point(self.default_aep[0] - self.default_step_length, self.movement_dir * 0.35, -0.1))
         # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
         # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
-        self.pep_thresh_line.points.append(point1)
-        self.pep_thresh_line.points.append(point2)
+        # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
+        # self.pep_thresh_line.points.append(point1)
+        # self.pep_thresh_line.points.append(point2)
+
+        # for i in range(0, 3):
+        # if rospy.is_shutdown():
+        # break
+        # self.visualization_pub.publish(self.aep_line)
+        self.visualization_pub.publish(self.pep_init_thresh_line)
+        # self.visualization_pub.publish(self.pep_thresh_line)
+        # self.viz_pub_rate.sleep()
+
+    def pub_pep_threshold(self):
+        # while not rospy.is_shutdown():
+        # self.pep_thresh_line.points.clear()
+        self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
+        # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
+        # self.pep_thresh_line.points.append(point1)
+        # self.pep_thresh_line.points.append(point2)
+        self.pep_thresh_line.pose.position.x = self.default_aep[0]
+        self.pep_thresh_line.pose.position.y = self.default_aep[1]
+        self.pep_thresh_line.pose.position.z = self.default_aep[2]
 
         # for i in range(0, 3):
         # if rospy.is_shutdown():

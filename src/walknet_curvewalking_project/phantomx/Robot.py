@@ -14,6 +14,7 @@ from walknet_curvewalking_project.support import stability
 class Robot:
     def __init__(self, name, nh):
         self.name = name
+        self.running = True
         self.viz = False
         self.log_data = True
         #self.str_list = []
