@@ -131,8 +131,8 @@ class RobotController:
         #         self.robot.body_model.lift_leg_from_ground(i)
         #         rospy.loginfo("lift leg " + str(i))
 
-        # self.robot.body_model.mmc_iteration_step(reset_segments)
-        self.robot.body_model.mmc_iteration_step_matrix(reset_segments)
+        self.robot.body_model.mmc_iteration_step(reset_segments)
+        # self.robot.body_model.mmc_iteration_step_matrix(reset_segments)
 
     def walk_body_model(self):
         while not rospy.is_shutdown() and self.walk_motivation and self.robot.running:
