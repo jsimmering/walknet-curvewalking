@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import datetime
-import sys
 
 import rospy
 from walknet_curvewalking.msg import robot_control
@@ -141,7 +140,6 @@ class RobotController:
         #         rospy.loginfo("lift leg " + str(i))
 
         self.robot.body_model.mmc_iteration_step(reset_segments)
-        # self.robot.body_model.mmc_iteration_step_matrix(reset_segments)
 
     def walk_body_model(self):
         while not rospy.is_shutdown() and self.walk_motivation and self.robot.running:
@@ -158,6 +156,8 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
+            #if self.controller_steps > 50:
+            #    self.robot.running = False
             # self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             self.rate.sleep()
         self.rate.sleep()

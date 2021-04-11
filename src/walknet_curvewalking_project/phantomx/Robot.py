@@ -8,6 +8,7 @@ from visualization_msgs.msg import Marker
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.controller.single_leg_controller import SingleLegController
 from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
+from walknet_curvewalking_project.phantomx.mmcBodyModel3D_matrix import mmcBodyModelStance_matrix
 from walknet_curvewalking_project.support import stability
 
 
@@ -25,6 +26,7 @@ class Robot:
         self.unstable_count = 0
 
         self.body_model = mmcBodyModelStance(self)
+        # self.body_model = mmcBodyModelStance_matrix(self)
         self.stance_speed = 0.0
         self.direction = 0.0
         self.file_name = "logs/walknet_stability_"
