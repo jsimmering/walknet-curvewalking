@@ -80,7 +80,7 @@ def plot_orientation_data(axs, start_time, stop_time):
         # print("time = " + str(time))
         # plt.plot(time[j], orientation_z[j])
         axs[0].plot(time[j], orientation_z[j])
-        axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
+        #axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
         # plt.plot(time[j], orientation_diff[j])
         axs[1].plot(time[j], orientation_diff[j])
         axs[1].axis(ymax=0.00007, ymin=-0.0001)
@@ -149,23 +149,25 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         # marked_step = [6, 5, 4, 1, 2, 3]
-        marked_step = [2, 1, 1, 0, 0, 1]
+        marked_step = [2, 2, 1, 1, 1, 1]
         # marked_step = [1, 1, 1, 0, 1, 1]  # 0.01s 0.0 dir
         # marked_step = [2, 2, 2, 0, 1, 1]  # 0.01s 0.5 dir
         # marked_step = [2, 2, 2, 1, 1, 1] # 0.02s 0.5 dir
         # marked_step = [3, 2, 2, 0, 1, 1] # 0.05s 0.5dir
+        show_steps = False
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
         for leg in stance_times:
             for step in leg:
+                if show_steps:
                 # if stance_times.index(leg) == 3 and leg.index(step) == 1:
-                if leg.index(step) == marked_step[stance_times.index(leg)]:
-                    axs[0].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
-                    axs[1].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
-                    axs[2].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
-                if leg.index(step) == (marked_step[stance_times.index(leg)] + 1):
-                    axs[0].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
-                    axs[1].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
-                    axs[2].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                    if leg.index(step) == marked_step[stance_times.index(leg)]:
+                        axs[0].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                        axs[1].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                        axs[2].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                    if leg.index(step) == (marked_step[stance_times.index(leg)] + 1):
+                        axs[0].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                        axs[1].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                        axs[2].axvline(x=step[0], color=leg_color[stance_times.index(leg)])
                 # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
                 # print("step = {}, stance_times.index(leg) = {}, leg_order = {}".format(step, stance_times.index(leg), leg_order))
                 axs[2].plot([step[0], step[1]],
@@ -185,8 +187,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:
         # start_duration = 45
         start_duration = 30
-        # stop_duration = 60
-        stop_duration = 0
+        stop_duration = 60
+        # stop_duration = 0
         # stop_duration = 45  # 0.05s 0.5dir
         fig, axs = plt.subplots(3)
         plt.setp(axs, xticks=range(0, stop_duration, 2))
