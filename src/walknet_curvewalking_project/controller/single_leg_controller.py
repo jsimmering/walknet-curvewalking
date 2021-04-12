@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import threading
 from math import fabs, exp
 
 import rospy
@@ -79,8 +78,6 @@ class SingleLegController:
             #        RSTATIC.leg_names[neighbour_leg_idx]))
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
-        # publish pep visualization
-        self.pep_viz = False
 
     def set_init_pos(self, p):
         self.init_pos = p
@@ -104,10 +101,8 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
                     1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        rospy.loginfo(self.name + ": aep_x = " + str(self.aep_x) + "pep_x = " + str(pep_x) + " aep_x - pep_x = " +
-                      str(fabs(self.aep_x - pep_x)))
-        rospy.loginfo(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral))
-        rospy.loginfo(self.name + ": threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
+        if self.leg.viz:
+            self.leg.pub_default_pep_threshold()
 
     def bezier_swing(self):
         while not self.leg.is_ready() and not rospy.is_shutdown():
@@ -158,8 +153,8 @@ class SingleLegController:
         shift_distance = data.rule2_contralateral + data.rule3_contralateral
         if self.name == "lr" or self.name == "rr":
             shift_distance += data.rule1
-        #if self.name == "lr" or self.name == "rr":
-        #    shift_distance += data.rule1
+        if self.name == "lr" or self.name == "rr":
+            shift_distance += data.rule1
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.
@@ -187,12 +182,6 @@ class SingleLegController:
             rules_msg.rule2_ipsilateral = 0.043
             rules_msg.rule2_contralateral = 0.011
         stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
-        # rospy.loginfo(self.name + ": stance_progress (" + str(stance_progress) +
-        #               ") = self.aep_x (" + str(self.aep_x) + ") - leg.compute_forward_kinematics()[0] (" +
-        #               str(self.leg.compute_forward_kinematics()[0]))
-        # rospy.logerr(self.name + ": self.threshold_rule3_ipsilateral (" + str(self.threshold_rule3_ipsilateral) +
-        #              ") < stance_progress (" + str(stance_progress) + ") < " +
-        #              str(self.threshold_rule3_ipsilateral + 0.01))
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
@@ -203,14 +192,12 @@ class SingleLegController:
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
         if self.leg.reached_pep() and legs_in_swing < 3:
-        #if self.leg.reached_step_length() and legs_in_swing < 3:
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
             self.swing = True
             legs_in_swing = legs_in_swing + 1
         elif self.leg.reached_pep() and legs_in_swing >= 3:
-        #elif self.leg.reached_step_length() and legs_in_swing >= 3:
             rospy.logwarn(self.name + ": delayed swing start.")
             #self.delayed_swing = True
         return legs_in_swing
@@ -241,20 +228,6 @@ class SingleLegController:
         return legs_in_swing
 
     # function for executing a single step in a stance movement.
-    def manage_stance(self):
-        if not self.robot.walk_motivation or rospy.is_shutdown():
-            rospy.loginfo("no moving motivation or shutdown...")
-            return
-        else:
-            rospy.loginfo(self.name + ": leg connected start walking. Swing = " + str(self.swing))
-            self.stance_net.modulated_routine_function_call()
-            if self.leg.reached_pep():
-                rospy.loginfo(self.name + ": reached pep. swing will be set to True")
-                self.stance_net.reset_stance_trajectory()
-                self.rate.sleep()
-                self.swing = True
-
-    # function for executing a single step in a stance movement.
     def move_leg_to(self, p=None):
         if rospy.is_shutdown():
             return
@@ -269,7 +242,6 @@ if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
     legController = SingleLegController('lm', nh, True, None)
     try:
-        # legController.manage_walk()
         legController.bezier_swing()
     except rospy.ROSInterruptException:
         pass
