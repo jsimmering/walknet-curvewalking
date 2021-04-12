@@ -71,7 +71,7 @@ class mmcBodyModelStance_matrix:
     # but are actually set when a leg is really put on the ground (initially all are
     # assumed in the air, so an update of the legs is forced in the first iteration)
     def __init__(self, robot):  # , motiv_net, stab_thr):
-        self.mathplot_viz = True
+        self.mathplot_viz = False
         self.visualization = None
         self.last_time_draw = None
         self.leg_lines = None
