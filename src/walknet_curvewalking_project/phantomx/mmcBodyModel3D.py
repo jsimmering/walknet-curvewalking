@@ -378,13 +378,6 @@ class mmcBodyModelStance:
         # rospy.loginfo("put leg on ground: {} leg_vec = {} length = {}".format(leg_name, leg_vec, numpy.linalg.norm(leg_vec)))
         leg_nr = RSTATIC.leg_names.index(leg_name)
 
-        # leg_vec_relative = numpy.array(leg_vec - self.c1_positions[leg_nr])
-        # angle = math.atan2(leg_vec_relative[1], leg_vec_relative[0]) + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
-        # rospy.loginfo("put leg on ground: {} leg_vec_relative = {} length = {}".format(leg_name, leg_vec_relative, numpy.linalg.norm(leg_vec_relative)))
-        # leg_vec_bm_frame = numpy.array([numpy.linalg.norm(leg_vec_relative) * math.cos(angle), numpy.linalg.norm(leg_vec_relative) * math.sin(angle), leg_vec_relative[2]])
-        # rospy.loginfo(
-        #         "leg_vec_bm_frame: {} leg_vec = {} length = {}".format(leg_name, leg_vec_bm_frame, numpy.linalg.norm(leg_vec_bm_frame)))
-
         if not self.gc[leg_nr]:
             # Set leg and diag vector
             # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
