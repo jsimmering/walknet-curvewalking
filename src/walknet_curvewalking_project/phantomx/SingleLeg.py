@@ -243,20 +243,20 @@ class SingleLeg:
             self.pep_thresh = pep_thresh
 
     def shift_step_length(self):
+        # keep
         step_length = self.default_step_length - self.pep_shift_ipsilateral - self.pep_shift_ipsilateral_front - self.pep_shift_contralateral
         if step_length < 0.01:
             self.step_length = 0.01
         else:
             self.step_length = step_length
+        # keep
 
     def set_default_step_length(self, length):
         self.default_step_length = length
 
     ##
-    #   Estimate ground ground_contact:
-    #   Predict current leg position (using fw kinematics) and
-    #   simply decide if the leg should touch ground
-    #   (very stable, but works only on flat terrain).
+    #   Estimate if end of stance is reached:
+    #   check current end effector position against current pep threshold and decide if the stance can end.
     def reached_pep(self):
         # TODO find min pep_thresh for warning in case the leg has to move to far back.
         # if self.pep_thresh == self.min_pep:
@@ -264,10 +264,8 @@ class SingleLeg:
         return self.ee_position()[0] < self.pep_thresh
 
     ##
-    #   Estimate ground ground_contact:
-    #   Predict current leg position (using fw kinematics) and
-    #   simply decide if the leg should touch ground
-    #   (very stable, but works only on flat terrain).
+    #   Estimate if end of stance is reached:
+    #   calculate current step length and decide based on threshold if the stance can end.
     def reached_step_length(self):
         # TODO find min pep_thresh for warning in case the leg has to move to far away.
         # if self.pep_thresh == self.min_pep:
