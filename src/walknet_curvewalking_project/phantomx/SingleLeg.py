@@ -1,4 +1,3 @@
-import copy
 from math import sin, cos, atan2, pow, pi, acos, radians
 
 import numpy
@@ -50,18 +49,8 @@ class SingleLeg:
 
         self.ee_pos = None
 
-        # if self.name == "lf" or self.name == "rf":
-        #     self.pep_thresh = RSTATIC.front_initial_pep[0].copy()
-        # if self.name == "lm" or self.name == "rm":
-        #     self.pep_thresh = RSTATIC.middle_initial_pep[0].copy()
-        # if self.name == "lr" or self.name == "rr":
-        #     self.pep_thresh = RSTATIC.hind_initial_pep[0].copy()
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
-
-        self.default_step_length = RSTATIC.default_stance_distance
-        self.step_length = RSTATIC.default_stance_distance
-        self.default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
 
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
@@ -74,6 +63,7 @@ class SingleLeg:
         self.tibia_z_angle = pi - atan2(0.02, -0.16)  # 0.12435499454676124
         # rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle, self.tibia_z_angle))
 
+        # publish pep visualization
         self.viz = False
         if self.viz:
             self.visualization_pub = rospy.Publisher('/kinematics', Marker, queue_size=1)
@@ -160,47 +150,20 @@ class SingleLeg:
     #   simply decide if the leg should touch ground
     #   (very stable, but works only on flat terrain).
     def predicted_ground_contact(self):
-        # if self.name == "lf" or self.name == "rf":
-        #     return self.ee_position()[2] < (
-        #                 RSTATIC.front_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
-        #     # and abs(self.ee_position()[0] - RSTATIC.front_initial_aep[0]) < 0.005:
-        #     # rospy.loginfo("predict ground contact for front leg")
-        #     # return 1
-        # if self.name == "lm" or self.name == "rm":
-        #     # rospy.loginfo(self.name +
-        #     #               " self.ee_position()[2] {} < (RSTATIC.middle_initial_aep[2] {} * gc_height_factor 0.9) {}".format(
-        #     #                       self.ee_position()[2], RSTATIC.middle_initial_aep[2],
-        #     #                       (RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)))
-        #     return self.ee_position()[2] < (
-        #                 RSTATIC.middle_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
-        #     # and abs(self.ee_position()[0] - RSTATIC.middle_initial_aep[0]) < 0.005:
-        #     # rospy.loginfo("predict ground contact for middle leg")
-        #     # return 1
-        # if self.name == "lr" or self.name == "rr":
-        #     return self.ee_position()[2] < (
-        #                 RSTATIC.hind_initial_aep[2] * RSTATIC.predicted_ground_contact_height_factor)
-        #     # and abs(self.ee_position()[0] - RSTATIC.hind_initial_aep[0]) < 0.005:
-        #     # rospy.loginfo("predict ground contact for rear leg")
-        #     # return 1
-
         return self.ee_position()[2] < (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][2] *
                                         RSTATIC.predicted_ground_contact_height_factor)
-        # return False
 
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
         self.shift_pep()
-        # self.shift_step_length()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
         self.shift_pep()
-        # self.shift_step_length()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
         self.shift_pep()
-        # self.shift_step_length()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
@@ -210,46 +173,14 @@ class SingleLeg:
         else:
             self.pep_thresh = pep_thresh
 
-    def shift_step_length_ipsilateral(self, distance):
-        self.pep_shift_ipsilateral = distance
-        self.shift_step_length()
-
-    def shift_step_length_ipsilateral_from_front(self, distance):
-        self.pep_shift_ipsilateral_front = distance
-        self.shift_step_length()
-
-    def shift_step_length_contralateral(self, distance):
-        self.pep_shift_contralateral = distance
-        self.shift_step_length()
-
-    def shift_step_length(self):
-        step_length = self.default_step_length + self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
-        if step_length < 0.01:
-            self.step_length = 0.01
-        else:
-            self.step_length = step_length
-
     ##
-    #   Estimate ground ground_contact:
-    #   Predict current leg position (using fw kinematics) and
-    #   simply decide if the leg should touch ground
-    #   (very stable, but works only on flat terrain).
+    #   Estimate if end of stance is reached:
+    #   check current end effector position against current pep threshold and decide if the stance can end.
     def reached_pep(self):
         # TODO find min pep_thresh for warning in case the leg has to move to far back.
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
         return self.ee_position()[0] < self.pep_thresh
-
-    ##
-    #   Estimate ground ground_contact:
-    #   Predict current leg position (using fw kinematics) and
-    #   simply decide if the leg should touch ground
-    #   (very stable, but works only on flat terrain).
-    def reached_step_length(self):
-        # TODO find min pep_thresh for warning in case the leg has to move to far away.
-        # if self.pep_thresh == self.min_pep:
-        #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
-        return numpy.linalg.norm(self.default_aep - self.ee_position()) < self.step_length
 
     def check_joint_ranges(self, angles):
         return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][
