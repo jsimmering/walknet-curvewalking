@@ -6,8 +6,6 @@
 
 import math
 
-import matplotlib.pylab as py
-import matplotlib.pyplot as plt
 import numpy
 import rospy
 from geometry_msgs.msg import Point
@@ -75,6 +73,7 @@ class mmcBodyModelStance_matrix:
     def __init__(self, robot):  # , motiv_net, stab_thr):
         self.mathplot_viz = True
         self.visualization = None
+        self.last_time_draw = None
         self.leg_lines = None
         self.fig_3d = None
         self.rviz_viz = False
@@ -211,6 +210,7 @@ class mmcBodyModelStance_matrix:
         # positions in a global coordinate system (and of one segment, too)
         if self.mathplot_viz:
             self.visualization = BodyModelVisualization(self)
+            self.last_time_draw = rospy.Time.now()
 
         # Vectors between footpoints - these are a fixed coordinate system which shall not be altered.
         # The standing feet are connected through the ground and their relation shall be constant.
@@ -380,8 +380,10 @@ class mmcBodyModelStance_matrix:
         leg_nr = RSTATIC.leg_names.index(leg_name)
         if not self.gc[leg_nr]:
             # Set leg and diag vector
-            self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])
-            self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
+            # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
+            self.front_vect[leg_nr] = -self.segm_post_ant / 2 + leg_vec
+            # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])  # leg_vec_bm_frame
+            self.leg_vect[leg_nr] = self.segm_leg_ant[leg_nr] + self.front_vect[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
             for i in range(0, leg_nr):
                 self.footdiag[leg_nr][i] = self.set_up_foot_diag(leg_nr, i)
@@ -598,7 +600,9 @@ class mmcBodyModelStance_matrix:
         self.step += 1
 
         if self.mathplot_viz:
-            self.visualization.draw_manipulator()
+            if rospy.Time.now() - self.last_time_draw > rospy.Duration(1, 0):
+                self.visualization.draw_manipulator()
+                self.last_time_draw = rospy.Time.now()
 
     """ **** Get, set methods - connection to the robot simulator ***********************
     """
