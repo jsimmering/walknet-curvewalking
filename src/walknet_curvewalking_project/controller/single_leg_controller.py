@@ -84,16 +84,6 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
 
-        self.rule1 = True
-        # self.rule2_contra = False
-        self.rule2_contra = True
-        self.rule2_ipsi = True
-        # self.rule3_contra = False
-        self.rule3_contra = True
-        self.rule3_ipsi = True
-
-        self.default_step_length = RSTATIC.default_stance_distance
-
     def set_init_pos(self, p):
         self.init_pos = p
 
@@ -103,24 +93,20 @@ class SingleLegController:
         #    delay = 0.8 - 15 * velocity
         # elif velocity <= 0.03:
         # elif velocity <= 0.0172:
-        # delay = 0.3 - 0.75 * velocity
+        #    delay = 0.3 - 0.75 * velocity
+        #    #delay = 0.4 - 0.5 * velocity
         # if delay > 0.27:
         self.delay_1b = 0.27
         # elif delay < 0.0:
-        #    self.delay_1b = 0
+        #     self.delay_1b = 0
         # else:
-        #    self.delay_1b = delay
+        #     self.delay_1b = delay
         rospy.loginfo(self.name + ": self.delay_1b = " + str(self.delay_1b))
-        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
+        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)//2][0].copy()
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
                 1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        # if angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
-        #     self.default_step_length -= 0.03
-        #     self.leg.set_default_step_length(self.default_step_length)
-        # if angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
-        #     self.default_step_length -= 0.03
-        #     self.leg.set_default_step_length(self.default_step_length)
+
         if self.leg.viz:
             self.leg.pub_default_pep_threshold()
 
@@ -183,17 +169,12 @@ class SingleLegController:
             shift_distance += self.default_step_length * data.rule3_contralateral
         if (self.name == "lr" or self.name == "rr") and self.rule1:
             shift_distance += data.rule1
-        # if self.name == "lr" or self.name == "rr":
-        #    shift_distance += data.rule1
+        if self.name == "lr" or self.name == "rr":
+            shift_distance += data.rule1
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.
-    def manage_walk(self, legs_in_swing, swing):
-        # if not self.robot.walk_motivation or rospy.is_shutdown():
-        #     rospy.loginfo("no moving motivation or shutdown...")
-        #     return
-        # else:
-        # start = rospy.Time.now()
+    def manage_walk(self, legs_in_swing):
         if self.leg.viz:
             self.leg.pub_pep_threshold()
         if self.swing:
@@ -204,10 +185,6 @@ class SingleLegController:
                 return legs_in_swing
         else:
             return self.execute_stance_step(legs_in_swing)
-        # end = rospy.Time.now()
-        # duration = end - start
-        # rospy.logwarn(self.name + " execute body model step " + str(self.robot.body_model.step) +
-        #               " step duration = " + str(duration.to_sec()) + " sec. ")
 
     def execute_stance_step(self, legs_in_swing):
         # rospy.loginfo(self.name + ": execute stance step.")
@@ -218,11 +195,9 @@ class SingleLegController:
             rules_msg.rule1 = -0.027
         if rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.4):
             # rospy.logerr(self.name + " rule 2 ipsi = 0.008 contra = 0.002")
-            # rules_msg.rule2_ipsilateral = 0.043
-            rules_msg.rule2_ipsilateral = 0.5375  # ~54 percent of step length
-            # rules_msg.rule2_contralateral = 0.011
-            rules_msg.rule2_contralateral = 0.1375  # ~14 percent of step length
-        stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
+            rules_msg.rule2_ipsilateral = 0.043
+            rules_msg.rule2_contralateral = 0.011
+        stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             # rospy.logerr(self.name + " rule 3 " + str(self.displ_leg_ipsilateral))
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
@@ -232,16 +207,14 @@ class SingleLegController:
         self.pub_rules(rules_msg)
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
-        # if self.leg.reached_pep() and legs_in_swing < 3:
-        if self.leg.reached_step_length() and legs_in_swing < 3:
+        if self.leg.reached_pep() and legs_in_swing < 3:
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
             # self.rate.sleep()
             # self.shift_aep()  # TODO
             self.swing = True
             legs_in_swing = legs_in_swing + 1
-        # elif self.leg.reached_pep() and legs_in_swing >= 3:
-        elif self.leg.reached_step_length() and legs_in_swing >= 3:
+        elif self.leg.reached_pep() and legs_in_swing >= 3:
             rospy.logwarn(self.name + ": delayed swing start.")
             # self.delayed_swing = True
         return legs_in_swing
@@ -317,7 +290,6 @@ if __name__ == '__main__':
     nh = rospy.init_node('single_leg_controller', anonymous=True)
     legController = SingleLegController('lm', nh, True, None)
     try:
-        # legController.manage_walk()
         legController.bezier_swing()
     except rospy.ROSInterruptException:
         pass
