@@ -14,6 +14,7 @@ from walknet_curvewalking_project.support import stability
 class Robot:
     def __init__(self, name, nh):
         self.name = name
+        self.running = True
         self.viz = False
         self.log_data = True
         #self.str_list = []
@@ -97,7 +98,7 @@ class Robot:
         #self.str_list.extend(str(rospy.Time.now().to_sec()))
         #str_list.extend(str(rospy.Time.now().to_sec()))
         leg_list = [RSTATIC.leg_names.index('lf'), RSTATIC.leg_names.index('lm'), RSTATIC.leg_names.index('lr'),
-                    RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf'), ]
+                    RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf')]
         for i in leg_list:
             if self.body_model.gc[i]:
                 temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
