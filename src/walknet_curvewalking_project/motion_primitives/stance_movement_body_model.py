@@ -62,8 +62,8 @@ class StanceMovementBodyModel:
             #         self.leg_controller.wleg.leg.name)
             #     stance_foot_pos[0] = self.leg_controller.pep_shifted[0] + 0.02
             # self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.compute_forward_kinematics_c1())  #self.leg_controller.leg.ee_position())
-            self.bodyModelStance.put_leg_on_ground(self.leg_controller.name,
-                    self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
+            self.bodyModelStance.put_leg_on_ground(self.leg_controller.name, self.leg_controller.leg.ee_position())
+                    #self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
             self.init_stance_footpoint = True
         target_vec = None
         try:
