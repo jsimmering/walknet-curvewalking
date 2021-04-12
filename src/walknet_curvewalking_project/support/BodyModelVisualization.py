@@ -1,4 +1,3 @@
-from math import sin, cos, atan2
 import matplotlib.pylab as py
 import matplotlib.pyplot as plt
 import numpy
@@ -12,7 +11,7 @@ import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 class BodyModelVisualization:
     def __init__(self, body_model):
         self.body_model = body_model
-        self.segm1_in_global = numpy.array([-0.02, 0.0, RSTATIC.stance_height])
+        self.segm1_in_global = numpy.array([-0.24, 0.0, RSTATIC.stance_height])
         self.foot_global = [(self.segm1_in_global + self.body_model.front_vect[0]),
                             (self.segm1_in_global + self.body_model.front_vect[1]),
                             (self.segm1_in_global + self.body_model.front_vect[2]),
@@ -33,8 +32,8 @@ class BodyModelVisualization:
             py.plot(self.get_leg_triangle(i)[0], self.get_leg_triangle(i)[1], linewidth=1.0,
                     color='gray', marker='o', alpha=0.7, mfc='gray')[0] for i in range(0, 6)]
         plt.axis('scaled')
-        py.xlim(-0.5, 1.5)
-        py.ylim(-0.5, 2.0)
+        py.xlim(-0.5, 7.5)
+        py.ylim(-0.5, 5.0)
         py.ioff()
         py.draw()
         plt.pause(0.000001)
@@ -54,9 +53,11 @@ class BodyModelVisualization:
             self.leg_lines[i].set_marker('o')
             if self.body_model.gc[i]:
                 py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='green', marker='o', alpha=0.7,
-                        mfc='gray', visible=True)
+                        mfc='gray')
             else:
-                py.setp(self.leg_lines[i], visible=False)
+                # py.setp(self.leg_lines[i], visible=False)
+                py.setp(self.leg_lines[i], linestyle='-', linewidth=2.0, color='gray', marker='o', alpha=0.5,
+                        mfc='gray')
             self.leg_lines[i].set_xdata(self.get_leg_triangle(i)[0][0:5])
             self.leg_lines[i].set_ydata(self.get_leg_triangle(i)[1][0:5])
         #plt.axis('scaled')
@@ -121,8 +122,6 @@ class BodyModelVisualization:
                      ])
 
     def update_foot_global(self, leg_nr):
-        delta = atan2(self.body_model.segm_post_ant[1], self.body_model.segm_post_ant[0])
-        body_rotation = numpy.array([[cos(delta), -sin(delta), 0], [sin(delta), cos(delta), 0], [0, 0, 1]])
         for i in range(0, 6):
             if self.body_model.gc[i]:
                 if i > leg_nr:

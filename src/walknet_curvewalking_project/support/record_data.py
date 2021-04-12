@@ -22,7 +22,7 @@ def main():
     #direction = numpy.arange(0.7, 1.25, 0.05)
     #direction = numpy.arange(1.1, 1.55, 0.1)
     #direction = [0.0, 0.25, 0.5, 0.75]
-    direction = [0.1]
+    direction = [0.2]
     speed = [0.03]
     for i in range(0, repetitions_per_speed):
         for s in speed:
