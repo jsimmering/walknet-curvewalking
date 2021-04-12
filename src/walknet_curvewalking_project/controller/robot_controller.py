@@ -79,6 +79,9 @@ class RobotController:
                     self.rate.sleep()
         rospy.loginfo("reached init positions")
 
+    def initialize_body_model(self):
+        self.robot.initialize_body_model()
+
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
             self.velocity = data.speed_fact
@@ -113,8 +116,8 @@ class RobotController:
 
     def init_body_model(self):
         for leg in self.robot.legs:
-            self.robot.body_model.put_leg_on_ground(leg.name,
-                    leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
+            self.robot.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position())
+                # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
             rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
         self.robot.body_model.updateLegStates()
 
@@ -220,6 +223,7 @@ if __name__ == '__main__':
             robot_controller.rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
             rospy.loginfo("ready status = " + str(ready_status))
+        robot_controller.initialize_body_model()
         while not rospy.is_shutdown() and robot_controller.robot.running and walk:
             robot_controller.walk_body_model()
 

@@ -6,6 +6,8 @@
 
 import math
 
+import matplotlib.pylab as py
+import matplotlib.pyplot as plt
 import numpy
 import rospy
 from geometry_msgs.msg import Point
@@ -64,7 +66,7 @@ import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.support.BodyModelVisualization import BodyModelVisualization
 
 
-class mmcBodyModelStance:
+class mmcBodyModelStance_matrix:
 
     # Initialisation of the body model.
     # The segment vectors are encoded here, the leg vectors are initialised here
@@ -126,7 +128,7 @@ class mmcBodyModelStance:
         # self.segm_post_ant = [numpy.array([0.22,0.0,0.0]),numpy.array([0.35, 0.0, 0.0]),numpy.array([0.36,0.0,0.0])]
         # self.segm_post_ant = [numpy.array([0.6, 0.0, 0.0]), numpy.array([0.12, 0.0, 0.0]),
         #    numpy.array([0.06, 0.0, 0.0])]
-        self.front_segment_start = numpy.array([0.12, 0.0, 0.0])
+        self.front_segment_start = [0.12, 0.0, 0.0]
         self.segm_post_ant = numpy.array([0.24, 0.0, 0.0])
         self.segm_post_ant_norm = numpy.linalg.norm(self.segm_post_ant)
 
@@ -374,22 +376,12 @@ class mmcBodyModelStance:
     #	vectors to all other standing legs (footdiag) which are used by the
     #	network.
     def put_leg_on_ground(self, leg_name, leg_vec):
-        #rospy.loginfo("put leg on ground: {} leg_vec = {} length = {}".format(leg_name, leg_vec, numpy.linalg.norm(leg_vec)))
+        # rospy.loginfo("put leg on ground: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
-
-        # leg_vec_relative = numpy.array(leg_vec - self.c1_positions[leg_nr])
-        # angle = math.atan2(leg_vec_relative[1], leg_vec_relative[0]) + math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
-        # rospy.loginfo("put leg on ground: {} leg_vec_relative = {} length = {}".format(leg_name, leg_vec_relative, numpy.linalg.norm(leg_vec_relative)))
-        # leg_vec_bm_frame = numpy.array([numpy.linalg.norm(leg_vec_relative) * math.cos(angle), numpy.linalg.norm(leg_vec_relative) * math.sin(angle), leg_vec_relative[2]])
-        # rospy.loginfo(
-        #         "leg_vec_bm_frame: {} leg_vec = {} length = {}".format(leg_name, leg_vec_bm_frame, numpy.linalg.norm(leg_vec_bm_frame)))
-
         if not self.gc[leg_nr]:
             # Set leg and diag vector
-            # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
-            self.front_vect[leg_nr] = -self.segm_post_ant/2 + leg_vec
-            # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])  # leg_vec_bm_frame
-            self.leg_vect[leg_nr] = self.segm_leg_ant[leg_nr] + self.front_vect[leg_nr]
+            self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])
+            self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
             for i in range(0, leg_nr):
                 self.footdiag[leg_nr][i] = self.set_up_foot_diag(leg_nr, i)
@@ -470,32 +462,60 @@ class mmcBodyModelStance:
     #	Using equations including the two legs connected to the segment,
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
-    def compute_segment_leg_ant_computations_and_integrate(self, leg_nr):
-        # rospy.loginfo("compute_segment_leg_ant_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
-        equation_counter = 1
-        # new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant[leg_nr // 2]
-        new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant
+    def compute_segment_leg_ant_computations_and_integrate_matrix(self):
+        # equation_counter = 1
+
+        # new_segm_leg_ant = self.segm_leg_post[leg_nr] + self.segm_post_ant
         # Neighboring leg with respect to leg_nr
-        new_segm_leg_ant += self.segm_leg_ant[leg_nr] * self.damping
-        equation_counter += self.damping
-        new_segm_leg_ant = new_segm_leg_ant / equation_counter
-        # print("leg " + str(leg_nr) + " normal = " + str(numpy.linalg.norm(new_segm_leg_ant)))
-        return (self.segm_leg_ant_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_ant)) * new_segm_leg_ant
+        # new_segm_leg_ant += self.segm_leg_ant[leg_nr] * self.damping
+        # equation_counter += self.damping
+        # new_segm_leg_ant = new_segm_leg_ant / equation_counter
+
+        new_segm_leg_ant = numpy.array([[1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                        [1 / (self.damping + 1), self.damping / (self.damping + 1)]])
+        # print("new_segm_leg_ant shape = " + str(new_segm_leg_ant.shape))
+
+        matrix2 = numpy.array([self.segm_leg_post + self.segm_post_ant, self.segm_leg_ant])
+        # print("matrix2 shape = " + str(matrix2.shape))
+
+        matrix = numpy.einsum('ij,jik->ik', new_segm_leg_ant, matrix2)
+        # print("matrix shape = " + str(matrix.shape))
+        # print("matrix = " + str(matrix))
+
+        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
+
+        # return ((self.segm_leg_ant_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_ant)) * new_segm_leg_ant)
+        return numpy.einsum('j,jk->jk', numpy.array(self.segm_leg_ant_norm) / normals, matrix)
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
     #	integrating the explicit displacement given as delta
     #	and the recurrent old value of the vector.
-    def compute_segment_leg_post_computations_and_integrate(self, leg_nr):
-        # rospy.loginfo("compute_segment_leg_post_computations_and_integrate: " + RSTATIC.leg_names[leg_nr])
-        equation_counter = 1
-        # new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant[leg_nr // 2]
-        new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant
-        new_segm_leg_post += self.segm_leg_post[leg_nr] * self.damping
-        equation_counter += self.damping
-        new_segm_leg_post = new_segm_leg_post / equation_counter
-        # print("leg " + str(leg_nr) + " normal = " + str(numpy.linalg.norm(new_segm_leg_post)))
-        return (self.segm_leg_post_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_post)) * new_segm_leg_post
+    def compute_segment_leg_post_computations_and_integrate_matrix(self):
+        # equation_counter = 1
+        # new_segm_leg_post = self.segm_leg_ant[leg_nr] - self.segm_post_ant
+        # new_segm_leg_post += self.segm_leg_post[leg_nr] * self.damping
+        # quation_counter += self.damping
+        # new_segm_leg_post = new_segm_leg_post / equation_counter
+        new_segm_leg_post = numpy.array([[1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)],
+                                         [1 / (self.damping + 1), self.damping / (self.damping + 1)]])
+        # print("new_segm_leg_ant shape = " + str(new_segm_leg_ant.shape))
+
+        matrix2 = numpy.array([self.segm_leg_ant - self.segm_post_ant, self.segm_leg_post])
+        # print("matrix2 shape = " + str(matrix2.shape))
+        matrix = numpy.einsum('ij,jik->ik', new_segm_leg_post, matrix2)
+        normals = numpy.sqrt(numpy.einsum('ij,ij->i', matrix, matrix))
+        # print("normals = " + str(normals))
+        # return (self.segm_leg_post_norm[leg_nr] / numpy.linalg.norm(new_segm_leg_post)) * new_segm_leg_post
+        return numpy.einsum('j,jk->jk', numpy.array(self.segm_leg_post_norm) / normals, matrix)
 
     ##	Compute the segment vectors:
     #	Using equations including the two legs connected to the segment,
@@ -549,32 +569,22 @@ class mmcBodyModelStance:
 
         front_vect = [self.compute_front_computations_and_integrate(i) for i in range(0, 6)]
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
-        segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
-        segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
-        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
+        # segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
+        segm_leg_ant = self.compute_segment_leg_ant_computations_and_integrate_matrix()
+        # segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
+        segm_leg_post = self.compute_segment_leg_post_computations_and_integrate_matrix()
         segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-        # rospy.loginfo("old segm_post_ant = {}".format(self.segm_post_ant))
-        # rospy.loginfo("new segm_post_ant = {}".format(segm_post_ant))
-        # rospy.loginfo("old segm_post_ant norm = {}".format(numpy.linalg.norm(self.segm_post_ant)))
-        # rospy.loginfo("new segm_post_ant norm = {}".format(numpy.linalg.norm(segm_post_ant)))
-        # rospy.loginfo("old segm_post_ant angle = {}".format(math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])))
-        # rospy.loginfo("new segm_post_ant angle = {}".format(math.atan2(segm_post_ant[1], segm_post_ant[0])))
-        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
         segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
-        # rospy.loginfo("old segm_diag_to_right = {}".format(self.segm_diag_to_right))
-        # rospy.loginfo("new segm_diag_to_right = {}".format(segm_diag_to_right))
-        # rospy.loginfo("old segm_diag_to_right norm = {}".format([numpy.linalg.norm(segm_vect) for segm_vect in self.segm_diag_to_right]))
-        # rospy.loginfo("new segm_diag_to_right norm = {}".format([numpy.linalg.norm(segm_vect) for segm_vect in segm_diag_to_right]))
 
         for i in range(0, 6):
             self.segm_leg_ant[i] = segm_leg_ant[i]
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
             self.leg_vect[i] = leg_vect[i]
-        # if reset_segments:
+
         self.segm_post_ant = segm_post_ant
-        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
         self.segm_diag_to_right = segm_diag_to_right
+        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
 
         if self.rviz_viz:
             self.pub_relative_vecs(self.c1_positions, self.segm_leg_ant, self.segm_leg_ant_lines)
