@@ -52,6 +52,11 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
 
+        self.default_step_length = RSTATIC.default_stance_distance
+        self.step_length = RSTATIC.default_stance_distance
+        default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+        self.default_aep = numpy.array([default_aep[0], self.movement_dir * default_aep[1], default_aep[2]])
+
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
@@ -186,15 +191,18 @@ class SingleLeg:
 
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
-        self.shift_pep()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
-        self.shift_pep()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
-        self.shift_pep()
+        # self.shift_pep()
+        self.shift_step_length()
 
     def shift_pep(self):
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
@@ -204,6 +212,16 @@ class SingleLeg:
         else:
             self.pep_thresh = pep_thresh
 
+    def shift_step_length(self):
+        step_length = self.default_step_length - self.pep_shift_ipsilateral - self.pep_shift_ipsilateral_front - self.pep_shift_contralateral
+        if step_length < 0.01:
+            self.step_length = 0.01
+        else:
+            self.step_length = step_length
+
+    def set_default_step_length(self, length):
+        self.default_step_length = length
+
     ##
     #   Estimate if end of stance is reached:
     #   check current end effector position against current pep threshold and decide if the stance can end.
@@ -212,6 +230,23 @@ class SingleLeg:
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
         return self.ee_position()[0] < self.pep_thresh
+
+    ##
+    #   Estimate if end of stance is reached:
+    #   calculate current step length and decide based on threshold if the stance can end.
+    def reached_step_length(self):
+        # TODO find min pep_thresh for warning in case the leg has to move to far away.
+        # if self.pep_thresh == self.min_pep:
+        #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
+        step_length = numpy.linalg.norm(self.default_aep - self.ee_position())
+        # if step_length > self.step_length:
+        #     rospy.loginfo(self.name + ": aep = {} ee = {} ".format(self.default_aep, self.ee_position()))
+        #     rospy.loginfo(self.name + ": step_length = {} > set step_length = {}?".format(step_length, self.step_length))
+        #     rospy.logwarn(self.name + ": stance done")
+        #     return True
+        # else:
+        #     return False
+        return step_length > self.step_length
 
     def check_joint_ranges(self, angles):
         return angles[0] >= RSTATIC.joint_angle_limits[0][0] or angles[0] <= RSTATIC.joint_angle_limits[0][
