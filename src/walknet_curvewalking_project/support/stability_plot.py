@@ -22,15 +22,15 @@ def check_stability(projected_com, foot_positions):
 
 
 def calculate_projected_com(values, com):
-    #print("original values = " + str(values))
-    #ee_on_ground = values.remove(0.0)
+    # print("original values = " + str(values))
+    # ee_on_ground = values.remove(0.0)
     ee_on_ground = [x for x in values if x != 0.0]
-    #print("ee on ground = " + str(ee_on_ground))
+    # print("ee on ground = " + str(ee_on_ground))
     temp_foot_positions = np.reshape(ee_on_ground, (-1, 3))
-    #print("temp_foot_positions = " + str(temp_foot_positions))
+    # print("temp_foot_positions = " + str(temp_foot_positions))
     projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
     if projected_com is None:
-        #print("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
+        # print("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
         return False
 
     # pcom_error = numpy.linalg.norm(projected_com[:-1] - com[:-1])
@@ -43,6 +43,7 @@ def calculate_projected_com(values, com):
 def plot_stability_data():
     # X, Y = [], []
     bins = [0, 0, 0, 0, 0, 0]
+    legs_with_gc = [0, 0, 0, 0]
     max_pcom_err = 0
     min_pcom_err = float('inf')
     average_pcom_err = 0
@@ -66,17 +67,19 @@ def plot_stability_data():
                 values = [float(s) for s in line.split(";")]
             except ValueError:
                 tmp = line.split(";")
-                #print("time = " + str(tmp[0]))
+                # print("time = " + str(tmp[0]))
                 tmp_time = tmp[0].split(".")
                 tmp[0] = tmp_time[0] + '.' + tmp_time[2]
-                #print("time = " + str(tmp[0]))
+                # print("time = " + str(tmp[0]))
                 values = [float(s) for s in tmp]
             foot_polygon = []
             first_leg = -1
             column_idx = 1
+            legs_with_gc_count = 0
             while column_idx < 19:
                 # print("column_idx = {}, len(values) = {}".format(column_idx, len(values)))
                 if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
+                    legs_with_gc_count += 1
                     if first_leg == -1:
                         first_leg = column_idx
                     # append_value_to_plot_polygons(values[column_idx], values[column_idx + 1], X, Y, A, B, C, D, E, F, G, H)
@@ -85,6 +88,7 @@ def plot_stability_data():
                     #        foot_positions_poly2, foot_positions_poly3, foot_positions_poly4, foot_positions_poly5)
                 column_idx += 3
             # append_value_to_plot_polygons(values[first_leg], values[first_leg + 1], X, Y, A, B, C, D, E, F, G, H)
+            legs_with_gc[legs_with_gc_count - 3] += 1
 
             centroid_pt = centroid(foot_polygon)
 
@@ -96,7 +100,7 @@ def plot_stability_data():
 
             polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
             # if len(values) >= 24:
-            #print("values = " + str(values))
+            # print("values = " + str(values))
             p_com_x, p_com_y = calculate_projected_com(values[1:19], [values[19], values[20], values[21]])
             stable = False
             if plot:
@@ -107,7 +111,7 @@ def plot_stability_data():
             for i in range(0, len(polygon_list)):  # polygon in polygon_list:
                 # print("check bin " + str(polygon_list.index(polygon)))
                 # if check_stability([values[22], values[23]], polygon_list[i]):
-                #if check_stability([values[19], values[20]], polygon_list[i]):
+                # if check_stability([values[19], values[20]], polygon_list[i]):
                 if check_stability([p_com_x, p_com_y], polygon_list[i]):
                     bins[i] += 1
                     stable = True
@@ -164,6 +168,7 @@ def plot_stability_data():
                 plt.xlim(-0.3, 0.3)
                 plt.ylim(-0.4, 0.4)
 
+                # plt.grid()
                 plt.draw()
                 plt.pause(0.0001)
 
@@ -171,13 +176,17 @@ def plot_stability_data():
 
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))
+    print("legs with ground contact: 3 = {}, 4 = {}, 5 = {}, 6 = {}".format(legs_with_gc[0], legs_with_gc[1],
+            legs_with_gc[2], legs_with_gc[3]))
+    print("average number of legs with ground contact = " + str(
+            (3 * legs_with_gc[0] + 4 * legs_with_gc[1] + 5 * legs_with_gc[2] + 6 * legs_with_gc[3]) / step_count))
     # average_pcom_err = average_pcom_err / step_count
     # print("average pcom error = {}, max pcom error = {} min pcom error = {}".format(average_pcom_err, max_pcom_err,
     #         min_pcom_err))
     print("step_count = " + str(step_count))
     print("last unstable controller step was " + str(last_unstable))
 
-
+# https://progr.interplanety.org/en/python-how-to-find-the-polygon-center-coordinates/
 def centroid(vertexes):
     _x_list = [vertex[0] for vertex in vertexes]
     _y_list = [vertex[1] for vertex in vertexes]

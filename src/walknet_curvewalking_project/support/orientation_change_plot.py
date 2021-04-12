@@ -7,6 +7,7 @@ import tf.transformations as tf_trans
 # uses walknet_position_ files
 if len(sys.argv) >= 2:
 
+    duration = 60
     files = None
     if sys.argv[1] == "-dir":
         files = os.listdir(sys.argv[2])
@@ -47,11 +48,15 @@ if len(sys.argv) >= 2:
                 line = line.rstrip("\n")
                 values = [float(s) for s in line.split(";")]
                 #print("time = " + str(values[0]))
+                if duration != 0:
+                    # print("values[0] {} > duration {}".format(values[0], duration))
+                    if values[0] > duration:
+                        break
 
                 angles = tf_trans.euler_from_quaternion([values[4], values[5], values[6], values[7]])
                 #print("angles = " + str(angles))
                 if not last_orientation is None:
-                    orientation_z[j].append(abs(angles[2] - last_orientation))
+                    orientation_z[j].append(angles[2] - last_orientation)
                     time[j].append(values[0])
                 last_orientation = angles[2]
 
@@ -59,7 +64,7 @@ if len(sys.argv) >= 2:
 
         print("used lines = " + str(used_lines) + " of total lines = " + str(line_number))
         #print("orientation_z = " + str(orientation_z))
-        print("time = " + str(time))
+        #print("time = " + str(time))
         plt.plot(time[j], orientation_z[j])
         plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
 
@@ -69,4 +74,5 @@ if len(sys.argv) >= 2:
     # plt.figure()
     # plt.plot(Z)
 
+    plt.grid()
     plt.show()
