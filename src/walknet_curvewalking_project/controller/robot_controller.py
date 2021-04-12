@@ -116,9 +116,8 @@ class RobotController:
 
     def init_body_model(self):
         for leg in self.robot.legs:
-            self.robot.body_model.put_leg_on_ground(leg.name,
-                    #leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
-                    leg.leg.ee_position())
+            self.robot.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position())
+                # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
             rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
         self.robot.body_model.updateLegStates()
 
@@ -152,11 +151,10 @@ class RobotController:
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
                     break
-                # input("press any key to performe the next step.")
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            #if self.controller_steps > 50:
+            # if self.controller_steps > 50:
             #    self.robot.running = False
             # self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             self.rate.sleep()
@@ -174,9 +172,9 @@ class RobotController:
         actual_duration = 0
         if self.walk_start_time:
             actual_duration = (rospy.Time.now() - self.walk_start_time).to_sec()
-        valueError_count = "valueError_count: \n"
+        value_error_count = "value_error_count: \n"
         for leg in self.robot.legs:
-            valueError_count += leg.name + " " + str(leg.stance_net.valueError_count) + "\n"
+            value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + "\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
@@ -186,7 +184,7 @@ class RobotController:
                             gc_height=RSTATIC.predicted_ground_contact_height_factor,
                             swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
                             angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                            unstable=self.robot.unstable_count) + valueError_count, )
+                            unstable=self.robot.unstable_count) + value_error_count, )
 
 
 def talker():
@@ -203,12 +201,12 @@ if __name__ == '__main__':
     nh = rospy.init_node('robot_controller', anonymous=True)
 
     walk = rospy.get_param('~walk', True)
+    swing = rospy.get_param('~swing', True)
 
     duration = 0
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
 
-    swing = True
     if duration != 0:
         robot_controller = RobotController('robot', nh, swing, rospy.Duration.from_sec(duration * 60))
         rospy.loginfo("Robot Controller: Walk for {} seconds.".format(duration * 60))
@@ -236,6 +234,6 @@ if __name__ == '__main__':
         else:
             rospy.loginfo("DURATION = 0. No walk command received")
         rospy.loginfo("CONTROLLER STEPS = " + str(robot_controller.controller_steps))
-        #input()
+        # input()
     except rospy.ROSInterruptException:
         pass
