@@ -13,7 +13,6 @@ from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 
-
 ##
 #	A Body Model for a hexapod walker, based on MMC computation.
 #	Now extended to 3 dimensions, (body segments are 3D and have now an orientation).
@@ -73,6 +72,7 @@ class mmcBodyModelStance:
     def __init__(self, robot):  # , motiv_net, stab_thr):
         self.mathplot_viz = True
         self.visualization = None
+        self.last_time_draw = None
         self.leg_lines = None
         self.fig_3d = None
         self.rviz_viz = False
@@ -209,6 +209,7 @@ class mmcBodyModelStance:
         # positions in a global coordinate system (and of one segment, too)
         if self.mathplot_viz:
             self.visualization = BodyModelVisualization(self)
+            self.last_time_draw = rospy.Time.now()
 
         # Vectors between footpoints - these are a fixed coordinate system which shall not be altered.
         # The standing feet are connected through the ground and their relation shall be constant.
@@ -374,7 +375,7 @@ class mmcBodyModelStance:
     #	vectors to all other standing legs (footdiag) which are used by the
     #	network.
     def put_leg_on_ground(self, leg_name, leg_vec):
-        #rospy.loginfo("put leg on ground: {} leg_vec = {} length = {}".format(leg_name, leg_vec, numpy.linalg.norm(leg_vec)))
+        # rospy.loginfo("put leg on ground: {} leg_vec = {} length = {}".format(leg_name, leg_vec, numpy.linalg.norm(leg_vec)))
         leg_nr = RSTATIC.leg_names.index(leg_name)
 
         # leg_vec_relative = numpy.array(leg_vec - self.c1_positions[leg_nr])
@@ -387,7 +388,7 @@ class mmcBodyModelStance:
         if not self.gc[leg_nr]:
             # Set leg and diag vector
             # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
-            self.front_vect[leg_nr] = -self.segm_post_ant/2 + leg_vec
+            self.front_vect[leg_nr] = -self.segm_post_ant / 2 + leg_vec
             # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])  # leg_vec_bm_frame
             self.leg_vect[leg_nr] = self.segm_leg_ant[leg_nr] + self.front_vect[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
@@ -588,7 +589,9 @@ class mmcBodyModelStance:
         self.step += 1
 
         if self.mathplot_viz:
-            self.visualization.draw_manipulator()
+            if rospy.Time.now() - self.last_time_draw > rospy.Duration(1, 0):
+                self.visualization.draw_manipulator()
+                self.last_time_draw = rospy.Time.now()
 
     """ **** Get, set methods - connection to the robot simulator ***********************
     """

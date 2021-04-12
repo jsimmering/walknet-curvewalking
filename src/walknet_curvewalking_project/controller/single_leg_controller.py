@@ -158,7 +158,7 @@ class SingleLegController:
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in a stance movement.
-    def manage_walk(self, legs_in_swing):
+    def manage_walk(self, legs_in_swing, swing):
         if self.leg.viz:
             self.leg.pub_pep_threshold()
         if self.swing:
