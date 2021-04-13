@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import time
 from threading import Lock
 
@@ -37,7 +36,6 @@ tibia_pub_list = [rospy.Publisher('/phantomx/j_tibia_lf_position_controller/comm
 
 def tibia_callback(data, args):
     global tibia_joint_values
-    # rospy.loginfo(rospy.get_caller_id() + "I heard from %s that %s", args, data.error)
     tibia_mutex.acquire()
     try:
         tibia_joint_values[args] = data
@@ -47,7 +45,6 @@ def tibia_callback(data, args):
 
 def thigh_callback(data, args):
     global thigh_joint_values
-    # rospy.loginfo(rospy.get_caller_id() + "I heard from %s that %s", args, data.error)
     thigh_mutex.acquire()
     try:
         thigh_joint_values[args] = data
@@ -64,8 +61,8 @@ def make_move(target, joint_values, pub_list, mutex, rate):
         done = True
         mutex.acquire()
         for key in joint_values:
-            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or joint_values[
-                key].error < -0.1:
+            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or \
+                    joint_values[key].error < -0.1:
                 done = False
         mutex.release()
         if done:

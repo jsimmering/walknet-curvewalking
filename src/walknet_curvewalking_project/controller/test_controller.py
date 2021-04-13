@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import rospy
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
@@ -116,7 +115,7 @@ class TestController:
         # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
         self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
         print(self.temp.trajectory_generator.bezier_points)
-        while not rospy.is_shutdown() and not self.leg.predicted_ground_contact():
+        while not rospy.is_shutdown() and not (self.leg.predicted_ground_contact() and self.temp.reacht_peak):
             self.temp.move_to_next_point(1)
             rate.sleep()
         self.temp.move_to_next_point(0)
@@ -134,7 +133,7 @@ class TestController:
         alpha = 0.3
         if self.movement_dir == 1:
             alpha = -0.3
-        end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
+        end_point = self.leg.compute_forward_kinematics([alpha, 0, -0.8])
         self.stance_trajectory_gen.set_target_point(end_point)
         while not rospy.is_shutdown():
             if self.swing:
@@ -142,16 +141,17 @@ class TestController:
                     rospy.loginfo("##############################reset swing")
                     self.temp.swing_start_point = self.leg.ee_position()
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                            [self.movement_dir * 0.3, 0, -1.0])
+                            [self.movement_dir * 0.3, 0, -0.8])
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
                 rate.sleep()
-                if self.leg.predicted_ground_contact():
+                if self.temp.reacht_peak and self.leg.predicted_ground_contact():
                     self.temp.move_to_next_point(0)
                     self.temp.swing_start_point = None
                     rate.sleep()
                     self.swing = False
+                    self.temp.reacht_peak = False
                 # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
             else:
                 if self.stance_trajectory_gen.start_point is None:
@@ -245,8 +245,8 @@ class TestController:
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
-        self.leg.pub_global()
-        self.leg.pub_local()
+        #self.leg.pub_global()
+        #self.leg.pub_local()
         rospy.loginfo("##########################################################################################")
         cur_angles = self.leg.compute_inverse_kinematics()
         rospy.loginfo('inverse kinematic angles for current ee_pos: ' + str(cur_angles))
