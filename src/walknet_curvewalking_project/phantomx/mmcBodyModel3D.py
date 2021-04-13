@@ -603,18 +603,6 @@ class mmcBodyModelStance:
 
         rospy.loginfo("pull_front = " + str(self.pull_front))
 
-    ##	Pull the body model into a direction relative to the last body
-    #	segment. Takes an angle (0 means straight backwards) and a velocity factor
-    #	(around 0.1 - positive means backwards walking!)
-    #	to come up with a corresponding pull vector.
-    def pullBodyModelAtBackIntoRelativeDirection(self, pull_angle, speed_fact):
-        rospy.loginfo(
-                "pullBodyModelAtBackIntoRelativeDirection: angle = " + str(pull_angle) + " speed = " + str(speed_fact))
-        # pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[2][1], -self.segm_post_ant[2][0]) -- 3 segments
-        pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[1], -self.segm_post_ant[0])
-        self.pull_back[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
-        self.pull_back[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
-
     def get_leg_vector(self, leg_name):
         # rospy.loginfo("get_leg_vector: " + leg_name)
         leg_nr = RSTATIC.leg_names.index(leg_name)
