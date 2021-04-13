@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Took code from:
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/SwingMovementBezier.py
 # modified for PhantomX Robot

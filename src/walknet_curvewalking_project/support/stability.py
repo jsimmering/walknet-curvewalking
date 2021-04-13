@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import numpy
 from numpy.core.umath_tests import inner1d
 from numpy.linalg import svd

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import numpy
 
 # Settings for the Phantom robot objects: defining leg namings, joint_limits.
