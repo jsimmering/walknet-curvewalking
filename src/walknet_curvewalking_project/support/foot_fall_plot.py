@@ -1,9 +1,6 @@
 import sys
 
 import matplotlib.pyplot as plt
-import numpy as np
-
-from walknet_curvewalking_project.support import stability
 
 
 # uses walknet_stability_ files
@@ -54,13 +51,14 @@ def plot_stability_data_to_footfall_pattern(duration):
         for leg in stance_times:
             for step in leg:
                 print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
-                plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]], linestyle='-',
-                        linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+                plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                        linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
 
         # plt.xlim(-0.3, 0.3)
         plt.ylim(-0.5, 5.5)
         # plt.yticks([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
-        plt.yticks([0, 1, 2, 3, 4, 5], ['right rear', 'right middle', 'right front', 'left rear', 'left middle', 'left front'])
+        plt.yticks([0, 1, 2, 3, 4, 5],
+                ['right rear', 'right middle', 'right front', 'left rear', 'left middle', 'left front'])
         # plt.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         # self.ax_footfall.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         plt.grid()

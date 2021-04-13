@@ -12,8 +12,6 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-
-
 ##
 #	A Body Model for a hexapod walker, based on MMC computation.
 #	Now extended to 3 dimensions, (body segments are 3D and have now an orientation).

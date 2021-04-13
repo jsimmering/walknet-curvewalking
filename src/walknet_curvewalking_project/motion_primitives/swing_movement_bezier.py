@@ -112,7 +112,8 @@ class TrajectoryGenerator:
                 #         str(desired_distance) + ") away from the last_target_position,\nlast_target_pos = " +
                 #         str(self.last_target_position) + " current_pos = " + str(current_position))
                 if abs(delta_distance - desired_distance) > 2 * desired_distance:
-                    rospy.logerr(self.name + " current distance is more than 2x desired distance away from last target. This should not happen!")
+                    rospy.logerr(
+                            self.name + " current distance is more than 2x desired distance away from last target. This should not happen!")
                 if RSTATIC.DEBUG:
                     rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
                                   str(current_position + delta_position /
@@ -394,15 +395,16 @@ class SwingMovementBezier:
             # rospy.loginfo("angles  = " + str(self.leg.get_current_angles()))
             # rospy.loginfo("targets = " + str(self.leg.get_current_targets()))
             if self.swing_velocity != CONST.DEFAULT_SWING_VELOCITY:
-                #rospy.logwarn("swing velocity adjusted using " + str(CONST.DEFAULT_SWING_VELOCITY))
+                # rospy.logwarn("swing velocity adjusted using " + str(CONST.DEFAULT_SWING_VELOCITY))
                 self.swing_velocity = CONST.DEFAULT_SWING_VELOCITY
             target_position, target_parameter = self.trajectory_generator.compute_next_target(
                     desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                     current_position=self.leg.ee_position())
             if target_position[2] <= -0.15:
-                rospy.logerr(self.leg.name + " target position = {} target parameter = {}".format(target_position, target_parameter))
+                rospy.logerr(self.leg.name + " target position = {} target parameter = {}".format(target_position,
+                        target_parameter))
             if target_parameter >= 0.5:
-                #rospy.logerr("reacht_peak = True")
+                # rospy.logerr("reacht_peak = True")
                 self.reacht_peak = True
             # now it's just a matter of moving the leg to the next position
             # current_input_angles = self.leg.get_current_angles()

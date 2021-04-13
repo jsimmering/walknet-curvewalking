@@ -10,4 +10,4 @@ import numpy
 # DEFAULT_SWING_VELOCITY = 0.9
 DEFAULT_SWING_VELOCITY = 1.2
 DEFAULT_APEX_THIGH_OFFSET = 0.4
-DEFAULT_APEX_POINT_OFFSET = numpy.array([0, 0.02, 0.035]) #numpy.array([0,0,0.02])
+DEFAULT_APEX_POINT_OFFSET = numpy.array([0, 0.02, 0.035])  # numpy.array([0,0,0.02])

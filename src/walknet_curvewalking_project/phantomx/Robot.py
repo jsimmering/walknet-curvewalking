@@ -18,7 +18,7 @@ class Robot:
         self.running = True
         self.viz = False
         self.log_data = True
-        #self.str_list = []
+        # self.str_list = []
 
         self.center_of_mass_of_body_segments = numpy.array([0, 0, 0])
         self.mass_of_body_segments = 1.4
@@ -94,15 +94,15 @@ class Robot:
         self.com_point.points.append(Point(com[0], com[1], com[2]))
 
         self.visualization_pub.publish(self.com_point)
-        #self.visualization_pub.publish(self.shortest_vectors)
+        # self.visualization_pub.publish(self.shortest_vectors)
 
     def check_stability(self):
         com = self._get_center_of_mass()
         # rospy.loginfo("Center of Mass = " + str(com))
         temp_foot_positions = []
         str_list = ["{}".format(rospy.Time.now().to_sec())]
-        #self.str_list.extend(str(rospy.Time.now().to_sec()))
-        #str_list.extend(str(rospy.Time.now().to_sec()))
+        # self.str_list.extend(str(rospy.Time.now().to_sec()))
+        # str_list.extend(str(rospy.Time.now().to_sec()))
         leg_list = [RSTATIC.leg_names.index('lf'), RSTATIC.leg_names.index('lm'), RSTATIC.leg_names.index('lr'),
                     RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf')]
         for i in leg_list:
@@ -110,7 +110,7 @@ class Robot:
                 temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
                         self.legs[i].leg.name)
                 temp_foot_positions.append(temp_foot_position)
-                #self.str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
+                # self.str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
                 str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
                         z=temp_foot_position[2]))
             else:
@@ -141,7 +141,7 @@ class Robot:
                 # if not stability.is_point_inside_convex_hull(convex_hull_points, com):
                 self.last_state_stable = False
                 rospy.logwarn("Unstable!")
-                #self.pub_com_vectors(projected_com)
+                # self.pub_com_vectors(projected_com)
                 # self.str_list.extend("\n")
                 str_list.extend("\n")
                 self.write_stability_data_to_file(''.join(str_list))
@@ -151,7 +151,7 @@ class Robot:
             elif not self.last_state_stable:
                 rospy.loginfo("back to stable state\n\n")
                 self.last_state_stable = True
-        #self.str_list.extend("\n")
+        # self.str_list.extend("\n")
         str_list.extend("\n")
         self.write_stability_data_to_file(''.join(str_list))
         return True

@@ -117,7 +117,7 @@ class RobotController:
     def init_body_model(self):
         for leg in self.robot.legs:
             self.robot.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position())
-                # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
+            #       # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
             rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
         self.robot.body_model.updateLegStates()
 

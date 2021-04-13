@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import rospy
-import tf
 from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
 
@@ -29,11 +28,11 @@ class TestController:
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         # self.stance_net = StanceMovementBodyModel(self)
         self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.c1_callback)
+                JointControllerState, self.leg.c1_callback)
         self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.thigh_callback)
+                JointControllerState, self.leg.thigh_callback)
         self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
-            JointControllerState, self.leg.tibia_callback)
+                JointControllerState, self.leg.tibia_callback)
         self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
 
     # function for testing the kinematics calculations
@@ -60,7 +59,7 @@ class TestController:
         temp.swing_start_point = self.leg.ee_position()
         temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
         # at which position of the interval between the start and the end point the middle point should be placed
-        #temp.apex_point_offset = numpy.array([0, 0, 0.4])
+        # temp.apex_point_offset = numpy.array([0, 0, 0.4])
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
         # temp.trajectory_generator.bezier_points = temp.compute_bezier_points()
         temp.trajectory_generator.bezier_points = temp.compute_bezier_points_with_joint_angles()
@@ -111,7 +110,7 @@ class TestController:
         # at which position of the interval between the start and the end point the middle point should be placed
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
-        #temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
+        # temp.apex_point_offset = numpy.array([0, 0, 0.4]) # constant is used
         # temp.collision_point = numpy.array([0.8, 0, 0.256])
         # bezier_points = temp.compute_bezier_points()
         # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
@@ -143,7 +142,7 @@ class TestController:
                     rospy.loginfo("##############################reset swing")
                     self.temp.swing_start_point = self.leg.ee_position()
                     self.temp.swing_target_point = self.leg.compute_forward_kinematics(
-                        [self.movement_dir * 0.3, 0, -1.0])
+                            [self.movement_dir * 0.3, 0, -1.0])
                     # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
                     self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
                 self.temp.move_to_next_point(1)
@@ -219,10 +218,10 @@ class TestController:
         rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
 
         self.swing_trajectory_gen.move_to_next_point()
-        #while not rospy.is_shutdown() and not self.swing_trajectory_gen.is_finished():
-            #self.swing_trajectory_gen.move_to_next_point()
-            #rate.sleep()
-            # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
+        # while not rospy.is_shutdown() and not self.swing_trajectory_gen.is_finished():
+        #     self.swing_trajectory_gen.move_to_next_point()
+        #     rate.sleep()
+        #     rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
 
     # function for executing a single stance movement.
     def manage_stance(self):

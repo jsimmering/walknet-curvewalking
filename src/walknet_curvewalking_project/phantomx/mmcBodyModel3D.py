@@ -12,7 +12,6 @@ from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-
 ##
 #	A Body Model for a hexapod walker, based on MMC computation.
 #	Now extended to 3 dimensions, (body segments are 3D and have now an orientation).
@@ -382,7 +381,7 @@ class mmcBodyModelStance:
             # Set leg and diag vector
             # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
             self.front_vect[leg_nr] = -self.segm_post_ant / 2 + leg_vec
-            # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])  # leg_vec_bm_frame
+            # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])
             self.leg_vect[leg_nr] = self.segm_leg_ant[leg_nr] + self.front_vect[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
             for i in range(0, leg_nr):

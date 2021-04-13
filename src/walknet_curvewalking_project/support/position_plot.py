@@ -123,5 +123,3 @@ if len(sys.argv) >= 2:
         plt.axis('scaled')
         # plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
-
-

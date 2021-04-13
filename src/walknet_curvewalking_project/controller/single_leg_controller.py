@@ -46,7 +46,7 @@ class SingleLegController:
             self.displ_leg = 0.03
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         rospy.loginfo("leg " + str(self.name) + " target_pos = " + str(self.target_pos))
-        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name)//2][0].copy()
+        self.aep_x = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
 
         if self.robot is None:
             self.stance_net = None
@@ -97,9 +97,9 @@ class SingleLegController:
         # else:
         #     self.delay_1b = delay
         rospy.loginfo(self.name + ": self.delay_1b = " + str(self.delay_1b))
-        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name)//2][0].copy()
-        self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / (
-                    1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
+        pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
+        self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / \
+                                           (1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
         if self.leg.viz:
             self.leg.pub_default_pep_threshold()
@@ -199,7 +199,7 @@ class SingleLegController:
             legs_in_swing = legs_in_swing + 1
         elif self.leg.reached_pep() and legs_in_swing >= 3:
             rospy.logwarn(self.name + ": delayed swing start.")
-            #self.delayed_swing = True
+            # self.delayed_swing = True
         return legs_in_swing
 
     def execute_swing_step(self, legs_in_swing):

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import time
 import subprocess
 import sys
-
-import numpy
+import time
 
 
 def run(args):
@@ -13,17 +11,16 @@ def run(args):
 
 
 def main():
-    # TODO record duration data
     repetitions_per_speed = 1
     duration = None
     circles = 1
     distance = None
-    #speed = numpy.arange(0.01, 0.1, 0.005)
-    #direction = numpy.arange(0.7, 1.25, 0.05)
-    #direction = numpy.arange(1.1, 1.55, 0.1)
-    #direction = [0.0, 0.25, 0.5, 0.75]
-    direction = [0.2]
-    speed = [0.03]
+    # speed = numpy.arange(0.01, 0.1, 0.005)
+    # direction = numpy.arange(0.7, 1.25, 0.05)
+    # direction = numpy.arange(1.1, 1.55, 0.1)
+    # direction = [0.0, 0.25, 0.5, 0.75]
+    direction = [0.7]
+    speed = [0.02]
     for i in range(0, repetitions_per_speed):
         for s in speed:
             for d in direction:

@@ -1,5 +1,5 @@
-import sys
 import re
+import sys
 
 import matplotlib.pyplot as plt
 import tf.transformations as tf_trans
@@ -80,7 +80,7 @@ def plot_orientation_data(axs, start_time, stop_time):
         # print("time = " + str(time))
         # plt.plot(time[j], orientation_z[j])
         axs[0].plot(time[j], orientation_z[j])
-        #axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
+        # axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
         # plt.plot(time[j], orientation_diff[j])
         axs[1].plot(time[j], orientation_diff[j])
         axs[1].axis(ymax=0.00007, ymin=-0.0001)
@@ -159,7 +159,7 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
         for leg in stance_times:
             for step in leg:
                 if show_steps:
-                # if stance_times.index(leg) == 3 and leg.index(step) == 1:
+                    # if stance_times.index(leg) == 3 and leg.index(step) == 1:
                     if leg.index(step) == marked_step[stance_times.index(leg)]:
                         axs[0].axvline(x=step[1], color=leg_color[stance_times.index(leg)])
                         axs[1].axvline(x=step[1], color=leg_color[stance_times.index(leg)])

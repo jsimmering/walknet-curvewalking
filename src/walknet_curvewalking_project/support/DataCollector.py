@@ -82,7 +82,7 @@ class DataCollector:
     def check_if_circle_finished(self):
         while not rospy.is_shutdown():
             if self.walking and self.running:
-                if self.current_position[0] > 0: #and self.current_position[1] > 0:
+                if self.current_position[0] > 0:  # and self.current_position[1] > 0:
                     now = rospy.Time.now()
                     if now - self.last_in_origin_area > rospy.Duration(60):
                         self.circle_count += 1
