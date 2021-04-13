@@ -22,7 +22,6 @@ import walknet_curvewalking_project.support.constants as CONST
 # order: order of the curve
 def bezier(points, parameter, order=2):
     num_of_segments = (points.shape[0] - 1) / order  # number of pieces, the piecewise bezier curve consists of
-    # rospy.loginfo("points.shape[0] = " + str(points.shape[0]) + " order = " + str(order) + " num_of_segments = " + str(num_of_segments))
     assert num_of_segments % 1 == 0
 
     segment_number = None  # the number of the currently relevant segment
@@ -32,20 +31,17 @@ def bezier(points, parameter, order=2):
         segment_number = 0
     elif 1 < parameter:
         segment_number = num_of_segments - 1
-    # rospy.loginfo("number of currently relevant segment = " + str(segment_number))
     segment_number = int(segment_number)
-    # rospy.loginfo("number of currently relevant segment = " + str(segment_number))
 
     relative_parameter = (parameter * num_of_segments) - segment_number  # this is the parameter for the
     # current segment. It is mapped to the interval [0,1]
     relevant_points = copy.copy(points[segment_number * order:(segment_number + 1) * order + 1, :])
     # #the bezier points of the current segment
-    # print("bezier points of the current segment = " + str(relevant_points))
+
     # compute the point
     while relevant_points.shape[0] > 1:
         deltas = numpy.diff(relevant_points, n=1, axis=0)
         relevant_points = relevant_points[0:-1] + deltas * relative_parameter  # [0:-1] = [:-1] all elements except last
-    # rospy.loginfo("return bezier point: " + str(relevant_points[0]))
     return relevant_points[0]  # [0, :]  # everything in row 0 (first row)
 
 
@@ -74,45 +70,28 @@ class TrajectoryGenerator:
     # a point is needed that is located at less than desired_distance from the current_position. Additionally,
     # a point is needed that is further than desired_distance away from the current_position.
     def compute_next_target(self, desired_distance=None, current_position=None):
-        # if desired_distance is not None and desired_distance < 0.15:
-        # rospy.logerr("desired_distance = " + str(desired_distance)) # + ". To small, set to 0.15")
-        # desired_distance = 0.15
 
         if self.last_target_parameter is None:
             # if the last target parameter is unknown, probably, this is the first iteration for a new trajectory.
             self.last_target_parameter = 0
             # the last target position is set to the first point of the bezier points
-            # print("last_target_position = " + str(self.last_target_position))
-            # print("bezier_points = " + str(self.bezier_points))
             self.last_target_position = self.bezier_points[0]  # [0, :]  # everything in row 0
             # The number of segments the piecewise bezier curve consists of:
             num_of_segments = (self.bezier_points.shape[0] - 1) / self.order
             # A good estimation of the delta_paramet is necessary in order to reduce the number of iterations
             self.norm_delta_parameter = ((1 / num_of_segments) * desired_distance) / numpy.linalg.norm(
                     numpy.diff(self.bezier_points[0:2, :]))  # [0:2, :]  array containing row 0 and 1 of array
-            # rospy.loginfo("num_of_segments = " + str(num_of_segments))
-            # rospy.loginfo("desired_distance = " + str(desired_distance))
-            # rospy.loginfo("numpy.linalg.norm(numpy.diff(self.bezier_points[0:2, :])) = " + str(numpy.linalg.norm(
-            #        numpy.diff(self.bezier_points[0:2, :]))))
-            # rospy.loginfo("norm_delta_parameter = " + str(self.norm_delta_parameter))
 
         # if no current_position is given by parameter, the last_target_position is assumed
         if current_position is None:
             current_position = self.last_target_position
         else:
             delta_position = self.last_target_position - current_position
-            # rospy.loginfo("delta_position (" + str(delta_position) + ") = self.last_target_position (" + str(
-            #        self.last_target_position) + ") - current_position (" + str(current_position) + ")")
             delta_distance = numpy.linalg.norm(delta_position)
-            # rospy.loginfo("current distance " + str(delta_distance) + " desired distance = " + str(desired_distance))
             if delta_distance > desired_distance:
                 # delta_distance needs to be smaller than desired distance otherwise swing movement gets stuck sometimes.
                 # if the current_position is more than desired_distance away from the last_target_position,
                 # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
-                # rospy.loginfo(self.name +
-                #         " ---ELSE: current distance (" + str(delta_distance) + ") is more than desired_distance (" +
-                #         str(desired_distance) + ") away from the last_target_position,\nlast_target_pos = " +
-                #         str(self.last_target_position) + " current_pos = " + str(current_position))
                 if abs(delta_distance - desired_distance) > 2 * desired_distance:
                     rospy.logerr(
                             self.name + " current distance is more than 2x desired distance away from last target. This should not happen!")
@@ -139,9 +118,6 @@ class TrajectoryGenerator:
             test_parameter = self.last_target_parameter + delta_parameter
             test_target_position = bezier(self.bezier_points, test_parameter)
             parameter_position_list.append((test_parameter, test_target_position))
-            # rospy.loginfo(
-            #        "parameter list append temp_parameter = " + str(test_parameter) + " temp_target_position = " + str(
-            #                test_target_position) + " delta_parameter = " + str(delta_parameter))
 
             # If a delta_parameter was found that produces a point which has a distance to the current_position that
             # is close enough to the desired_distance, stop this algorithm.
@@ -160,16 +136,6 @@ class TrajectoryGenerator:
             # adapt the delta_parameter for the next iteration
             delta_parameter = delta_parameter / (
                     numpy.linalg.norm(test_target_position - current_position) / desired_distance)
-            # if (delta_parameter / (
-            #         numpy.linalg.norm(test_target_position - current_position) / desired_distance)) < 0.0001:
-            #     rospy.logerr("delta_parameter = " + str(delta_parameter) + " to small! set to 0.0001")
-            #     delta_parameter = 0.0001
-            #     if RSTATIC.DEBUG:
-            #         rospy.loginfo("delta_parameter (" + str(delta_parameter) + ") = \ndelta_parameter (" +
-            #                       str(delta_parameter) + ") / \n(numpy.linalg.norm(test_target_position (" +
-            #                       str(test_target_position) + ") - current_position (" + str(current_position) +
-            #                       ")) (" + str(numpy.linalg.norm(test_target_position - current_position)) +
-            #                       ") \n/ desired_distance (" + str(desired_distance) + "))")
 
             # TODO can be done only once after for??
             # variables containing a parameter, position and the corresponding distance that is slightly smaller than
@@ -185,7 +151,6 @@ class TrajectoryGenerator:
             # search in the parameter_position_list for a parameter that leads to a distance slightly less than
             # desired_distance and a parameter that leads to a slightly longer distance
             for temp_parameter, temp_target_position in parameter_position_list:
-                # rospy.loginfo("parameter list temp_parameter = " + str(temp_parameter) + " temp_target_position = " + str(temp_target_position))
                 temp_distance = numpy.linalg.norm(temp_target_position - current_position)
 
                 if temp_distance <= desired_distance and slightly_closer_parameter < temp_parameter < \
@@ -223,9 +188,6 @@ class TrajectoryGenerator:
         # use binary search to find a point with sufficient accuracy
         # initialize the test_parameter to be between the slightly closer and the slightly further parameters
         test_parameter = (slightly_closer_parameter + slightly_further_parameter) / 2
-        # rospy.loginfo("test_param (" + str(test_parameter) + ") = (slightly_closer_parameter (" + str(
-        #        slightly_closer_parameter) + ") + slightly_further_parameter (" + str(
-        #        slightly_further_parameter) + ")) / 2")
         # test_target_position = None
         for _ in range(20):
             test_target_position = bezier(self.bezier_points, test_parameter)
@@ -240,16 +202,13 @@ class TrajectoryGenerator:
 
             test_parameter = (slightly_further_parameter + slightly_closer_parameter) / 2
 
-        # rospy.loginfo("abs(test_distance - desired_distance) / desired_distance (" +
-        #   str(abs(test_distance - desired_distance) / desired_distance) + ") < self.accuracy (" +
-        #   str(self.accuracy) + ")")
         self.norm_delta_parameter = (test_parameter - self.last_target_parameter) / desired_distance
         self.last_target_parameter = test_parameter
         self.last_target_position = current_position + (test_target_position - current_position) / numpy.linalg.norm(
                 test_target_position - current_position) * desired_distance
         if RSTATIC.DEBUG:
             rospy.loginfo("+++RETURN binary search = " + str(self.last_target_position))
-        return (self.last_target_position, self.last_target_parameter)
+        return self.last_target_position, self.last_target_parameter
 
 
 class SwingMovementBezier:
@@ -283,8 +242,7 @@ class SwingMovementBezier:
             self.trajectory_generator.reset()
             self.trajectory_generator.bezier_points = bezier_points
 
-    def compute_bezier_points(self):  # ForNormalSwingMovement(self):
-        # rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+    def compute_bezier_points(self):
         start_to_end_vector = self.swing_target_point - self.swing_start_point
         start_to_end_distance = numpy.linalg.norm(start_to_end_vector)
         start_to_end_direction = start_to_end_vector / start_to_end_distance
@@ -354,8 +312,7 @@ class SwingMovementBezier:
                         [self.collision_point, control_point_1, retraction_point, control_point_2, evasion_point,
                          control_point_3, self.swing_target_point])
 
-    def compute_bezier_points_with_joint_angles(self):  # ForNormalSwingMovement(self):
-        # rospy.loginfo("target = " + str(self.swing_target_point) + " start = " + str(self.swing_start_point))
+    def compute_bezier_points_with_joint_angles(self):
         start_to_end_vector = (self.swing_target_point - self.swing_start_point)
         start_angles = self.leg.compute_inverse_kinematics(self.swing_start_point)
         target_angles = self.leg.compute_inverse_kinematics(self.swing_target_point)
@@ -387,17 +344,8 @@ class SwingMovementBezier:
                 self.reacht_peak = False
                 self.collision_point = None
 
-            # if numpy.any(self.swing_target_point != self.mleg.aep_shifted):
-            #    self.swing_target_point = self.mleg.aep_shifted
-            #    bezier_points = self.compute_bezier_points()
-            #    self.trajectory_generator.bezier_points = bezier_points
-            # target_position = self.trajectory_generator.compute_next_target(
-            #   desired_distance=self.swing_velocity / RSTATIC.controller_frequency)
-            # rospy.loginfo("ee pos  = " + str(self.leg.ee_position()))
-            # rospy.loginfo("angles  = " + str(self.leg.get_current_angles()))
-            # rospy.loginfo("targets = " + str(self.leg.get_current_targets()))
             if self.swing_velocity != CONST.DEFAULT_SWING_VELOCITY:
-                # rospy.logwarn("swing velocity adjusted using " + str(CONST.DEFAULT_SWING_VELOCITY))
+                # rospy.loginfo("swing velocity adjusted using " + str(CONST.DEFAULT_SWING_VELOCITY))
                 self.swing_velocity = CONST.DEFAULT_SWING_VELOCITY
             target_position, target_parameter = self.trajectory_generator.compute_next_target(
                     desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
@@ -406,12 +354,11 @@ class SwingMovementBezier:
                 rospy.logerr(self.leg.name + " target position = {} target parameter = {}".format(target_position,
                         target_parameter))
             if target_parameter >= 0.5:
-                # rospy.logerr("reacht_peak = True")
+                # rospy.loginfo("reacht_peak = True")
                 self.reacht_peak = True
             # now it's just a matter of moving the leg to the next position
             # current_input_angles = self.leg.get_current_angles()
             # compute the values should for the next iteration
-            next_angles = None
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
                 if RSTATIC.DEBUG:
@@ -426,13 +373,7 @@ class SwingMovementBezier:
                         target_position) + "\ncurrent angles are: " + str(self.leg.get_current_angles()) +
                              "\nMaintaining current angles.")
                 self.leg.set_command(self.leg.get_current_angles())
-            # compute the difference
-            # delta_angles = next_angles - numpy.array(current_input_angles)
-            # compute the required speed in order to reach those angles
-            # angle_vel = delta_angles * RSTATIC.controller_frequency
 
-            # if self.mleg.wleg.leg.leg_enabled:
-            #    self.mleg.wleg.addControlVelocities(angle_vel)
         self.last_activation = activation
 
     def end_swing_phase(self):
@@ -440,7 +381,6 @@ class SwingMovementBezier:
 
 
 if __name__ == '__main__':
-    # print("here0")
     # rospy.init_node('bezier_swing_controller', anonymous=True)
     temp = SwingMovementBezier()
     temp.swing_start_point = numpy.array([0., 0., 0.])  # the point where the swing phase starts
