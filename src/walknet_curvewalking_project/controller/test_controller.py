@@ -102,7 +102,7 @@ class TestController:
 
     def bezier_swing(self):
         rate = rospy.Rate(RSTATIC.controller_frequency)
-        while not self.leg.is_ready():
+        while not self.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         self.temp.swing_start_point = self.leg.ee_position()

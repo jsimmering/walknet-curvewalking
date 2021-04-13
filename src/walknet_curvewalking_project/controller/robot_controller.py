@@ -146,18 +146,24 @@ class RobotController:
         if self.walk_start_time:
             actual_duration = (rospy.Time.now() - self.walk_start_time).to_sec()
         value_error_count = "value_error_count: \n"
+        swing_delay_count = "swing_delay_count: \n"
         for leg in self.robot.legs:
             value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + "\n"
+            swing_delay_count += leg.name + " " + str(leg.swing_delays) + "\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
-                    "controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n".format(
+                    ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
+                     "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
+                     "velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull " +
+                     "angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n"
+                     ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
                             height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
                             gc_height=RSTATIC.predicted_ground_contact_height_factor,
                             swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
                             angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                            unstable=self.robot.unstable_count) + value_error_count, )
+                            unstable=self.robot.unstable_count) + value_error_count + swing_delay_count)
 
 
 def talker():
