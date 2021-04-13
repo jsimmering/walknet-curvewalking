@@ -126,7 +126,10 @@ class Robot:
                 self.last_state_stable = False
                 rospy.logwarn("Unstable! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
                 str_list.append("\n")
-                self.write_stability_data_to_file(''.join(str_list))
+                if self.write_at_end:
+                    self.str_list.extend(str_list)
+                else:
+                    self.write_stability_data_to_file(''.join(str_list))
                 self.unstable_count += 1
                 return False
 
@@ -138,7 +141,10 @@ class Robot:
                 rospy.logwarn("Unstable!")
                 # self.pub_com_vectors(projected_com)
                 str_list.extend("\n")
-                self.write_stability_data_to_file(''.join(str_list))
+                if self.write_at_end:
+                    self.str_list.extend(str_list)
+                else:
+                    self.write_stability_data_to_file(''.join(str_list))
                 self.unstable_count += 1
                 return False
             # If the center of mass lies inside the support polygon

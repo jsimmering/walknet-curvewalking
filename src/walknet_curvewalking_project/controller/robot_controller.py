@@ -204,7 +204,8 @@ if __name__ == '__main__':
         robot_controller.initialize_body_model()
         while not rospy.is_shutdown() and robot_controller.robot.running and walk:
             robot_controller.walk_body_model()
-
+        if robot_controller.robot.write_at_end:
+            robot_controller.robot.write_all_stability_data_to_file()
         talker()
         if robot_controller.walk_start_time:
             robot_controller.record_additional_data()
