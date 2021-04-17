@@ -3,6 +3,8 @@ import subprocess
 import sys
 import time
 
+import numpy
+
 
 def run(args):
     p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=sys.stdout, stderr=subprocess.STDOUT,
@@ -11,16 +13,15 @@ def run(args):
 
 
 def main():
-    repetitions_per_speed = 1
+    repetitions_per_speed = 5
     duration = None
     circles = 1
     distance = None
-    # speed = numpy.arange(0.01, 0.1, 0.005)
-    # direction = numpy.arange(0.7, 1.25, 0.05)
-    # direction = numpy.arange(1.1, 1.55, 0.1)
-    # direction = [0.0, 0.25, 0.5, 0.75]
-    direction = [0.3]
-    speed = [0.02]
+    speed = numpy.arange(0.02, 0.065, 0.01)
+    direction = numpy.arange(0.10, 0.24, 0.05)
+    # direction = numpy.arange(1.1, 1.5, 0.1)
+    # direction = [0.2]
+    #speed = [0.007]
     for i in range(0, repetitions_per_speed):
         for s in speed:
             for d in direction:

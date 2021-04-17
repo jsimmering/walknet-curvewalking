@@ -84,7 +84,7 @@ def plot_orientation_data(axs, start_time, stop_time):
         # axs[0].axis(ymax=initial_orientation + 0.05, ymin=initial_orientation - 0.15)
         # plt.plot(time[j], orientation_diff[j])
         axs[1].plot(time[j], orientation_diff[j])
-        axs[1].axis(ymax=0.00007, ymin=-0.0001)
+        #axs[1].axis(ymax=0.00007, ymin=-0.0001)
         plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
 
     # plt.figure()
@@ -150,12 +150,14 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         # marked_step = [6, 5, 4, 1, 2, 3]
-        marked_step = [2, 2, 1, 1, 1, 1]
-        # marked_step = [1, 1, 1, 0, 1, 1]  # 0.01s 0.0 dir
+        # marked_step = [2, 2, 1, 1, 1, 1]
+        marked_step = [2, 2, 1, 1, 1, 1]  # 0.01s 0.0 dir
         # marked_step = [2, 2, 2, 0, 1, 1]  # 0.01s 0.5 dir
-        # marked_step = [2, 2, 2, 1, 1, 1] # 0.02s 0.5 dir
-        # marked_step = [3, 2, 2, 0, 1, 1] # 0.05s 0.5dir
-        show_steps = False
+        # marked_step = [2, 2, 2, 0, 0, 0] # 0.02s 0.5 dir
+        # marked_step = [7, 6, 4, 1, 2, 4] # 0.06s 0.0dir
+        #marked_step = [7, 6, 4, 0, 2, 3]  # 0.06s 0.2dir
+        # marked_step = [2, 2, 2, 0, 0, 1]  # 0.02s 0.3dir
+        show_steps = True
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
         for leg in stance_times:
             for step in leg:
@@ -186,9 +188,10 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
-        # start_duration = 45
-        start_duration = 30
-        stop_duration = 60
+        start_duration = 115
+        # start_duration = 30
+        # stop_duration = 60
+        stop_duration = 145
         # stop_duration = 0
         # stop_duration = 45  # 0.05s 0.5dir
         fig, axs = plt.subplots(3)
