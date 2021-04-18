@@ -124,11 +124,17 @@ class SingleLeg:
         # self.viz_pub_rate.sleep()
 
     def pub_pep_threshold(self):
-        self.pep_thresh_line.points.clear()
-        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        self.pep_thresh_line.points.append(point1)
-        self.pep_thresh_line.points.append(point2)
+        # self.pep_thresh_line.points.clear()
+        self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
+        # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
+        # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
+        # self.pep_thresh_line.points.append(point1)
+        # self.pep_thresh_line.points.append(point2)
+        self.pep_thresh_line.pose.position.x = self.default_aep[0]
+        self.pep_thresh_line.pose.position.y = self.default_aep[1]
+        self.pep_thresh_line.pose.position.z = self.default_aep[2]
 
         self.visualization_pub.publish(self.aep_line)
         self.visualization_pub.publish(self.pep_init_thresh_line)
