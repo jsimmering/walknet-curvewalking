@@ -13,15 +13,18 @@ def run(args):
 
 
 def main():
-    repetitions_per_speed = 5
+    repetitions_per_speed = 1
     duration = None
     circles = 1
     distance = None
-    speed = numpy.arange(0.02, 0.065, 0.01)
-    direction = numpy.arange(0.10, 0.24, 0.05)
-    # direction = numpy.arange(1.1, 1.5, 0.1)
-    # direction = [0.2]
-    #speed = [0.007]
+    # speed = numpy.arange(0.02, 0.065, 0.01)
+    # direction = numpy.arange(0.10, 0.24, 0.05)
+    # direction = [0.3]
+    direction = [0.25]
+    # direction = [0.1]
+    # speed = [0.05]
+    speed = [0.04]
+    # speed = [0.06]
     for i in range(0, repetitions_per_speed):
         for s in speed:
             for d in direction:
