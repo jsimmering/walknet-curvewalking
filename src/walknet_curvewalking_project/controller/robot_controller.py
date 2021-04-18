@@ -104,7 +104,7 @@ class RobotController:
 
     # Update the body model state and perform next iteration step
     # Main Processing Step
-    def update_stance_body_model(self, reset_segments):
+    def update_stance_body_model(self):
         self.robot.body_model.updateLegStates()
         # for i in range(0, 6):
         #     #if (self.motivationNetLegs[i].swing_motivation.output_value > 0.5):
@@ -112,7 +112,7 @@ class RobotController:
         #         self.robot.body_model.lift_leg_from_ground(i)
         #         rospy.loginfo("lift leg " + str(i))
 
-        self.robot.body_model.mmc_iteration_step(reset_segments)
+        self.robot.body_model.mmc_iteration_step()
 
     def walk_body_model(self):
         while not rospy.is_shutdown() and self.walk_motivation and self.robot.running:

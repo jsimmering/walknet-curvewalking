@@ -372,7 +372,7 @@ class mmcBodyModelStance_matrix:
     #	For each variable new values are calculated through
     #	different equations.
     ##
-    def mmc_iteration_step(self, reset_segments):
+    def mmc_iteration_step(self):
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 

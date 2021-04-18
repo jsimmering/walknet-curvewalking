@@ -365,7 +365,7 @@ class mmcBodyModelStance:
     #	For each variable new values are calculated through
     #	different equations.
     ##
-    def mmc_iteration_step(self, reset_segments):
+    def mmc_iteration_step(self):
         self.delta_front = self.pull_front
         self.delta_back = self.pull_back
 
@@ -373,9 +373,7 @@ class mmcBodyModelStance:
         leg_vect = [self.compute_leg_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_ant = [self.compute_segment_leg_ant_computations_and_integrate(i) for i in range(0, 6)]
         segm_leg_post = [self.compute_segment_leg_post_computations_and_integrate(i) for i in range(0, 6)]
-        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
         segm_post_ant = self.compute_segm_post_ant_computations_and_integrate(0)
-        # TODO doesn't seem to change?! therefore doesn't need to be recomputet
         segm_diag_to_right = [self.compute_segm_diag_computations_and_integrate(i) for i in range(0, 3)]
 
         for i in range(0, 6):
@@ -383,9 +381,7 @@ class mmcBodyModelStance:
             self.segm_leg_post[i] = segm_leg_post[i]
             self.front_vect[i] = front_vect[i]
             self.leg_vect[i] = leg_vect[i]
-        # if reset_segments:
         self.segm_post_ant = segm_post_ant
-        # self.segm_diag_to_right[0] = segm_diag_to_right[0]
         self.segm_diag_to_right = segm_diag_to_right
 
         self.step += 1
