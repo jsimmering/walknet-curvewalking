@@ -120,7 +120,7 @@ class RobotController:
                 self.robot.running = False
                 # self.robot.write_all_stability_data_to_file()
             self.controller_steps += 1
-            self.update_stance_body_model(False)
+            self.update_stance_body_model()
             legs_in_swing = self.robot.body_model.gc.count(False)
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
