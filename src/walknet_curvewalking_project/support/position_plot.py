@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
 import os
 import sys
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,10 +9,12 @@ import numpy as np
 if len(sys.argv) >= 2:
 
     plot = True
+    colors = ['b', 'r', 'g', 'm', 'c', 'y', '#e67e22', '#78281f', '#1abc9c', '#909497', '#34495e', '#17202a']
 
     files = None
     if sys.argv[1] == "-dir":
         files = os.listdir(sys.argv[2])
+        files.sort(reverse=True)
         print(files)
     elif len(sys.argv) == 2:
         files = [sys.argv[1]]
@@ -34,6 +38,8 @@ if len(sys.argv) >= 2:
     if plot:
         plt.figure()
 
+    current_speed = None
+    current_color = 1
     for j in range(0, len(files)):
         first_line = True
         last_position = None
@@ -96,8 +102,22 @@ if len(sys.argv) >= 2:
         x_dim[j].append(x_max - x_min)
         y_dim[j].append(y_max - y_min)
         if plot:
-            plt.plot(X[j], Y[j])
-            plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='upper right')
+            if not current_speed:
+                split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+                speed = split[split.index("position")+1]
+                current_speed = float(speed[:-1])
+
+            split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+            speed = split[split.index("position") + 1]
+            if current_speed != speed:
+                current_color += 1
+                current_speed = speed
+            plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+            split = [i.split("_") for i in files]
+            # plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
+            plt.legend(
+                    [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
+                     range(0, len(split))], loc='lower right')
 
     for i in range(0, len(files)):
         print("steps = " + str(len(velocity[i])))
@@ -119,9 +139,38 @@ if len(sys.argv) >= 2:
         # plt.plot(Z)
         ## -----
 
+        plt.tick_params(labelsize=20)
         plt.grid()
         plt.axis('scaled')
         # plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
+        #plt.show()
 
-
+        plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
+        plt.margins(1, 1)
+        if len(files) == 1:
+            #split = [i.split("_") for i in files]
+            split = re.findall(r"[^/_,]+", files[0], re.ASCII)
+            print("split = " + str(split))
+            name = "_".join(split[split.index("walknet"):])
+            print("name = " + name)
+            print("single file: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".pdf")
+            plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
+                    pad_inches=0)
+        else:
+            split = [i.split("_") for i in files]
+            speeds = [float(split[i][split[i].index("position") + 1][:-1]) for i in range(0, len(split))]
+            directions = [float(split[i][split[i].index("position") + 2][:-3]) for i in range(0, len(split))]
+            name = ""
+            if min(speeds) != max(speeds):
+                name += str(min(speeds)) + "-to-" + str(max(speeds)) + "speed"
+            else:
+                name += str(min(speeds)) + "speed"
+            if min(directions) != max(directions):
+                name += str(min(directions)) + "-to-" + str(max(directions)) + "dir"
+            else:
+                name += str(max(directions)) + "dir"
+            name += "_"
+            name += "_".join(split[0][split[0].index("position") + 3:])
+            print("multiple files: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".png")
+            plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
+                    pad_inches=0)

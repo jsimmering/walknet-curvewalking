@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 
 import matplotlib.pyplot as plt
@@ -185,6 +186,7 @@ def plot_stability_data():
     #         min_pcom_err))
     print("step_count = " + str(step_count))
     print("last unstable controller step was " + str(last_unstable))
+
 
 # https://progr.interplanety.org/en/python-how-to-find-the-polygon-center-coordinates/
 def centroid(vertexes):

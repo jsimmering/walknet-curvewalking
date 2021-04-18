@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rospy
 
 
@@ -34,15 +35,15 @@ class SimpleSwingTrajectoryGen:
             rospy.loginfo('start_point or target_point not set. Can not compute trajectory')
             return False
         self.trajectory.append(self.start_point)
-        #middle_point = [0, 0.386, -0.055]
+        # middle_point = [0, 0.386, -0.055]
         # middle_point[2] += self.swing_height
-        #control_point1 = [(self.start_point[0] + middle_point[0]) / 2, (self.start_point[1] + middle_point[1]) / 2,
+        # control_point1 = [(self.start_point[0] + middle_point[0]) / 2, (self.start_point[1] + middle_point[1]) / 2,
         #    (self.start_point[2] + middle_point[2]) / 2]
-        #control_point2 = [(self.target_point[0] + middle_point[0]) / 2, (self.target_point[1] + middle_point[1]) / 2,
+        # control_point2 = [(self.target_point[0] + middle_point[0]) / 2, (self.target_point[1] + middle_point[1]) / 2,
         #    (self.target_point[2] + middle_point[2]) / 2]
-        #self.trajectory.append(control_point1)
+        # self.trajectory.append(control_point1)
         self.trajectory.append(self.mid_point)
-        #self.trajectory.append(control_point2)
+        # self.trajectory.append(control_point2)
         self.trajectory.append(self.target_point)
         return True
 
@@ -75,8 +76,8 @@ class SimpleSwingTrajectoryGen:
                 return
         else:
             rospy.loginfo(
-                "target is not reached got target: " + str(self.set_angles) + " and current angles are: " + str(
-                    self.leg.get_current_targets()) + ". skipp")
+                    "target is not reached got target: " + str(self.set_angles) + " and current angles are: " + str(
+                            self.leg.get_current_targets()) + ". skipp")
         target = self.trajectory[self.point]
         # get current angles
         rospy.loginfo('in move to next point; current target: ' + str(target))

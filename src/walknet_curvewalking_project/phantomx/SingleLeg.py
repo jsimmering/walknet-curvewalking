@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from math import sin, cos, atan2, pow, pi, acos, radians
 
 import numpy
@@ -123,26 +124,15 @@ class SingleLeg:
         # self.viz_pub_rate.sleep()
 
     def pub_pep_threshold(self):
-        # while not rospy.is_shutdown():
-        # self.pep_thresh_line.points.clear()
-        self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
-        # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
-        # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
-        # self.pep_thresh_line.points.append(point1)
-        # self.pep_thresh_line.points.append(point2)
-        self.pep_thresh_line.pose.position.x = self.default_aep[0]
-        self.pep_thresh_line.pose.position.y = self.default_aep[1]
-        self.pep_thresh_line.pose.position.z = self.default_aep[2]
+        self.pep_thresh_line.points.clear()
+        point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+        point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+        self.pep_thresh_line.points.append(point1)
+        self.pep_thresh_line.points.append(point2)
 
-        # for i in range(0, 3):
-        # if rospy.is_shutdown():
-        # break
         self.visualization_pub.publish(self.aep_line)
         self.visualization_pub.publish(self.pep_init_thresh_line)
         self.visualization_pub.publish(self.pep_thresh_line)
-        # self.viz_pub_rate.sleep()
 
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
@@ -173,7 +163,6 @@ class SingleLeg:
         self.ee_pos = self.compute_forward_kinematics()
 
     def leg_center_of_mass(self):
-        # if isinstance(self._center_of_mass, (type(None))):
         self.update_com_position()
         return self._center_of_mass
 
@@ -465,17 +454,9 @@ class SingleLeg:
     def is_target_reached(self):
         if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
             return None
-        # rospy.loginfo(self.name + ": self.alpha_reached (" + str(self.alpha_reached) + ") and self.beta_reached (" +
-        #               str(self.beta_reached) + ") and self.gamma_reached (" + str(self.gamma_reached) + ") = " +
-        #               str(self.alpha_reached and self.beta_reached and self.gamma_reached))
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def is_target_set(self):
-        # if self.name == "lr":
-        #     rospy.loginfo(self.name + ": alpha_target (" + str(self.alpha_target) + ") == alpha_command (" + str(
-        #             self.alpha_command) + ") and beta_target (" + str(self.beta_target) + ") == beta_command (" + str(
-        #             self.beta_command) + ") and gamma_target (" + str(self.gamma_target) + ") == gamma_command (" + str(
-        #             self.gamma_command) + ")")
         return self.alpha_target == self.alpha_command and self.beta_target == self.beta_command and self.gamma_target == self.gamma_command
 
     def set_command(self, next_angles):

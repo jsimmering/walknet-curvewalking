@@ -1,8 +1,8 @@
-import numpy as np
-import matplotlib.pyplot as plt
+#!/usr/bin/env python3
 import sys
 
-from walknet_curvewalking_project.support import stability
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_workspace_data():
@@ -60,14 +60,14 @@ def plot_workspace_data():
             X = [point[0] for point in stance]
             Y = [point[1] for point in stance]
             if stance and not first_step:
-                #print("stance = " + str(stance))
-                #print("beginning = stance[0] = " + str(stance[0]))
-                #print("end = stance[len(stance) - 1] = " + str(stance[len(stance) - 1]))
+                # print("stance = " + str(stance))
+                # print("beginning = stance[0] = " + str(stance[0]))
+                # print("end = stance[len(stance) - 1] = " + str(stance[len(stance) - 1]))
                 step_length.append(np.linalg.norm(np.array(stance[len(stance) - 1]) - np.array(stance[0])))
             if first_step:
                 first_step = False
             plt.plot(X, Y)
-        average_step_length = np.sum(step_length)/len(step_length)
+        average_step_length = np.sum(step_length) / len(step_length)
         print("average_step_length = " + str(average_step_length))
         counter += 1
     # A = [point[0] for point in polygon_list[4]]

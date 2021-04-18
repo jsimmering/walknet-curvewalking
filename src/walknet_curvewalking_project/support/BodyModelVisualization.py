@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import matplotlib.pylab as py
 import matplotlib.pyplot as plt
 import numpy
@@ -60,7 +61,7 @@ class BodyModelVisualization:
                         mfc='gray')
             self.leg_lines[i].set_xdata(self.get_leg_triangle(i)[0][0:5])
             self.leg_lines[i].set_ydata(self.get_leg_triangle(i)[1][0:5])
-        #plt.axis('scaled')
+        # plt.axis('scaled')
         py.draw()
         plt.pause(0.000001)
 

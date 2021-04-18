@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import time
 from threading import Lock
 
@@ -37,7 +36,6 @@ tibia_pub_list = [rospy.Publisher('/phantomx/j_tibia_lf_position_controller/comm
 
 def tibia_callback(data, args):
     global tibia_joint_values
-    # rospy.loginfo(rospy.get_caller_id() + "I heard from %s that %s", args, data.error)
     tibia_mutex.acquire()
     try:
         tibia_joint_values[args] = data
@@ -47,7 +45,6 @@ def tibia_callback(data, args):
 
 def thigh_callback(data, args):
     global thigh_joint_values
-    # rospy.loginfo(rospy.get_caller_id() + "I heard from %s that %s", args, data.error)
     thigh_mutex.acquire()
     try:
         thigh_joint_values[args] = data
@@ -64,8 +61,8 @@ def make_move(target, joint_values, pub_list, mutex, rate):
         done = True
         mutex.acquire()
         for key in joint_values:
-            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or joint_values[
-                key].error < -0.1:
+            if abs(joint_values[key].set_point - target) >= 0.05 or 0.1 < joint_values[key].error or \
+                    joint_values[key].error < -0.1:
                 done = False
         mutex.release()
         if done:
@@ -100,29 +97,29 @@ def talker():
 if __name__ == '__main__':
     rospy.init_node('standup_controller', anonymous=True)
     rospy.Subscriber('/phantomx/j_thigh_lf_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_lf")
+            callback_args="thigh_lf")
     rospy.Subscriber('/phantomx/j_thigh_lm_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_lm")
+            callback_args="thigh_lm")
     rospy.Subscriber('/phantomx/j_thigh_lr_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_lr")
+            callback_args="thigh_lr")
     rospy.Subscriber('/phantomx/j_thigh_rf_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_rf")
+            callback_args="thigh_rf")
     rospy.Subscriber('/phantomx/j_thigh_rm_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_rm")
+            callback_args="thigh_rm")
     rospy.Subscriber('/phantomx/j_thigh_rr_position_controller/state', JointControllerState, thigh_callback,
-                     callback_args="thigh_rr")
+            callback_args="thigh_rr")
     rospy.Subscriber('/phantomx/j_tibia_lf_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_lf")
+            callback_args="tibia_lf")
     rospy.Subscriber('/phantomx/j_tibia_lm_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_lm")
+            callback_args="tibia_lm")
     rospy.Subscriber('/phantomx/j_tibia_lr_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_lr")
+            callback_args="tibia_lr")
     rospy.Subscriber('/phantomx/j_tibia_rf_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_rf")
+            callback_args="tibia_rf")
     rospy.Subscriber('/phantomx/j_tibia_rm_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_rm")
+            callback_args="tibia_rm")
     rospy.Subscriber('/phantomx/j_tibia_rr_position_controller/state', JointControllerState, tibia_callback,
-                     callback_args="tibia_rr")
+            callback_args="tibia_rr")
 
     try:
         talker()

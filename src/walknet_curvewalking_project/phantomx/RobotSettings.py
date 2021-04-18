@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import numpy
 
 # Settings for the Phantom robot objects: defining leg namings, joint_limits.
@@ -53,36 +54,20 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
-# default_stance_distance = 0.07
-# stance_height = -0.09
-# default_stance_width = 0.27
-#
-# front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
-# front_initial_pep = numpy.array(
-#     [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-# middle_initial_aep = numpy.array([0.035, 0.327, stance_height])  # for forward walking
-# middle_initial_pep = numpy.array(
-#     [middle_initial_aep[0] - default_stance_distance, 0.327, stance_height])  # -0.07# for forward walking
-# hind_initial_aep = numpy.array([-0.18, default_stance_width, stance_height])
-# hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
-
-# == with changed joint ranges
 default_stance_distance = 0.08  # 0.10 pep_shifted to aep_shifted
 stance_height = -0.09
 default_stance_width = 0.24
 middle_leg_offset = 0.04176
-#middle_stance_width = 0.31
 
 front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
-# front_initial_aep = numpy.array([0.23, default_stance_width, stance_height])  # for forward walking
 front_initial_pep = numpy.array(
         [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array([0.05, (default_stance_width + middle_leg_offset), stance_height])  # for forward walking
-# middle_initial_aep = numpy.array([0.02, 0.31, stance_height])  # for forward walking
+middle_initial_aep = numpy.array(
+        [0.05, (default_stance_width + middle_leg_offset), stance_height])  # for forward walking
 middle_initial_pep = numpy.array(
-        [middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset), stance_height])  # -0.07# for forward walking
+        [middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset),
+         stance_height])  # -0.07# for forward walking
 hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
-# hind_initial_aep = numpy.array([-0.19, default_stance_width, stance_height])
 hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 initial_pep = (front_initial_pep, middle_initial_pep, hind_initial_pep)

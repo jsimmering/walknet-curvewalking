@@ -1,6 +1,7 @@
-import numpy, math
+#!/usr/bin/env python3
 import matplotlib.pylab as py
 import matplotlib.pyplot as plt
+import numpy
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -13,7 +14,7 @@ class mmcBodyModelStance:
 
     def __init__(self, motiv_net):
         self.motivationNetRobot = motiv_net
-        self.height = -0.09 # 0.18  # WSTATIC.stanceheight
+        self.height = -0.09  # 0.18  # WSTATIC.stanceheight
         width = 0.24
 
         self.ee_positions = [numpy.array([0.26, (width - 0.1), self.height]),
@@ -103,10 +104,10 @@ class mmcBodyModelStance:
                 self.footdiag[i][j] = self.set_up_foot_diag(i, j)
         # The explicit disturbance vectors of the network
         # self.delta_front = [numpy.array([0, 0, 0]), numpy.array([0, 0, 0]), numpy.array([0, 0, 0])]
-        self.delta_front = [numpy.array([0,0,0])]
+        self.delta_front = [numpy.array([0, 0, 0])]
         #		self.delta_back = [[numpy.array([0,0,0])], [numpy.array([0,0,0])], [numpy.array([0,0,0])]]
         # These are operated through a pull at the front
-        #self.pull_front = numpy.array([0.1, 0.05, 0.0])
+        # self.pull_front = numpy.array([0.1, 0.05, 0.0])
         self.pull_front = numpy.array([0.0075, 0.01, 0.0])
         #		self.pull_back = numpy.array([0.0,0.0,0.0])
         self.step = 0
@@ -284,7 +285,6 @@ class mmcBodyModelStance:
         self.segm_post_ant = segm_post_ant
         self.segm_diag_to_right[0] = segm_diag_to_right[0]
 
-
     ##	Extract the global positions of the feet, the segments, diagonals ...
     def get_leg_triangle(self, leg):
         return ([[self.foot_global[leg][0],
@@ -384,12 +384,11 @@ def draw_manipulator_3d(mmc):
         fig_3d.canvas.draw()
 
 
-
 mmcBM = mmcBodyModelStance(0)
 print("initialise_drawing_window")
 (leg_lines, ax_fig_3d, fig_3d) = initialise_drawing_window(mmcBM)
 print("before first fore")
-for i in range(0, 35): #25
+for i in range(0, 35):  # 25
     mmcBM.mmc_iteration_step()
     draw_manipulator(mmcBM)
 print("after for, waiting for input")

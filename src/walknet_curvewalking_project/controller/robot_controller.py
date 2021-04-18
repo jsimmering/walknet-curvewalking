@@ -10,27 +10,26 @@ from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
 class RobotController:
-    def __init__(self, name, note_handle, swing, duration=None):
-        self.debug = False
+    def __init__(self, name, note_handle, swing_legs, walk_duration=None):
         self.rate = rospy.Rate(RSTATIC.controller_frequency)
-        self.rate_leg = rospy.Rate(RSTATIC.controller_frequency)
-        self.rate_body = rospy.Rate(RSTATIC.controller_frequency)
         self.nh = note_handle
-        self.swing = swing
-
         self.name = name
         self.robot = Robot(self.name, self.nh)
+
+        # only move body cohesively or actually walk (swig legs)
+        self.walk = swing_legs
+        # whether robot currently wants to move forward
         self.walk_motivation = False
         self.walk_start_time = None
+        self.walk_duration = walk_duration
+
+        self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
+
+        # variables saving additional information
         self.stance_speed = 0
         self.velocity = 0
         self.pull_angle = 0
         self.controller_steps = 0
-
-        self.started = False
-        self.walk_duration = duration
-
-        self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
 
     def move_legs_into_init_pos(self):
         for leg in self.robot.legs:
@@ -40,22 +39,14 @@ class RobotController:
         rospy.loginfo("legs connected move to init pos")
         for leg in self.robot.legs:
             init_pos = RSTATIC.initial_pep[RSTATIC.leg_names.index(leg.name) // 2].copy()
-            if leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
-                # init_pos = RSTATIC.front_initial_pep.copy()
-                if self.swing:
-                    init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
-                else:
-                    init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
-                init_pos[1] = init_pos[1] * leg.movement_dir
-                leg.set_init_pos(init_pos)
+            if not self.walk:
+                init_pos[0] += (RSTATIC.default_stance_distance * 1)
+            elif leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
+                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
             elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
-                # init_pos = RSTATIC.front_initial_pep.copy()
-                if self.swing:
-                    init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
-                else:
-                    init_pos[0] += (RSTATIC.default_stance_distance * 1)  # (1.0 / 4.0))
-                init_pos[1] = init_pos[1] * leg.movement_dir
-                leg.set_init_pos(init_pos)
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
+            init_pos[1] = init_pos[1] * leg.movement_dir
+            leg.set_init_pos(init_pos)
 
             if leg.init_pos is not None:
                 leg.move_leg_to(leg.init_pos)
@@ -68,10 +59,8 @@ class RobotController:
             finished = True
             for leg in self.robot.legs:
                 if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
-                    # rospy.logerr(leg.name + " : target set = " + str(leg.leg.is_target_set()) + " target reached = " +
-                    #             str(leg.leg.is_target_reached()))
                     if not leg.leg.is_target_set():
-                        rospy.logerr(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
+                        rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
                                 leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
                                 leg.leg.get_current_targets()))
                     finished = False
@@ -82,63 +71,48 @@ class RobotController:
     def initialize_body_model(self):
         self.robot.initialize_body_model()
 
+        for leg in self.robot.legs:
+            self.robot.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position())
+            #       # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
+            rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
+        self.robot.body_model.updateLegStates()
+
     def control_robot_callback(self, data):
         if data.speed_fact > 0:
             self.velocity = data.speed_fact
             self.pull_angle = data.pull_angle
-            counter_damping_fact = (-109.5 * data.speed_fact + 0.0145 / data.speed_fact + 31.53)
-            # counter_damping_fact = 27
-            rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(counter_damping_fact))
-            self.stance_speed = (data.speed_fact * counter_damping_fact) / RSTATIC.controller_frequency
-            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(data.pull_angle, self.stance_speed)
-            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
+            counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
+            self.stance_speed = (self.velocity * counter_damping_fact) / RSTATIC.controller_frequency
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             for leg in self.robot.legs:
-                leg.set_pull_dependent_parameter(self.stance_speed, data.pull_angle)
-            # if data.speed_fact * 10 > 0.70:
-            # if data.speed_fact * 10 >= 0.60:
-            #     CONST.DEFAULT_SWING_VELOCITY += 0.3
-            rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
-            rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
-            self.robot.stance_speed = data.speed_fact
-            self.robot.direction = data.pull_angle
+                leg.set_pull_dependent_parameter(self.stance_speed, self.pull_angle)
+            self.robot.stance_speed = self.velocity
+            self.robot.direction = self.pull_angle
             self.robot.initialize_stability_data_file()
             self.walk_motivation = True
             self.walk_start_time = rospy.Time.now()
+            rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(counter_damping_fact))
+            rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
+            rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
             self.walk_motivation = False
             self.robot.stance_speed = 0.0
             self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
-            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
-        # self.update_stance_body_model(True)
 
-    def init_body_model(self):
-        for leg in self.robot.legs:
-            self.robot.body_model.put_leg_on_ground(leg.name, leg.leg.ee_position())
-                # leg.leg.ee_position() - leg.leg.apply_c1_static_transform())
-            rospy.loginfo("BODY MODEL LEG INIT: " + str(leg.name) + " ee:pos: " + str(leg.leg.ee_position()))
-        self.robot.body_model.updateLegStates()
-
-    # Update all the leg networks.
+    # Update the body model state and perform next iteration step
     # Main Processing Step
-    def update_stance_body_model(self, reset_segments):
-        if self.debug:
-            mleg = self.robot.legs[4]
-            print("GC: ", mleg.leg.predicted_ground_contact(), " - ", mleg.leg.ee_position()[2])
-            print("SWING: ", mleg.swing)
-            # input()
-
+    def update_stance_body_model(self):
         self.robot.body_model.updateLegStates()
-
         # for i in range(0, 6):
         #     #if (self.motivationNetLegs[i].swing_motivation.output_value > 0.5):
         #     if self.robot.legs[i].swing:
         #         self.robot.body_model.lift_leg_from_ground(i)
         #         rospy.loginfo("lift leg " + str(i))
 
-        self.robot.body_model.mmc_iteration_step(reset_segments)
+        self.robot.body_model.mmc_iteration_step()
 
     def walk_body_model(self):
         while not rospy.is_shutdown() and self.walk_motivation and self.robot.running:
@@ -156,7 +130,6 @@ class RobotController:
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             # if self.controller_steps > 50:
             #    self.robot.running = False
-            # self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             self.rate.sleep()
         self.rate.sleep()
 
@@ -173,18 +146,24 @@ class RobotController:
         if self.walk_start_time:
             actual_duration = (rospy.Time.now() - self.walk_start_time).to_sec()
         value_error_count = "value_error_count: \n"
+        swing_delay_count = "swing_delay_count: \n"
         for leg in self.robot.legs:
             value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + "\n"
+            swing_delay_count += leg.name + " " + str(leg.swing_delays) + "\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
-                    "controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n".format(
+                    ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
+                     "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
+                     "velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull " +
+                     "angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n"
+                     ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
                             height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
                             gc_height=RSTATIC.predicted_ground_contact_height_factor,
                             swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
                             angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                            unstable=self.robot.unstable_count) + value_error_count, )
+                            unstable=self.robot.unstable_count) + value_error_count + swing_delay_count)
 
 
 def talker():
@@ -219,14 +198,14 @@ if __name__ == '__main__':
         ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
         while not rospy.is_shutdown() and ready_status.__contains__(False):
-            rospy.loginfo("leg not connected yet! wait...")
             robot_controller.rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
-            rospy.loginfo("ready status = " + str(ready_status))
+        rospy.loginfo("all legs ready! status = " + str(ready_status))
         robot_controller.initialize_body_model()
         while not rospy.is_shutdown() and robot_controller.robot.running and walk:
             robot_controller.walk_body_model()
-
+        if robot_controller.robot.write_at_end:
+            robot_controller.robot.write_all_stability_data_to_file()
         talker()
         if robot_controller.walk_start_time:
             robot_controller.record_additional_data()
