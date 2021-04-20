@@ -12,8 +12,8 @@ def plot_workspace_data():
     last_state_swing = [False, False, False, False, False, False]
     first_line = True
     plt.figure()
-    plt.xlim(-0.4, 0.3)
-    plt.ylim(-0.6, 0.4)
+    plt.xlim(-0.35, 0.3)
+    plt.ylim(-0.4, 0.4)
     for line in open(str(sys.argv[1]), 'r'):
         if first_line:
             first_line = False
