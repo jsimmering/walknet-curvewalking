@@ -9,6 +9,7 @@ import numpy as np
 if len(sys.argv) >= 2:
 
     plot = True
+    controll_colors = False
     colors = ['b', 'r', 'g', 'm', 'c', 'y', '#e67e22', '#78281f', '#1abc9c', '#909497', '#34495e', '#17202a']
 
     files = None
@@ -39,7 +40,7 @@ if len(sys.argv) >= 2:
         plt.figure()
 
     current_speed = None
-    current_color = 1
+    current_color = 0
     for j in range(0, len(files)):
         first_line = True
         last_position = None
@@ -102,17 +103,20 @@ if len(sys.argv) >= 2:
         x_dim[j].append(x_max - x_min)
         y_dim[j].append(y_max - y_min)
         if plot:
-            if not current_speed:
-                split = re.findall(r"[^/_,]+", files[j], re.ASCII)
-                speed = split[split.index("position")+1]
-                current_speed = float(speed[:-1])
+            if controll_colors:
+                if not current_speed:
+                    split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+                    speed = split[split.index("position") + 1]
+                    current_speed = float(speed[:-1])
 
-            split = re.findall(r"[^/_,]+", files[j], re.ASCII)
-            speed = split[split.index("position") + 1]
-            if current_speed != speed:
-                current_color += 1
-                current_speed = speed
-            plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+                split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+                speed = split[split.index("position") + 1]
+                if current_speed != speed:
+                    current_color += 1
+                    current_speed = speed
+                plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+            else:
+                plt.plot(X[j], Y[j])
             split = [i.split("_") for i in files]
             # plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
             plt.legend(
