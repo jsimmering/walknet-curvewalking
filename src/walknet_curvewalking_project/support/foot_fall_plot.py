@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 
 
 # uses walknet_stability_ files
+import numpy
+from matplotlib.ticker import MultipleLocator
+
+
 def plot_stability_data_to_footfall_pattern(start, end):
     stance_times = [[], [], [], [], [], []]
     last_state_swing = [True, True, True, True, True, True]
@@ -67,6 +71,10 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
         if end != 0:
             plt.xlim(start, end)
+            plt.xticks(numpy.arange(start, end + 1, 5.0))
+            # plt.minorticks_on()
+            m1 = MultipleLocator(1)
+            plt.axes().xaxis.set_minor_locator(m1)
         plt.ylim(-0.5, 5.5)
         # plt.yticks([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         plt.yticks([0, 1, 2, 3, 4, 5],
@@ -79,7 +87,7 @@ def plot_stability_data_to_footfall_pattern(start, end):
         # plt.rcParams.update({'font.size': 40})
         plt.tick_params(labelsize=20)
 
-        plt.grid()
+        plt.grid(which='both')
         plt.show()
 
         plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
@@ -97,6 +105,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 90  # 60
-        end_time = 120  # 90
+        start_time = 150 #90  # 60
+        end_time = 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)
