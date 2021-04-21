@@ -3,6 +3,9 @@
 # Took Code from
 # https://github.com/malteschilling/cognitiveWalker/blob/master/controller/reaCog/Movements/StanceMovementBodyModel.py
 # modified for phantomX
+import math
+
+import numpy
 import rospy
 
 
@@ -35,9 +38,6 @@ class StanceMovementBodyModel:
         self.inverseKinematic_provider = self.leg_controller.leg
         self.valueError_count = 0
 
-    def __del__(self):
-        pass
-
     def reset_stance_trajectory(self):
         self.init_stance_footpoint = False
 
@@ -47,8 +47,16 @@ class StanceMovementBodyModel:
             #       self.leg_controller.leg.ee_position() - self.leg_controller.leg.apply_c1_static_transform())
             self.init_stance_footpoint = True
         try:
-            target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
-                    self.leg_controller.leg.name)
+            body_angle = math.atan2(self.bodyModelStance.segm_post_ant[1], self.bodyModelStance.segm_post_ant[0])
+            rotation_matrix_bm_robot = numpy.array([[math.cos(-body_angle), -math.sin(-body_angle), 0],
+                                                    [math.sin(-body_angle), math.cos(-body_angle), 0], [0, 0, 1]])
+            rotated_leg_vec = rotation_matrix_bm_robot.dot(
+                self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name))
+
+            # target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
+            #         self.leg_controller.leg.name)
+            target_vec = self.leg_controller.leg.apply_c1_static_transform() + (rotated_leg_vec)
+
             next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
             self.leg_controller.leg.set_command(next_angles)
         except ValueError as ve:

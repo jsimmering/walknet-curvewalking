@@ -94,11 +94,10 @@ class mmcBodyModelStance:
         self.segm_post_ant = numpy.array([0.24, 0.0, 0.0])
         self.segm_post_ant_norm = numpy.linalg.norm(self.segm_post_ant)
 
-        # positions of the shoulder c1 joints for calculating real leg vectors
-        self.c1_positions = [numpy.array([0.1248, 0.06164, 0.001116]), numpy.array([0.1248, -0.06164, 0.001116]),
-                             numpy.array([0.0, 0.1034, 0.001116]),
-                             numpy.array([0.0, -0.1034, 0.001116]), numpy.array([-0.1248, 0.06164, 0.001116]),
-                             numpy.array([-0.1248, -0.06164, 0.001116])]
+        # positions of the shoulder c1 joints for calculating real leg vectors [lf, rf, lm, rm, lr, rr]
+        self.c1_positions = [numpy.array([0.1248, 0.06164, 0.0]), numpy.array([0.1248, -0.06164, 0.0]),
+                             numpy.array([0.0, 0.1034, 0.0]), numpy.array([0.0, -0.1034, 0.0]),
+                             numpy.array([-0.1248, 0.06164, 0.0]), numpy.array([-0.1248, -0.06164, 0.0])]
 
         self.ee_positions = None
 
@@ -215,9 +214,15 @@ class mmcBodyModelStance:
         leg_nr = RSTATIC.leg_names.index(leg_name)
 
         if not self.gc[leg_nr]:
+            body_angle = math.atan2(self.segm_post_ant[1], self.segm_post_ant[0])
+            rotation_matrix_robot_bm = numpy.array([[math.cos(body_angle), -math.sin(body_angle), 0],
+                                                    [math.sin(body_angle), math.cos(body_angle), 0], [0, 0, 1]])
+            rotated_leg_vec = rotation_matrix_robot_bm.dot(leg_vec)
+            self.front_vect[leg_nr] = -self.segm_post_ant / 2 + rotated_leg_vec
             # Set leg and diag vector
             # self.front_vect[leg_nr] = self.leg_vect[leg_nr] - self.segm_leg_ant[leg_nr]
-            self.front_vect[leg_nr] = -self.segm_post_ant / 2 + leg_vec
+            # self.front_vect[leg_nr] = -self.segm_post_ant / 2 + leg_vec
+
             # self.leg_vect[leg_nr] = numpy.array(leg_vec - self.c1_positions[leg_nr])
             self.leg_vect[leg_nr] = self.segm_leg_ant[leg_nr] + self.front_vect[leg_nr]
             # Construction of all foot vectors - the ones to legs in the air are not used!
