@@ -2,10 +2,9 @@
 import datetime
 
 import rospy
-from walknet_curvewalking.msg import robot_control
-
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
+from walknet_curvewalking.msg import robot_control
 from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
@@ -61,8 +60,8 @@ class RobotController:
                 if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
                     if not leg.leg.is_target_set():
                         rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
-                                leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
-                                leg.leg.get_current_targets()))
+                            leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
+                            leg.leg.get_current_targets()))
                     finished = False
                     leg.move_leg_to()
                     self.rate.sleep()
@@ -154,17 +153,17 @@ class RobotController:
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
-                    ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
-                     "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
-                     "velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull " +
-                     "angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n"
-                     ).format(
-                            hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
-                            height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
-                            gc_height=RSTATIC.predicted_ground_contact_height_factor,
-                            swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
-                            angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                            unstable=self.robot.unstable_count) + value_error_count + swing_delay_count)
+                ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
+                 "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
+                 "velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull " +
+                 "angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n"
+                 ).format(
+                    hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
+                    height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
+                    gc_height=RSTATIC.predicted_ground_contact_height_factor,
+                    swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
+                    angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
+                    unstable=self.robot.unstable_count) + value_error_count + swing_delay_count)
 
 
 def talker():

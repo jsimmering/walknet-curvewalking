@@ -8,9 +8,6 @@ import math
 
 import numpy
 import rospy
-from geometry_msgs.msg import Point
-from visualization_msgs.msg import Marker
-
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 ##
 #	A Body Model for a hexapod walker, based on MMC computation.
