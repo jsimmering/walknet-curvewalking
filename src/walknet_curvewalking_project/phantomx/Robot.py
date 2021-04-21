@@ -3,13 +3,11 @@ import datetime
 
 import numpy
 import rospy
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
-
-import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.controller.single_leg_controller import SingleLegController
 from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
-from walknet_curvewalking_project.phantomx.mmcBodyModel3D_matrix import mmcBodyModelStance_matrix
 from walknet_curvewalking_project.support import stability
 
 
@@ -107,11 +105,12 @@ class Robot:
                     RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf')]
         for i in leg_list:
             if self.body_model.gc[i]:
-                temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
-                        self.legs[i].leg.name)
+                # temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
+                #         self.legs[i].leg.name)
+                temp_foot_position = self.legs[i].leg.ee_position()
                 temp_foot_positions.append(temp_foot_position)
                 str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
-                        z=temp_foot_position[2]))
+                    z=temp_foot_position[2]))
             else:
                 str_list.extend(";{x};{y};{z}".format(x=0.0, y=0.0, z=0.0))
 
@@ -180,4 +179,4 @@ class Robot:
             with open(self.file_name + self.file_suffix, "a") as f_handle:
                 # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
                 f_handle.write(
-                        "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z\n")
+                    "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z\n")

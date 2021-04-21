@@ -3,6 +3,8 @@ import re
 import sys
 
 import matplotlib.pyplot as plt
+import numpy
+from matplotlib.ticker import MultipleLocator
 
 
 # uses walknet_stability_ files
@@ -66,8 +68,8 @@ def plot_stability_data_to_footfall_pattern(start, end):
                 # plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                 #         linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
                 plt.plot([leg[i][1], leg[i + 1][0]],
-                        [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
-                        linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+                    [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                    linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
 
         if end != 0:
             plt.xlim(start, end)
@@ -78,7 +80,7 @@ def plot_stability_data_to_footfall_pattern(start, end):
         plt.ylim(-0.5, 5.5)
         # plt.yticks([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         plt.yticks([0, 1, 2, 3, 4, 5],
-                ['right rear', 'right middle', 'right front', 'left rear', 'left middle', 'left front'])
+            ['right rear', 'right middle', 'right front', 'left rear', 'left middle', 'left front'])
         # plt.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         # self.ax_footfall.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
 
@@ -99,7 +101,7 @@ def plot_stability_data_to_footfall_pattern(start, end):
         print("name = " + name)
         print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".pdf")
 
-        #plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".png", bbox_inches='tight',
+        # plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".png", bbox_inches='tight',
         #        pad_inches=0)
 
 

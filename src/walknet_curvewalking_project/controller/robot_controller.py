@@ -2,10 +2,9 @@
 import datetime
 
 import rospy
-from walknet_curvewalking.msg import robot_control
-
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
+from walknet_curvewalking.msg import robot_control
 from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
@@ -61,8 +60,8 @@ class RobotController:
                 if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
                     if not leg.leg.is_target_set():
                         rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
-                                leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
-                                leg.leg.get_current_targets()))
+                            leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
+                            leg.leg.get_current_targets()))
                     finished = False
                     leg.move_leg_to()
                     self.rate.sleep()
@@ -128,6 +127,7 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             # if self.controller_steps > 50:
             #    self.robot.running = False
             self.rate.sleep()
