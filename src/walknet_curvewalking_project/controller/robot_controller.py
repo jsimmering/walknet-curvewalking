@@ -128,6 +128,7 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             # if self.controller_steps > 50:
             #    self.robot.running = False
             self.rate.sleep()

@@ -109,10 +109,10 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / \
                                            (1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        # if angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
+        # if angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
         #     self.default_step_length -= 0.03
         #     self.leg.set_default_step_length(self.default_step_length)
-        # if angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
+        # if angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
         #     self.default_step_length -= 0.03
         #     self.leg.set_default_step_length(self.default_step_length)
 
@@ -232,6 +232,7 @@ class SingleLegController:
             # rospy.loginfo(self.name + ": reset swing")
             self.swing_generator.swing_start_point = self.leg.ee_position()
             self.swing_generator.swing_target_point = self.target_pos
+            rospy.loginfo(self.name + ": swing target point = aep = " + str(self.target_pos))
             self.swing_generator.reacht_peak = False
             # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
             self.swing_generator.trajectory_generator.bezier_points = self.swing_generator.compute_bezier_points_with_joint_angles()
@@ -244,6 +245,7 @@ class SingleLegController:
             self.swing = False
             legs_in_swing = legs_in_swing - 1
             self.last_stance_activation = rospy.Time.now()
+            rospy.loginfo(self.name + ": actually reached swing target point = actual aep = " + str(self.leg.ee_position()))
             # rospy.loginfo(self.name + ': swing is finished switch to stance.')
         return legs_in_swing
 
