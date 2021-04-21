@@ -25,7 +25,6 @@ class Robot:
         self.unstable_count = 0
 
         self.body_model = mmcBodyModelStance(self)
-        # self.body_model = mmcBodyModelStance_matrix(self)
         self.stance_speed = 0.0
         self.direction = 0.0
         self.file_name = "logs/walknet_stability_"
