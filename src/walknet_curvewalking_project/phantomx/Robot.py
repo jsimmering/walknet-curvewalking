@@ -107,8 +107,9 @@ class Robot:
                     RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf')]
         for i in leg_list:
             if self.body_model.gc[i]:
-                temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
-                        self.legs[i].leg.name)
+                # temp_foot_position = self.legs[i].leg.apply_c1_static_transform() + self.body_model.get_leg_vector(
+                #         self.legs[i].leg.name)
+                temp_foot_position = self.legs[i].leg.ee_position()
                 temp_foot_positions.append(temp_foot_position)
                 str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
                         z=temp_foot_position[2]))
