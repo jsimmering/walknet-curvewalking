@@ -99,7 +99,7 @@ class SingleLegController:
         #    delay = 0.3 - 0.75 * velocity
         #    #delay = 0.4 - 0.5 * velocity
         # if delay > 0.27:
-        self.delay_1b = 0.27
+        self.delay_1b = 0.2
         # elif delay < 0.0:
         #     self.delay_1b = 0
         # else:

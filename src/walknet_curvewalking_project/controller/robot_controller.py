@@ -2,9 +2,10 @@
 import datetime
 
 import rospy
+from walknet_curvewalking.msg import robot_control
+
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
-from walknet_curvewalking.msg import robot_control
 from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
@@ -29,6 +30,7 @@ class RobotController:
         self.velocity = 0
         self.pull_angle = 0
         self.controller_steps = 0
+        self.counter_damping_fact = 0
 
     def move_legs_into_init_pos(self):
         for leg in self.robot.legs:
@@ -60,8 +62,8 @@ class RobotController:
                 if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
                     if not leg.leg.is_target_set():
                         rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
-                            leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
-                            leg.leg.get_current_targets()))
+                                leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
+                                leg.leg.get_current_targets()))
                     finished = False
                     leg.move_leg_to()
                     self.rate.sleep()
@@ -80,8 +82,11 @@ class RobotController:
         if data.speed_fact > 0:
             self.velocity = data.speed_fact
             self.pull_angle = data.pull_angle
-            counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
-            self.stance_speed = (self.velocity * counter_damping_fact) / RSTATIC.controller_frequency
+            # self.counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
+            # new linear:
+            self.counter_damping_fact = (-141.5 * self.velocity) + 35.5
+
+            self.stance_speed = (self.velocity * self.counter_damping_fact) / RSTATIC.controller_frequency
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             for leg in self.robot.legs:
                 leg.set_pull_dependent_parameter(self.stance_speed, self.pull_angle)
@@ -90,7 +95,7 @@ class RobotController:
             self.robot.initialize_stability_data_file()
             self.walk_motivation = True
             self.walk_start_time = rospy.Time.now()
-            rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(counter_damping_fact))
+            rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
             rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
@@ -148,26 +153,28 @@ class RobotController:
         value_error_count = "value_error_count: \n"
         swing_delay_count = "swing_delay_count: \n"
         for leg in self.robot.legs:
-            value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + "\n"
+            value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + " = " + str(
+                    (leg.stance_net.valueError_count * 100) / self.controller_steps) + "%\n"
             swing_delay_count += leg.name + " " + str(leg.swing_delays) + " = " + str(
-                (leg.swing_delays * 100) / self.controller_steps) + "%\n"
+                    (leg.swing_delays * 100) / self.controller_steps) + "%\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
-                ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
-                 "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
-                 "velocity = {swing}\nbm stance speed factor = {stance}\nset average velocity = {velocity}\npull " +
-                 "angle = {angle}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\n" +
-                 "unstable_percent = {percent}\n"
-                 ).format(
-                    hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
-                    height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
-                    gc_height=RSTATIC.predicted_ground_contact_height_factor,
-                    swing=CONST.DEFAULT_SWING_VELOCITY, stance=self.stance_speed, velocity=self.velocity,
-                    angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                    unstable=self.robot.unstable_count,
-                    percent=(self.robot.unstable_count * 100) / self.controller_steps) +
-                value_error_count + swing_delay_count)
+                    ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
+                     "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
+                     "velocity = {swing}\ncounter_damping_fact = {factor}\nbm stance speed factor = {stance}\n" +
+                     "set average velocity = {velocity}\npull angle = {angle}\nduration = {duration}\ncontroller " +
+                     "steps = {cs}\nunstable_count = {unstable}\nunstable_percent = {percent}\n"
+                     ).format(
+                            hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
+                            height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
+                            gc_height=RSTATIC.predicted_ground_contact_height_factor,
+                            swing=CONST.DEFAULT_SWING_VELOCITY,
+                            factor=self.counter_damping_fact, stance=self.stance_speed, velocity=self.velocity,
+                            angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
+                            unstable=self.robot.unstable_count,
+                            percent=(self.robot.unstable_count * 100) / self.controller_steps) +
+                    value_error_count + swing_delay_count)
 
 
 def talker():
