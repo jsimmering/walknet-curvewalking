@@ -406,8 +406,7 @@ class mmcBodyModelStance:
         self.pull_front[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_front[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
         # self.pull_front = numpy.array([0.0075, 0.01, 0.0])
-
-        rospy.loginfo("pull_front = " + str(self.pull_front))
+        # rospy.loginfo("pull_front = " + str(self.pull_front))
 
     def get_leg_vector(self, leg_name):
         # rospy.loginfo("get_leg_vector: " + leg_name)

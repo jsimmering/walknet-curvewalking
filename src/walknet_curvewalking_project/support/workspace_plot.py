@@ -85,6 +85,10 @@ def plot_workspace_data():
     # plt.axvline(x=0.05, color='b')
     # plt.axvline(x=-0.17, color='b')
 
+    # plt.axvline(x=0.25 - 0.08, color='g')
+    # plt.axvline(x=0.05 - 0.08, color='g')
+    # plt.axvline(x=-0.17 - 0.08, color='g')
+
     plt.grid()
     plt.show()
 

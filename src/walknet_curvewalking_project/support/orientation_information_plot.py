@@ -150,12 +150,9 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         # marked_step = [6, 5, 4, 1, 2, 3]
-        # marked_step = [2, 2, 1, 1, 1, 1]
-        marked_step = [2, 2, 1, 1, 1, 1]  # 0.01s 0.0 dir
-        # marked_step = [2, 2, 2, 0, 1, 1]  # 0.01s 0.5 dir
-        # marked_step = [2, 2, 2, 0, 0, 0] # 0.02s 0.5 dir
-        # marked_step = [7, 6, 4, 1, 2, 4] # 0.06s 0.0dir
-        #marked_step = [7, 6, 4, 0, 2, 3]  # 0.06s 0.2dir
+        # marked_step = [2, 2, 2, 0, 1, 1]
+        # marked_step = [1, 1, 1, 0, 0, 0]  # 0.007s 0.0 dir
+        marked_step = [0, 1, 1, 1, 1, 1]  # 0.007s 0.3 dir
         # marked_step = [2, 2, 2, 0, 0, 1]  # 0.02s 0.3dir
         show_steps = True
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
@@ -188,10 +185,12 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
 
 if __name__ == '__main__':
     if len(sys.argv) == 3:
-        start_duration = 115
+        # start_duration = 115
+        start_duration = 70
         # start_duration = 30
         # stop_duration = 60
-        stop_duration = 145
+        stop_duration = 100
+        # stop_duration = 145
         # stop_duration = 0
         # stop_duration = 45  # 0.05s 0.5dir
         fig, axs = plt.subplots(3)

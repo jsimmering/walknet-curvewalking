@@ -85,7 +85,7 @@ class RobotController:
             # self.counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
             # new linear:
             self.counter_damping_fact = (-141.5 * self.velocity) + 35.5
-            
+
             self.stance_speed = (self.velocity * self.counter_damping_fact) / RSTATIC.controller_frequency
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
             for leg in self.robot.legs:

@@ -9,6 +9,7 @@ import numpy as np
 if len(sys.argv) >= 2:
 
     plot = True
+    safe_plot = True
     controll_colors = False
     colors = ['b', 'r', 'g', 'm', 'c', 'y', '#e67e22', '#78281f', '#1abc9c', '#909497', '#34495e', '#17202a']
 
@@ -147,34 +148,35 @@ if len(sys.argv) >= 2:
         plt.grid()
         plt.axis('scaled')
         # plt.gca().set_aspect('equal', adjustable='box')
-        #plt.show()
-
-        plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
-        plt.margins(1, 1)
-        if len(files) == 1:
-            #split = [i.split("_") for i in files]
-            split = re.findall(r"[^/_,]+", files[0], re.ASCII)
-            print("split = " + str(split))
-            name = "_".join(split[split.index("walknet"):])
-            print("name = " + name)
-            print("single file: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".pdf")
-            plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
-                    pad_inches=0)
+        if safe_plot:
+            plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
+            plt.margins(1, 1)
+            if len(files) == 1:
+                # split = [i.split("_") for i in files]
+                split = re.findall(r"[^/_,]+", files[0], re.ASCII)
+                print("split = " + str(split))
+                name = "_".join(split[split.index("walknet"):])
+                print("name = " + name)
+                print("single file: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".pdf")
+                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
+                        pad_inches=0)
+            else:
+                split = [i.split("_") for i in files]
+                speeds = [float(split[i][split[i].index("position") + 1][:-1]) for i in range(0, len(split))]
+                directions = [float(split[i][split[i].index("position") + 2][:-3]) for i in range(0, len(split))]
+                name = ""
+                if min(speeds) != max(speeds):
+                    name += str(min(speeds)) + "-to-" + str(max(speeds)) + "speed"
+                else:
+                    name += str(min(speeds)) + "speed"
+                if min(directions) != max(directions):
+                    name += str(min(directions)) + "-to-" + str(max(directions)) + "dir"
+                else:
+                    name += str(max(directions)) + "dir"
+                name += "_"
+                name += "_".join(split[0][split[0].index("position") + 3:])
+                print("multiple files: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".png")
+                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
+                        pad_inches=0)
         else:
-            split = [i.split("_") for i in files]
-            speeds = [float(split[i][split[i].index("position") + 1][:-1]) for i in range(0, len(split))]
-            directions = [float(split[i][split[i].index("position") + 2][:-3]) for i in range(0, len(split))]
-            name = ""
-            if min(speeds) != max(speeds):
-                name += str(min(speeds)) + "-to-" + str(max(speeds)) + "speed"
-            else:
-                name += str(min(speeds)) + "speed"
-            if min(directions) != max(directions):
-                name += str(min(directions)) + "-to-" + str(max(directions)) + "dir"
-            else:
-                name += str(max(directions)) + "dir"
-            name += "_"
-            name += "_".join(split[0][split[0].index("position") + 3:])
-            print("multiple files: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".png")
-            plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
-                    pad_inches=0)
+            plt.show()
