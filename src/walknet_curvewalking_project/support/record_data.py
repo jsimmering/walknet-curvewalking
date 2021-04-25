@@ -14,19 +14,24 @@ def run(args):
 
 def main():
     repetitions_per_speed = 3
-    duration = 5
-    circles = None
+    duration = 20
+    circles = 1
     distance = None
+
+    step_length = True
+    shift_aep = True
+    decrease_inner_stance = True
+
     # direction = numpy.arange(0.10, 0.24, 0.05)
     # direction = [0.3]
     # direction = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
-    direction = [0.0]
+    direction = [0.5]
     # speed = [0.02, 0.03, 0.04, 0.05, 0.06]
     # speed = numpy.arange(0.02, 0.065, 0.01)
     # 0.007,
     # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
     # speed = [0.007]
-    speed = [0.01]
+    speed = [0.05]
     for i in range(0, repetitions_per_speed):
         for s in speed:
             for d in direction:
@@ -56,10 +61,14 @@ def main():
                 if duration:
                     print("recorder: Robot Collector walk for {} minutes".format(duration))
                     robot_p = run(["rosrun", "walknet_curvewalking", "robot_controller.py", "_walk:=True",
+                                   "_stepLength:=" + str(step_length), "_aepShift:=" + str(shift_aep),
+                                   "_innerStep:=" + str(decrease_inner_stance),
                                    "_duration:=" + str(duration)])
                 else:
                     print("recorder: Robot Controller walk walk until stop")
                     robot_p = run(["rosrun", "walknet_curvewalking", "robot_controller.py", "_walk:=True",
+                                   "_stepLength:=" + str(step_length), "_aepShift:=" + str(shift_aep),
+                                   "_innerStep:=" + str(decrease_inner_stance),
                                    "_duration:=0"])
 
                 print("initialize Data Collector")

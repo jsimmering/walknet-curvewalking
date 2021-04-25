@@ -12,7 +12,7 @@ import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 
 class SingleLeg:
 
-    def __init__(self, name, movement_dir):
+    def __init__(self, name, movement_dir, use_step_length):
         self.name = name
         self._alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
                 queue_size=1)
@@ -22,6 +22,8 @@ class SingleLeg:
                 queue_size=1)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
+
+        self.use_step_length = use_step_length
 
         self.alpha = None
         self.beta = None
@@ -53,10 +55,11 @@ class SingleLeg:
         self.pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
         self.aep_thresh = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
 
-        self.default_step_length = RSTATIC.default_stance_distance
-        self.step_length = RSTATIC.default_stance_distance
-        default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
-        self.default_aep = numpy.array([default_aep[0], self.movement_dir * default_aep[1], default_aep[2]])
+        if self.use_step_length:
+            self.default_step_length = RSTATIC.default_stance_distance
+            self.step_length = RSTATIC.default_stance_distance
+            default_aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+            self.default_aep = numpy.array([default_aep[0], self.movement_dir * default_aep[1], default_aep[2]])
 
         self.pep_shift_ipsilateral = 0
         self.pep_shift_ipsilateral_front = 0
@@ -84,14 +87,19 @@ class SingleLeg:
             self.pep_init_thresh_line.id = 4
             self.aep_line.id = 5 + RSTATIC.leg_names.index(self.name)
             self.pep_thresh_line.id = 11 + RSTATIC.leg_names.index(self.name)
-            self.pep_thresh_line.type = Marker.CYLINDER
+            if self.use_step_length:
+                self.pep_thresh_line.type = Marker.CYLINDER
+                self.pep_thresh_line.scale.z = 0.005
+                self.pep_thresh_line.color.a = 0.5
+            else:
+                self.pep_thresh_line.type = Marker.LINE_LIST
+                self.pep_thresh_line.scale.x = 0.0025
+                self.pep_thresh_line.color.a = 1.0
             self.aep_line.type = self.pep_init_thresh_line.type = Marker.LINE_LIST
-            self.pep_thresh_line.scale.z = 0.005
             self.aep_line.scale.x = self.pep_init_thresh_line.scale.x = 0.0025
             self.pep_init_thresh_line.color.g = 1.0
             self.aep_line.color.b = 1.0
             self.pep_thresh_line.color.r = 1.0
-            self.pep_thresh_line.color.a = 0.5
             self.aep_line.color.a = self.pep_init_thresh_line.color.a = 1.0
             self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.20, -0.1))
             self.pep_init_thresh_line.points.append(Point(self.pep_thresh, self.movement_dir * 0.35, -0.1))
@@ -124,17 +132,19 @@ class SingleLeg:
         # self.viz_pub_rate.sleep()
 
     def pub_pep_threshold(self):
-        # self.pep_thresh_line.points.clear()
-        self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
-        # point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
-        # point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
-        # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
-        # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
-        # self.pep_thresh_line.points.append(point1)
-        # self.pep_thresh_line.points.append(point2)
-        self.pep_thresh_line.pose.position.x = self.default_aep[0]
-        self.pep_thresh_line.pose.position.y = self.default_aep[1]
-        self.pep_thresh_line.pose.position.z = self.default_aep[2]
+        if self.use_step_length:
+            self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
+            self.pep_thresh_line.pose.position.x = self.default_aep[0]
+            self.pep_thresh_line.pose.position.y = self.default_aep[1]
+            self.pep_thresh_line.pose.position.z = self.default_aep[2]
+        else:
+            self.pep_thresh_line.points.clear()
+            point1 = Point(self.pep_thresh, self.movement_dir * 0.20, -0.1)
+            point2 = Point(self.pep_thresh, self.movement_dir * 0.35, -0.1)
+            # point1 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.20, -0.1)
+            # point2 = Point(self.default_aep[0] - self.step_length, self.movement_dir * 0.35, -0.1)
+            self.pep_thresh_line.points.append(point1)
+            self.pep_thresh_line.points.append(point2)
 
         self.visualization_pub.publish(self.aep_line)
         self.visualization_pub.publish(self.pep_init_thresh_line)
@@ -186,20 +196,29 @@ class SingleLeg:
 
     def shift_pep_ipsilateral(self, distance):
         self.pep_shift_ipsilateral = distance
-        # self.shift_pep()
-        self.shift_step_length()
+        if self.use_step_length:
+            self.shift_step_length()
+        else:
+            self.shift_pep()
 
     def shift_pep_ipsilateral_from_front(self, distance):
         self.pep_shift_ipsilateral_front = distance
-        # self.shift_pep()
-        self.shift_step_length()
+        if self.use_step_length:
+            self.shift_step_length()
+        else:
+            self.shift_pep()
 
     def shift_pep_contralateral(self, distance):
         self.pep_shift_contralateral = distance
-        # self.shift_pep()
-        self.shift_step_length()
+        if self.use_step_length:
+            self.shift_step_length()
+        else:
+            self.shift_pep()
 
     def shift_pep(self):
+        if self.use_step_length:
+            rospy.logerr("calling x-pep-thresh function, but shift_step_length is used! Return without action")
+            return
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
                      self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
         if pep_thresh > self.aep_thresh - 0.01:
@@ -208,6 +227,9 @@ class SingleLeg:
             self.pep_thresh = pep_thresh
 
     def shift_step_length(self):
+        if not self.use_step_length:
+            rospy.logerr("calling shift_step_length function, but x-pep-thresh is used! Return without action")
+            return
         step_length = self.default_step_length - self.pep_shift_ipsilateral - self.pep_shift_ipsilateral_front - self.pep_shift_contralateral
         if step_length < 0.01:
             self.step_length = 0.01
@@ -215,12 +237,19 @@ class SingleLeg:
             self.step_length = step_length
 
     def set_default_step_length(self, length):
+        if not self.use_step_length:
+            rospy.logerr("calling shift_step_length function, but x-pep-thresh is used! Return without action")
+            return
         self.default_step_length = length
+        self.shift_step_length()
 
     ##
     #   Estimate if end of stance is reached:
     #   check current end effector position against current pep threshold and decide if the stance can end.
     def reached_pep(self):
+        if self.use_step_length:
+            rospy.logerr("calling x-pep-thresh function, but shift_step_length is used! Return without action")
+            return
         # TODO find min pep_thresh for warning in case the leg has to move to far back.
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
@@ -230,6 +259,9 @@ class SingleLeg:
     #   Estimate if end of stance is reached:
     #   calculate current step length and decide based on threshold if the stance can end.
     def reached_step_length(self):
+        if not self.use_step_length:
+            rospy.logerr("calling shift_step_length function, but x-pep-thresh is used! Return without action")
+            return
         # TODO find min pep_thresh for warning in case the leg has to move to far away.
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")

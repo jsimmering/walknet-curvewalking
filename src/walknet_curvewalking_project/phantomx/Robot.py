@@ -12,9 +12,10 @@ from walknet_curvewalking_project.support import stability
 
 
 class Robot:
-    def __init__(self, name, nh):
+    def __init__(self, name, nh, step_length, shift_aep, decrease_inner_stance):
         self.name = name
         self.running = True
+
         self.log_data = True
         self.write_at_end = False
         self.str_list = []
@@ -33,12 +34,7 @@ class Robot:
         self.legs = []
         for name in RSTATIC.leg_names:
             swing = False
-            if name == 'rm' or name == 'lf' or name == 'lr':
-                # swing = True
-                self.legs.append(SingleLegController(name, nh, swing, self))
-            if name == 'lm' or name == 'rf' or name == 'rr':
-                # swing = True
-                self.legs.append(SingleLegController(name, nh, swing, self))
+            self.legs.append(SingleLegController(name, nh, swing, self, step_length, shift_aep, decrease_inner_stance))
 
         self.viz = False
         if self.viz:
@@ -109,7 +105,7 @@ class Robot:
                 temp_foot_position = self.legs[i].leg.ee_position()
                 temp_foot_positions.append(temp_foot_position)
                 str_list.extend(";{x};{y};{z}".format(x=temp_foot_position[0], y=temp_foot_position[1],
-                    z=temp_foot_position[2]))
+                        z=temp_foot_position[2]))
             else:
                 str_list.extend(";{x};{y};{z}".format(x=0.0, y=0.0, z=0.0))
 
@@ -178,4 +174,4 @@ class Robot:
             with open(self.file_name + self.file_suffix, "a") as f_handle:
                 # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
                 f_handle.write(
-                    "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z\n")
+                        "time;lf x;lf y;lf z;lm x;lm y;lm z;lr x;lr y;lr z;rr x;rr y;rr z;rm x;rm y;rm z;rf x;rf y;rf z;com x;com y;com z\n")

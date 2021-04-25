@@ -13,7 +13,7 @@ from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
 
 
 class SingleLegController:
-    def __init__(self, name, note_handle, swing, robot):
+    def __init__(self, name, note_handle, swing, robot, step_length, shift_aep, decrease_inner_stance):
         self.robot = robot
         self.name = name
         self.nh = note_handle
@@ -24,7 +24,13 @@ class SingleLegController:
         else:
             rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, self.movement_dir)
+
+        self.step_length = step_length
+        self.shift_aep = shift_aep
+        self.decrease_inner_stance = decrease_inner_stance
+
+        self.leg = SingleLeg(name, self.movement_dir, self.step_length)
+
         self.swing_generator = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_delays = 0
@@ -35,7 +41,7 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = None
         self.threshold_rule3_contralateral = None
 
-        #self.displ_leg_ipsilateral = 0.041
+        # self.displ_leg_ipsilateral = 0.041
         self.displ_leg_ipsilateral = 0.5125  # percent of step length
         if self.name == "lf" or self.name == "rf":
             # self.displ_leg = 0.025
@@ -48,7 +54,6 @@ class SingleLegController:
         self.target_pos = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
         self.aep_x = self.target_pos[0]
-        self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
 
         if self.robot is None:
             self.stance_net = None
@@ -85,6 +90,8 @@ class SingleLegController:
         self.rule3_contra = True
         self.rule3_ipsi = True
 
+        if self.step_length:
+            self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.default_step_length = RSTATIC.default_stance_distance
 
     def set_init_pos(self, p):
@@ -109,12 +116,21 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / \
                                            (1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
-        # if angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
-        #     self.default_step_length -= 0.03
-        #     self.leg.set_default_step_length(self.default_step_length)
-        # if angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
-        #     self.default_step_length -= 0.03
-        #     self.leg.set_default_step_length(self.default_step_length)
+
+        if self.decrease_inner_stance and angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
+            self.default_step_length -= 0.02
+            if self.step_length:
+                self.leg.set_default_step_length(self.default_step_length)
+            else:
+                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += 0.02
+        if self.decrease_inner_stance and angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
+            self.default_step_length -= 0.02
+            if self.step_length:
+                self.leg.set_default_step_length(self.default_step_length)
+            else:
+                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += 0.02
+                rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
+                        RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
 
         if self.leg.viz:
             self.leg.pub_default_pep_threshold()
@@ -173,8 +189,10 @@ class SingleLegController:
             rules_msg.rule2_ipsilateral = 0.5375  # ~54 percent of step length
             # rules_msg.rule2_contralateral = 0.011
             rules_msg.rule2_contralateral = 0.1375  # ~14 percent of step length
-        # stance_progress = self.aep_x - self.leg.compute_forward_kinematics()[0]
-        stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
+        if self.step_length:
+            stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
+        else:
+            stance_progress = self.aep_x - self.leg.ee_position()[0]
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral
         if self.threshold_rule3_contralateral < stance_progress < self.threshold_rule3_contralateral + 0.016:
@@ -183,19 +201,22 @@ class SingleLegController:
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
         # if self.leg.reached_pep() and legs_in_swing < 3:
-        if self.leg.reached_step_length() and legs_in_swing < 3:
+        if (self.step_length and self.leg.reached_step_length() and legs_in_swing < 3) or (
+                not self.step_length and self.leg.reached_pep() and legs_in_swing < 3):
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
-            # self.shift_aep()
+            if self.shift_aep:
+                self.move_aep()
             self.swing = True
             legs_in_swing = legs_in_swing + 1
         # elif self.leg.reached_pep() and legs_in_swing >= 3:
-        elif self.leg.reached_step_length() and legs_in_swing >= 3:
+        elif (self.step_length and self.leg.reached_step_length() and legs_in_swing >= 3) or (
+                not self.step_length and self.leg.reached_pep() and legs_in_swing >= 3):
             rospy.logwarn(self.name + ": delayed swing start.")
             self.swing_delays += 1
         return legs_in_swing
 
-    def shift_aep(self):
+    def move_aep(self):
         ee_pos = self.leg.ee_position()
         step_vector = ee_pos - self.target_pos
         # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(

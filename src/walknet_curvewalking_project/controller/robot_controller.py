@@ -10,11 +10,15 @@ from walknet_curvewalking_project.phantomx.Robot import Robot
 
 
 class RobotController:
-    def __init__(self, name, note_handle, swing_legs, walk_duration=None):
+    def __init__(self, name, note_handle, swing_legs, step_length, shift_aep, decrease_inner_stance,
+                 walk_duration=None):
         self.rate = rospy.Rate(RSTATIC.controller_frequency)
         self.nh = note_handle
         self.name = name
-        self.robot = Robot(self.name, self.nh)
+        self.step_length = step_length
+        self.shift_aep = shift_aep
+        self.decrease_inner_stance = decrease_inner_stance
+        self.robot = Robot(self.name, self.nh, step_length, shift_aep, decrease_inner_stance)
 
         # only move body cohesively or actually walk (swig legs)
         self.walk = swing_legs
@@ -163,16 +167,19 @@ class RobotController:
                     ("controller frequency = {hz}\ndefault stance distance (length) = {step_length}\ndefault stance " +
                      "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
                      "velocity = {swing}\ncounter_damping_fact = {factor}\nbm stance speed factor = {stance}\n" +
-                     "set average velocity = {velocity}\npull angle = {angle}\nduration = {duration}\ncontroller " +
-                     "steps = {cs}\nunstable_count = {unstable}\nunstable_percent = {percent}\n"
+                     "set average velocity = {velocity}\npull angle = {angle}\nstep_length used as pep = " +
+                     "{step_length_on}\naep shifted for curve = {shift_aep}\ninner stance step decreased for curve = " +
+                     "{decrease_inner_stance}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = " +
+                     "{unstable}\nunstable_percent = {percent}\n"
                      ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
                             height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
                             gc_height=RSTATIC.predicted_ground_contact_height_factor,
                             swing=CONST.DEFAULT_SWING_VELOCITY,
                             factor=self.counter_damping_fact, stance=self.stance_speed, velocity=self.velocity,
-                            angle=self.pull_angle, duration=actual_duration, cs=self.controller_steps,
-                            unstable=self.robot.unstable_count,
+                            angle=self.pull_angle, step_length_on=self.step_length, shift_aep=self.shift_aep,
+                            decrease_inner_stance=self.decrease_inner_stance, duration=actual_duration,
+                            cs=self.controller_steps, unstable=self.robot.unstable_count,
                             percent=(self.robot.unstable_count * 100) / self.controller_steps) +
                     value_error_count + swing_delay_count)
 
@@ -197,11 +204,17 @@ if __name__ == '__main__':
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
 
+    step_length_param = rospy.get_param('~stepLength', True)
+    shift_aep_param = rospy.get_param('~aepShift', True)
+    decrease_inner_stance_param = rospy.get_param('~innerStep', True)
+
     if duration != 0:
-        robot_controller = RobotController('robot', nh, swing, rospy.Duration.from_sec(duration * 60))
+        robot_controller = RobotController('robot', nh, swing, step_length_param, shift_aep_param,
+                decrease_inner_stance_param, rospy.Duration.from_sec(duration * 60))
         rospy.loginfo("Robot Controller: Walk for {} seconds.".format(duration * 60))
     else:
-        robot_controller = RobotController('robot', nh, swing)  # executing until stop command
+        robot_controller = RobotController('robot', nh, swing, step_length_param, shift_aep_param,
+                decrease_inner_stance_param)  # executing until stop command
         rospy.loginfo("Robot Controller: Walk until stop command")
 
     try:
