@@ -28,6 +28,7 @@ class SingleLegController:
         self.step_length = step_length
         self.shift_aep = shift_aep
         self.decrease_inner_stance = decrease_inner_stance
+        self.stance_diff = 0.005
 
         self.leg = SingleLeg(name, self.movement_dir, self.step_length)
 
@@ -118,17 +119,17 @@ class SingleLegController:
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
 
         if self.decrease_inner_stance and angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
-            self.default_step_length -= 0.02
+            self.default_step_length -= self.stance_diff
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)
             else:
-                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += 0.02
+                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
         if self.decrease_inner_stance and angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
-            self.default_step_length -= 0.02
+            self.default_step_length -= self.stance_diff
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)
             else:
-                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += 0.02
+                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
                 rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
                         RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
 
