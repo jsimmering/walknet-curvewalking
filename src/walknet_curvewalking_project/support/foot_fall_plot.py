@@ -18,6 +18,7 @@ def plot_stability_data_to_footfall_pattern(start, end):
     first_line = True
     line_count = 0
     plot = True
+    save_file = True
     plt.figure()
     for line in open(str(sys.argv[1]), 'r'):
         # print("line count = " + str(line_count))
@@ -90,23 +91,25 @@ def plot_stability_data_to_footfall_pattern(start, end):
         plt.tick_params(labelsize=20)
 
         plt.grid(which='both')
-        plt.show()
 
-        plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
-        plt.margins(1, 1)
+        if save_file:
+            plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
+            plt.margins(1, 1)
 
-        split = re.findall(r"[^/_,]+", str(sys.argv[1]), re.ASCII)
-        print("split = " + str(split))
-        name = "_".join(split[split.index("50hz") + 1:])
-        print("name = " + name)
-        print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".pdf")
+            split = re.findall(r"[^/_,]+", str(sys.argv[1]), re.ASCII)
+            print("split = " + str(split))
+            name = "_".join(split[split.index("50hz") + 1:])
+            print("name = " + name)
+            print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".pdf")
 
-        # plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".png", bbox_inches='tight',
-        #        pad_inches=0)
+            plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".png", bbox_inches='tight',
+                   pad_inches=0)
+        else:
+            plt.show()
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 150 #90  # 60
-        end_time = 200 # 120  # 90
+        start_time = 100  # 150 #90  # 60
+        end_time = 150  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)
