@@ -11,6 +11,7 @@ if len(sys.argv) >= 2:
     plot = True
     safe_plot = True
     controll_colors = False
+    controll_colors_dir =False
     colors = ['b', 'r', 'g', 'm', 'c', 'y', '#e67e22', '#78281f', '#1abc9c', '#909497', '#34495e', '#17202a']
 
     files = None
@@ -41,6 +42,7 @@ if len(sys.argv) >= 2:
         plt.figure()
 
     current_speed = None
+    current_dir = None
     current_color = 0
     for j in range(0, len(files)):
         first_line = True
@@ -116,6 +118,18 @@ if len(sys.argv) >= 2:
                     current_color += 1
                     current_speed = speed
                 plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+            elif controll_colors_dir:
+                if not current_dir:
+                    split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+                    dir = split[split.index("position") + 2]
+                    current_dir = float(dir[:-3])
+
+                split = re.findall(r"[^/_,]+", files[j], re.ASCII)
+                dir = split[split.index("position") + 2]
+                if current_dir != dir:
+                    current_color += 1
+                    current_dir = dir
+                plt.plot(X[j], Y[j], colors[current_color % len(colors)])
             else:
                 plt.plot(X[j], Y[j])
             split = [i.split("_") for i in files]
@@ -147,6 +161,10 @@ if len(sys.argv) >= 2:
         plt.tick_params(labelsize=20)
         plt.grid()
         plt.axis('scaled')
+        plt.xlim(-4, 2)
+        # plt.xlim(-3, 1)
+        plt.ylim(-1.5, 4.5)
+        # plt.ylim(-1.0, 3.5)
         # plt.gca().set_aspect('equal', adjustable='box')
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
