@@ -28,7 +28,7 @@ class SingleLegController:
         self.step_length = step_length
         self.shift_aep = shift_aep
         self.decrease_inner_stance = decrease_inner_stance
-        self.stance_diff = 0.005
+        self.stance_diff = 0.02  # 0.0025
 
         self.leg = SingleLeg(name, self.movement_dir, self.step_length)
 
@@ -118,20 +118,24 @@ class SingleLegController:
                                            (1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
 
-        if self.decrease_inner_stance and angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
+        if self.decrease_inner_stance and angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
             self.default_step_length -= self.stance_diff
+            rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)
             else:
                 RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
-        if self.decrease_inner_stance and angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
+        elif self.decrease_inner_stance and angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"):
             self.default_step_length -= self.stance_diff
+            rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)
             else:
                 RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
                 rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
                         RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
+        else:
+            rospy.loginfo(self.name + ": maintain original default_step_length = " + str(self.default_step_length))
 
         if self.leg.viz:
             self.leg.pub_default_pep_threshold()
