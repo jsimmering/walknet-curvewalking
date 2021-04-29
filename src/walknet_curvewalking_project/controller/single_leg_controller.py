@@ -226,7 +226,7 @@ class SingleLegController:
         step_vector = ee_pos - self.target_pos
         # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
         #         numpy.array(step_vector))) * step_vector
-        step_vector_default_length = (self.default_step_length / numpy.linalg.norm(
+        step_vector_default_length = ((self.default_step_length + 0.02) / numpy.linalg.norm(
                 numpy.array(step_vector))) * step_vector
         ee_default_step = self.target_pos + step_vector_default_length
         offset_center_1 = self.target_pos[1] - RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[
@@ -251,6 +251,7 @@ class SingleLegController:
                     self.target_pos[1],
                     RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[1] * self.movement_dir))
             self.target_pos[1] = new_aep_y
+            self.leg.shift_default_aep(self.target_pos)
 
     def execute_swing_step(self, legs_in_swing):
         # rospy.loginfo(self.name + ": execute swing step.")

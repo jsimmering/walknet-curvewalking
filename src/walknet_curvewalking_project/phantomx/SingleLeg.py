@@ -243,6 +243,9 @@ class SingleLeg:
         self.default_step_length = length
         self.shift_step_length()
 
+    def shift_default_aep(self, aep):
+        self.default_aep = aep
+
     ##
     #   Estimate if end of stance is reached:
     #   check current end effector position against current pep threshold and decide if the stance can end.
