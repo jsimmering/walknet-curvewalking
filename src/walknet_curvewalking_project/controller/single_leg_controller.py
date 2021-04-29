@@ -27,8 +27,8 @@ class SingleLegController:
 
         self.step_length = step_length
         self.shift_aep = shift_aep
-        self.decrease_inner_stance = decrease_inner_stance
-        self.stance_diff = 0.02  # 0.0025
+        self.decrease_inner_stance = bool(decrease_inner_stance)
+        self.stance_diff = decrease_inner_stance  # 0.001  # 0.0025
 
         self.leg = SingleLeg(name, self.movement_dir, self.step_length)
 

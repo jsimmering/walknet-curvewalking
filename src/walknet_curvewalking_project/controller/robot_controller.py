@@ -168,8 +168,8 @@ class RobotController:
                      "height = {height}\nstance width = {width}\npredicted ground contact = {gc_height}\nswing " +
                      "velocity = {swing}\ncounter_damping_fact = {factor}\nbm stance speed factor = {stance}\n" +
                      "set average velocity = {velocity}\npull angle = {angle}\nstep_length used as pep = " +
-                     "{step_length_on}\naep shifted for curve = {shift_aep}\ninner stance step decreased for curve = " +
-                     "{decrease_inner_stance}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = " +
+                     "{step_length_on}\naep shifted for curve = {shift_aep}\ninner stance step decreased for curve by" +
+                     " = {decrease_inner_stance}\nduration = {duration}\ncontroller steps = {cs}\nunstable_count = " +
                      "{unstable}\nunstable_percent = {percent}\n"
                      ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
 
-    step_length_param = rospy.get_param('~stepLength', True)
+    step_length_param = rospy.get_param('~stepLength', 0.0)
     shift_aep_param = rospy.get_param('~aepShift', True)
     decrease_inner_stance_param = rospy.get_param('~innerStep', True)
 
