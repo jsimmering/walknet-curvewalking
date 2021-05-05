@@ -244,7 +244,7 @@ class SingleLegController:
         step_vector = ee_pos - self.target_pos
         # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
         #         numpy.array(step_vector))) * step_vector
-        step_vector_default_length = ((self.default_step_length + 0.02) / numpy.linalg.norm(
+        step_vector_default_length = ((self.default_step_length + 0.05) / numpy.linalg.norm(
                 numpy.array(step_vector))) * step_vector
         ee_default_step = self.target_pos + step_vector_default_length
         # ydir
