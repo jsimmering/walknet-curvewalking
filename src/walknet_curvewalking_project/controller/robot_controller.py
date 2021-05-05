@@ -88,6 +88,8 @@ class RobotController:
 
             self.stance_speed = (self.velocity * self.counter_damping_fact) / RSTATIC.controller_frequency
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
+            # TODO figure out how if pulling at back can allow for rotation on the spot
+            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
                 leg.set_pull_dependent_parameter(self.stance_speed, self.pull_angle)
             self.robot.stance_speed = self.velocity
@@ -103,6 +105,7 @@ class RobotController:
             self.robot.stance_speed = 0.0
             self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
+            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
 
