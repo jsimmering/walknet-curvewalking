@@ -83,6 +83,7 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
 
+        self.first_stance = True
         self.rule1 = True
         # self.rule2_contra = False
         self.rule2_contra = True
@@ -210,9 +211,11 @@ class SingleLegController:
                 not self.step_length and self.leg.reached_pep() and legs_in_swing < 3):
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
-            if self.shift_aep:
+            if self.shift_aep and not self.first_stance:
                 self.move_aep()
             self.swing = True
+            if self.first_stance:
+                self.first_stance = False
             legs_in_swing = legs_in_swing + 1
         # elif self.leg.reached_pep() and legs_in_swing >= 3:
         elif (self.step_length and self.leg.reached_step_length() and legs_in_swing >= 3) or (
