@@ -219,6 +219,7 @@ class SingleLeg:
         if self.use_step_length:
             rospy.logerr("calling x-pep-thresh function, but shift_step_length is used! Return without action")
             return
+        # for backwards walking change minus to plus everywhere
         pep_thresh = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy() + \
                      self.pep_shift_ipsilateral + self.pep_shift_ipsilateral_front + self.pep_shift_contralateral
         if pep_thresh > self.aep_thresh - 0.01:
@@ -257,6 +258,8 @@ class SingleLeg:
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
         return self.ee_position()[0] < self.pep_thresh
+        # for backwards walking:
+        # return self.ee_position()[0] > self.pep_thresh
 
     ##
     #   Estimate if end of stance is reached:
