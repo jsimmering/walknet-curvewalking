@@ -11,16 +11,10 @@ def plot_workspace_data():
     plot = True
     safe_plot = True
 
-    # X, Y = [], []
-    if plot:
-        plt.figure()
-        plt.xlim(-0.35, 0.3)
-        plt.ylim(-0.4, 0.4)
-
     files = None
     if sys.argv[1] == "-dir":
         files = os.listdir(sys.argv[2])
-        files.sort(reverse=False)
+        files.sort(key=lambda x: os.path.getmtime(sys.argv[2] + "/" + x), reverse=False)
         print(files)
     elif len(sys.argv) == 2:
         files = [sys.argv[1]]
@@ -31,6 +25,11 @@ def plot_workspace_data():
     average_step_length_overall = [0, 0, 0, 0, 0, 0]
     leg_names = ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']
     for file in files:
+        if plot:
+            plt.figure()
+            plt.xlim(-0.35, 0.3)
+            plt.ylim(-0.4, 0.4)
+
         legs = [[[]], [[]], [[]], [[]], [[]], [[]]]
         steps = [0, 0, 0, 0, 0, 0]
         last_state_swing = [False, False, False, False, False, False]

@@ -5,6 +5,7 @@ import re
 
 import matplotlib.pyplot as plt
 import numpy as np
+import glob
 
 if len(sys.argv) >= 2:
 
@@ -17,7 +18,7 @@ if len(sys.argv) >= 2:
     files = None
     if sys.argv[1] == "-dir":
         files = os.listdir(sys.argv[2])
-        files.sort(reverse=True)
+        files.sort(key=lambda x: os.path.getmtime(sys.argv[2] + "/" + x), reverse=False)
         print(files)
     elif len(sys.argv) == 2:
         files = [sys.argv[1]]
@@ -161,10 +162,17 @@ if len(sys.argv) >= 2:
         plt.tick_params(labelsize=20)
         plt.grid()
         plt.axis('scaled')
-        plt.xlim(-4, 2)
-        # plt.xlim(-3, 1)
-        plt.ylim(-1.5, 4.5)
-        # plt.ylim(-1.0, 3.5)
+        # plt.xlim(-1.5, 0.25) # 1.0dir?
+        # plt.xlim(-1.5, 0.5)  # 1.0dir?
+        # plt.xlim(-2.25, 1.0)  # 0.5dir
+        plt.xlim(-2, 1.0)  # 0.7dir
+        # plt.xlim(-1.75, 0.5)  # 0.9dir
+        # plt.ylim(-0.5, 1.35) # 1.0dir?
+        # plt.ylim(-0.75, 0.75)  # 1.57dir?
+        # plt.ylim(-0.5, 1.85)  # 1.0dir?2
+        # plt.ylim(-0.5, 3)  # 0.5dir
+        plt.ylim(-0.5, 2)  # 0.7dir
+        # plt.ylim(-0.75, 1.75)  # 0.9dir
         # plt.gca().set_aspect('equal', adjustable='box')
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
