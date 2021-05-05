@@ -40,6 +40,7 @@ class RobotController:
         rospy.loginfo("legs connected move to init pos")
         for leg in self.robot.legs:
             init_pos = RSTATIC.initial_pep[RSTATIC.leg_names.index(leg.name) // 2].copy()
+            # for backwards walking: switch plus to minus in all statements in if
             if not self.walk:
                 init_pos[0] += (RSTATIC.default_stance_distance * 1)
             elif leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
@@ -100,6 +101,27 @@ class RobotController:
             rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
             rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
+        elif data.speed_fact < 0:
+            self.velocity = data.speed_fact
+            self.pull_angle = data.pull_angle
+            # self.counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
+            # new linear:
+            self.counter_damping_fact = (-141.5 * self.velocity) + 35.5
+
+            self.stance_speed = (self.velocity * self.counter_damping_fact) / RSTATIC.controller_frequency
+            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
+            # in this case negative angle leads to backwards left circle (left legs inside legs)
+            self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(self.pull_angle, -self.stance_speed)
+            for leg in self.robot.legs:
+                leg.set_pull_dependent_parameter(self.stance_speed, self.pull_angle)
+            self.robot.stance_speed = self.velocity
+            self.robot.direction = self.pull_angle
+            self.robot.initialize_stability_data_file()
+            self.walk_motivation = True
+            self.walk_start_time = rospy.Time.now()
+            rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
+            rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
+            rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
             self.walk_motivation = False
             self.robot.stance_speed = 0.0
@@ -135,7 +157,11 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
+            if self.velocity > 0:
+                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
+            else:
+                # for backwards walking
+                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(self.pull_angle, -self.stance_speed)
             # if self.controller_steps > 50:
             #    self.robot.running = False
             self.rate.sleep()

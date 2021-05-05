@@ -59,19 +59,22 @@ stance_height = -0.09
 default_stance_width = 0.24
 middle_leg_offset = 0.04176
 
-front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])  # for forward walking
-front_initial_pep = numpy.array(
-        [front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])  # for forward walking
-middle_initial_aep = numpy.array(
-        [0.05, (default_stance_width + middle_leg_offset), stance_height])  # for forward walking
-middle_initial_pep = numpy.array(
-        [middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset),
+_front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])
+_front_initial_pep = numpy.array(
+        [_front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
+_middle_initial_aep = numpy.array(
+        [0.05, (default_stance_width + middle_leg_offset), stance_height])
+_middle_initial_pep = numpy.array(
+        [_middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset),
          stance_height])  # -0.07# for forward walking
-hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
-hind_initial_pep = numpy.array([hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
+_hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
+_hind_initial_pep = numpy.array([_hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
-initial_pep = (front_initial_pep, middle_initial_pep, hind_initial_pep)
-initial_aep = (front_initial_aep, middle_initial_aep, hind_initial_aep)
+initial_pep = (_front_initial_pep, _middle_initial_pep, _hind_initial_pep)  # for forward walking
+initial_aep = (_front_initial_aep, _middle_initial_aep, _hind_initial_aep)  # for forward walking
+
+# initial_aep = (_front_initial_pep, _middle_initial_pep, _hind_initial_pep)  # for backwards walking
+# initial_pep = (_front_initial_aep, _middle_initial_aep, _hind_initial_aep)  # for backwards walking
 
 # == Ground Contact Parameters ========
 # =====================================

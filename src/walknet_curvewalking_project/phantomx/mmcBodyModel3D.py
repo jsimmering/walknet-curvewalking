@@ -413,7 +413,7 @@ class mmcBodyModelStance:
     #	(around 0.1 - positive means backwards walking!)
     #	to come up with a corresponding pull vector.
     def pullBodyModelAtBackIntoRelativeDirection(self, pull_angle, speed_fact):
-        pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[2][1], -self.segm_post_ant[2][0])
+        pull_angle_BM = pull_angle + math.atan2(-self.segm_post_ant[1], -self.segm_post_ant[0])
         self.pull_back[0] = speed_fact * math.cos(pull_angle_BM)  # pull x
         self.pull_back[1] = speed_fact * math.sin(pull_angle_BM)  # pull y
 
