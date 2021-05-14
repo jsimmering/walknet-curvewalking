@@ -139,16 +139,14 @@ if len(sys.argv) >= 2:
                     [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                      range(0, len(split))], loc='lower right')
 
-    for i in range(0, len(files)):
-        print("steps = " + str(len(velocity[i])))
-        print("average velocity = " + str(np.sum(velocity[i]) / len(velocity[i])))
+    print("**average velocity** = " + str([round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
 
-    print("circle dimensions x = " + str(x_dim))
-    print("circle dimensions y = " + str(y_dim))
+    print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
+    print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
 
-    print("distance traveled = " + str(distance))
-    print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
-            np.linalg.norm(np.array(last_position) - np.array(first_position))))
+    print("distance traveled = " + str([round(i, 3) for i in distance]))
+    #print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
+    #        np.linalg.norm(np.array(last_position) - np.array(first_position))))
 
     if plot:
         ## --- for height plot
@@ -163,16 +161,36 @@ if len(sys.argv) >= 2:
         plt.grid()
         plt.axis('scaled')
         # plt.xlim(-1.5, 0.25) # 1.0dir?
-        # plt.xlim(-1.5, 0.5)  # 1.0dir?
+        # plt.xlim(-1.25, 0.75)  # 1.0dir?
+        # plt.xlim(-1.25, 0.5)  # 1.3dir
+        # plt.xlim(-1.5, 0.25)  # 1.57dir
         # plt.xlim(-2.25, 1.0)  # 0.5dir
-        plt.xlim(-2, 1.0)  # 0.7dir
-        # plt.xlim(-1.75, 0.5)  # 0.9dir
+        # plt.xlim(-1.25, 2.25)  # 0.5dir
+        # plt.xlim(-2, 1.0)  # 0.7dir old
+        # plt.xlim(-1.25, 1.5)  # 0.7dir with pull at back
+        # plt.xlim(-1.25, 1.25)  # original
+        # plt.xlim(-2.0, 0.5)  # original2
+        # plt.xlim(-1.5, 1.5)  # step length
+        plt.xlim(-0.75, 0.75)  # step length
+        # plt.xlim(-1.5, 2.5)  # 0.4dir
+        # plt.xlim(-2, 1.0)  # step length2
+        # plt.xlim(-1.0, 1.0)  # 0.9dir
         # plt.ylim(-0.5, 1.35) # 1.0dir?
         # plt.ylim(-0.75, 0.75)  # 1.57dir?
-        # plt.ylim(-0.5, 1.85)  # 1.0dir?2
+        # plt.ylim(-0.3, 1.5)  # 1.1dir
+        # plt.ylim(-0.4, 1.25)  # 1.3dir
+        # plt.ylim(-0.5, 1.25)  # 1.57dir
         # plt.ylim(-0.5, 3)  # 0.5dir
-        plt.ylim(-0.5, 2)  # 0.7dir
-        # plt.ylim(-0.75, 1.75)  # 0.9dir
+        #plt.ylim(-0.5, 2)  # 0.7dir
+        # plt.ylim(-0.25, 2.25)  # original
+        # plt.ylim(-0.75, 1.75)  # original2
+        # plt.ylim(-0.6, 2.0)  # step length
+        # plt.ylim(-0.5, 4.0)  # 0.4dir
+        # plt.ylim(-0.5, 2.5)  # 0.4dir
+        # plt.ylim(-0.25, 1.75)  # 0.8dir
+        plt.ylim(-0.5, 1.25)  # 1.0dir
+        # plt.ylim(-0.4, 2.2)  # step length2
+        # plt.ylim(-0.5, 1.75)  # 0.9dir
         # plt.gca().set_aspect('equal', adjustable='box')
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
