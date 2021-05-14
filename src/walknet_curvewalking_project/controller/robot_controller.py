@@ -7,7 +7,6 @@ from walknet_curvewalking.msg import robot_control
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
-from math import pi
 
 
 class RobotController:

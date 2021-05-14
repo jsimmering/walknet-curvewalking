@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import datetime
+from math import pi
 
 import numpy as np
 import rospy
+import tf.transformations as tf_trans
 from gazebo_msgs.msg import ModelStates
 from walknet_curvewalking.msg import robot_control
 
@@ -15,8 +17,11 @@ class DataCollector:
         self.file_name = ""
         self.circles_to_walk = circles
         self.circle_count = 0
-        self.last_in_origin_area = None
+        # self.last_in_origin_area = None
         self.current_position = [0, 0, 0]
+        self.current_z_angle = 0
+        self.start_z_angle = None
+        self.current_circle = True
         self.last_position = None
         self.steps_since_last = 0
         self.distance = 0
@@ -39,7 +44,7 @@ class DataCollector:
                         "time;point x;point y;point z;quaternion x;quaternion y;quaternion z;quaternion w;linear x;linear y;linear z;angular x;angular y;angular z\n")
 
             self.walking = True
-            self.last_in_origin_area = rospy.Time.now()
+            # self.last_in_origin_area = rospy.Time.now()
         else:
             self.walking = False
             self.running = False
@@ -47,8 +52,13 @@ class DataCollector:
     def position_callback(self, data):
         if self.walking and self.running:
             robot_position = data.pose[data.name.index('phantomx')]
-            self.current_position = [robot_position.position.x,
-                                     robot_position.position.y]
+            self.current_position = [robot_position.position.x, robot_position.position.y]
+            (x, y, self.current_z_angle) = tf_trans.euler_from_quaternion(
+                    [robot_position.orientation.x, robot_position.orientation.y, robot_position.orientation.z,
+                     robot_position.orientation.w])
+            if not self.start_z_angle:
+                self.start_z_angle = self.current_z_angle
+                rospy.logwarn("Data Collector: start angle = " + str(self.start_z_angle))
             self.write_positiion_to_file(robot_position, data.twist[data.name.index('phantomx')])
             if self.steps_since_last % 1000 == 0 and (self.required_distance != 0.0 or self.required_distance != 0):
                 if self.last_position is not None:
@@ -83,15 +93,27 @@ class DataCollector:
     def check_if_circle_finished(self):
         while not rospy.is_shutdown():
             if self.walking and self.running:
-                if self.current_position[0] >= 0:  #  or self.current_position[1] > 0:
-                # if self.current_position[1] > 0:  # and self.current_position[0] > 0:
-                    now = rospy.Time.now()
-                    if now - self.last_in_origin_area > rospy.Duration(10):
-                        self.circle_count += 1
-                        rospy.loginfo("Data Collector: circle count = " + str(self.circle_count))
-                        if self.circle_count >= self.circles_to_walk:
-                            self.brodcast_stop_walking()
-                    self.last_in_origin_area = now
+                angle_z = ((2 * pi) + self.current_z_angle) % (2 * pi)
+                # rospy.loginfo("current z angle = " + str(angle_z))
+                # rospy.loginfo("abs current start = " + str(abs(angle_z - self.start_z_angle)))
+                if abs(angle_z - self.start_z_angle) < 0.2 and not self.current_circle:
+                    self.circle_count += 1
+                    rospy.logwarn("Data Collector: circle count = " + str(self.circle_count))
+                    self.current_circle = True
+                    if self.circle_count >= self.circles_to_walk:
+                        self.brodcast_stop_walking()
+                elif abs(angle_z - self.start_z_angle) > 0.5 and self.current_circle:
+                    rospy.logwarn("out of finished circle range already in new circle")
+                    self.current_circle = False
+                # if self.current_position[0] >= 0:  # or self.current_position[1] > 0:
+                #     # if self.current_position[1] > 0:  # and self.current_position[0] > 0:
+                #     now = rospy.Time.now()
+                #     if now - self.last_in_origin_area > rospy.Duration(10):
+                #         self.circle_count += 1
+                #         rospy.loginfo("Data Collector: circle count = " + str(self.circle_count))
+                #         if self.circle_count >= self.circles_to_walk:
+                #             self.brodcast_stop_walking()
+                #     self.last_in_origin_area = now
             self.rate.sleep()
 
     def brodcast_stop_walking(self):

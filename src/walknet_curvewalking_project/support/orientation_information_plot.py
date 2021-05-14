@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import re
 import sys
+from math import pi
 
 import matplotlib.pyplot as plt
 import tf.transformations as tf_trans
@@ -61,18 +62,18 @@ def plot_orientation_data(axs, start_time, stop_time):
                 used_lines += 1
 
                 angles = tf_trans.euler_from_quaternion([values[4], values[5], values[6], values[7]])
-                # print("angles = " + str(angles))
+                angle_z = ((2 * pi) + angles[2]) % (2 * pi)
                 if last_orientation is not None:
                     if initial_orientation is None:
-                        initial_orientation = angles[2]
+                        initial_orientation = angle_z
                     # orientation_z[j].append(angles[2] - initial_orientation)
-                    orientation_z[j].append(angles[2])
-                    if abs(angles[2] - last_orientation) <= 0.00002:
+                    orientation_z[j].append(angle_z)
+                    if abs(angle_z - last_orientation) <= 0.00002:
                         orientation_diff[j].append(0)
                     else:
-                        orientation_diff[j].append(angles[2] - last_orientation)
+                        orientation_diff[j].append(angle_z - last_orientation)
                     time[j].append(values[0])
-                last_orientation = angles[2]
+                last_orientation = angle_z
 
                 line_number += 1
 

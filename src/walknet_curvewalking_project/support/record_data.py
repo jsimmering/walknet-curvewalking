@@ -22,30 +22,71 @@ def main():
     distance = None
 
     pull_at_back = True
-    root_dir = "logs/curvewalk_improvements_with_changing_pull_at_back/parameter_eval/decrease"
-    trials = [{"name": root_dir + "all_aep-xy_xm2-3_decreased_1cm/", "length": True, "aep_y": True, "aep_x": True,
-               "decrease": 0.01},
-              {"name": root_dir + "all_aep-y_decreased_1cm/", "length": True, "aep_y": True, "aep_x": False,
-               "decrease": 0.01},
-              {"name": root_dir + "all_aep-xm2-3_decreased_1cm/", "length": True, "aep_y": False, "aep_x": True,
-               "decrease": 0.01},
-              {"name": root_dir + "step_length_decreased_1cm/", "length": True, "aep_y": False, "aep_x": False,
-               "decrease": 0.01},
-              {"name": root_dir + "step_length_aep-xy_xm2-3/", "length": True, "aep_y": True, "aep_x": True,
-               "decrease": 0.0},
-              {"name": root_dir + "step_length_aep-y/", "length": True, "aep_y": True, "aep_x": False, "decrease": 0.0},
-              {"name": root_dir + "step_length_aep-xm2-3/", "length": True, "aep_y": False, "aep_x": True,
-               "decrease": 0.0},
-              {"name": root_dir + "step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": 0.0},
-              # {"name": root_dir + "aep-xy_xm2-3_decreased_1cm/", "length": False, "aep_y": True, "aep_x": True, "decrease": 0.01},
-              # {"name": root_dir + "aep-y_decreased_1cm/", "length": False, "aep_y": True, "aep_x": False, "decrease": 0.01},
-              # {"name": root_dir + "aep-xm2-3_decreased_1cm/", "length": False, "aep_y": False, "aep_x": True, "decrease": 0.01},
-              # {"name": root_dir + "decreased_1cm/", "length": False, "aep_y": False, "aep_x": False, "decrease": 0.01},
-              # {"name": root_dir + "aep-xy_xm2-3/", "length": False, "aep_y": True, "aep_x": True, "decrease": 0.0},
-              # {"name": root_dir + "aep-y/", "length": False, "aep_y": True, "aep_x": False, "decrease": 0.0},
-              # {"name": root_dir + "aep-xm2-3/", "length": False, "aep_y": False, "aep_x": True, "decrease": 0.0},
-              # {"name": root_dir + "original_approach/", "length": False, "aep_y": False, "aep_x": False, "decrease": 0.0}
-              ]
+    aep_param = 0.025
+    root_dir = "logs/curvewalk_improvements_with_changing_pull_at_back/parameter_eval/"
+    trials = [
+        # all aep_xy
+        {"name": root_dir + "all_aep-xy_2.5cm_xm2-3_decreased_1.0cm/", "length": True, "aep_y": aep_param,
+         "aep_x": aep_param,
+         "decrease": 0.01},
+        # all aep_y
+        {"name": root_dir + "all_aep-y_2.5cm_decreased_1.0cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
+         "decrease": 0.01},
+        # all aep_x
+        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_1.0cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+         "decrease": 0.01},
+        # step length aep_xy
+        {"name": root_dir + "step_length_aep-xy_2.5cm_xm2-3/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+         "decrease": 0.0},
+        # step length aep_y
+        {"name": root_dir + "step_length_aep-y_2.5cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
+         "decrease": 0.0},
+        # step length aep_x
+        {"name": root_dir + "step_length_aep-xm2-3_2.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+         "decrease": 0.0},
+        # all aep_x decreased 0.5cm
+        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+         "decrease": 0.005},
+        # all aep_x decreased 1.5cm
+        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+         "decrease": 0.015},
+        # all aep_x decreased 2.0cm
+        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+         "decrease": 0.020},
+        # all aep_x 5cm decreased 0.5cm
+        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+         "decrease": 0.005},
+        # all aep_x 5cm decreased 1.5cm
+        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+         "decrease": 0.015},
+        # all aep_x 5cm decreased 2.0cm
+        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+         "decrease": 0.020},
+        # step length decreased
+        # {"name": root_dir + "step_length_decreased_1cm/", "length": True, "aep_y": 0.0, "aep_x": 0.0,
+        #  "decrease": 0.01},
+        # step length
+        # {"name": root_dir + "step_length/", "length": True, "aep_y": 0.0, "aep_x": 0.0, "decrease": 0.0},
+        # aep_xy decreased
+        # {"name": root_dir + "aep-xy_xm2-3_decreased_1cm/", "length": False, "aep_y": aep_param, "aep_x": aep_param,
+        #  "decrease": 0.01},
+        # aep_y decreased
+        # {"name": root_dir + "aep-y_decreased_1cm/", "length": False, "aep_y": aep_param, "aep_x": 0.0,
+        # "decrease": 0.01},
+        # aep_x decreased
+        # {"name": root_dir + "aep-xm2-3_decreased_1cm/", "length": False, "aep_y": 0.0, "aep_x": aep_param,
+        # "decrease": 0.01},
+        # decreased
+        # {"name": root_dir + "decreased_1cm/", "length": False, "aep_y": 0.0, "aep_x": 0.0, "decrease": 0.01},
+        # aep_xy
+        # {"name": root_dir + "aep-xy_xm2-3/", "length": False, "aep_y": aep_param, "aep_x": aep_param, "decrease": 0.0},
+        # aep_y
+        # {"name": root_dir + "aep-y/", "length": False, "aep_y": aep_param, "aep_x": 0.0, "decrease": 0.0},
+        # aep_x
+        # {"name": root_dir + "aep-xm2-3/", "length": False, "aep_y": 0.0, "aep_x": aep_param, "decrease": 0.0},
+        # original approach
+        # {"name": root_dir + "original_approach/", "length": False, "aep_y": 0.0, "aep_x": 0.0, "decrease": 0.0}
+    ]
 
     # direction = numpy.arange(0.10, 0.24, 0.05)
     # direction = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
