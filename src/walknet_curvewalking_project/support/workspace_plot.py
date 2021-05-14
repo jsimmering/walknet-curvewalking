@@ -24,6 +24,8 @@ def plot_workspace_data():
 
     average_step_length_overall = [0, 0, 0, 0, 0, 0]
     leg_names = ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']
+    leg_step_length = [[], [], [], [], [], []]
+    run = 0
     for file in files:
         if plot:
             plt.figure()
@@ -79,7 +81,7 @@ def plot_workspace_data():
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
         for leg in legs:
-            print("{}: {} leg".format(counter, leg_names[counter]))
+            # print("{}: {} leg".format(counter, leg_names[counter]))
             step_length = []
             first_step = True
             for stance in leg:
@@ -95,8 +97,10 @@ def plot_workspace_data():
                 if plot:
                     plt.plot(X, Y)
             average_step_length = np.sum(step_length) / len(step_length)
-            print("average_step_length = " + str(average_step_length))
+            # print("average_step_length = " + str(average_step_length))
             average_step_length_overall[counter] += average_step_length
+            if average_step_length:
+                leg_step_length[counter].append(average_step_length)
             counter += 1
 
         if plot:
@@ -129,9 +133,9 @@ def plot_workspace_data():
 
                 # split = [i.split("_") for i in files]
                 split = re.findall(r"[^/_,]+", file_name, re.ASCII)
-                print("split = " + str(split))
+                # print("split = " + str(split))
                 name = "_".join(split[(split.index("stability") + 4):])
-                print("name = " + name)
+                # print("name = " + name)
                 print("single file: " + "/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".pdf")
                 plt.savefig("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".png",
                         bbox_inches='tight',
@@ -140,7 +144,31 @@ def plot_workspace_data():
                 plt.show()
         print("")
 
-    print("average step length over all runs:")
+        run += 1
+
+    # print("length collected = " + str(leg_step_length))
+    sqrt_errors = []
+    for i in range(0, len(files)):
+        sqrt_error = 0
+        for j in range(0, 6):
+            sqrt_error += pow(leg_step_length[j][i] - average_step_length_overall[j], 2)
+        sqrt_errors.append(sqrt_error / 6)
+    min_idx = sqrt_errors.index(min(sqrt_errors))
+    print("errors = " + str(sqrt_errors) + " idx of min (1-3) = " + str(min_idx + 1))
+    print("\n\n")
+    print("**workspace:** run " + str(min_idx + 1))
+    print("")
+
+    file_name = None
+    if len(sys.argv) > 2:
+        file_name = sys.argv[2] + "/" + str(files[min_idx])
+    else:
+        file_name = str(files[min_idx])
+    split = re.findall(r"[^/_,]+", file_name, re.ASCII)
+    name = "_".join(split[(split.index("stability") + 4):])
+    print("workspace_" + name + ".png")
+
+    print("**average step length over all runs:**")
     for i in [0, 1, 2, 5, 4, 3]:
         print("{} leg = {}".format(leg_names[i], round(average_step_length_overall[i] / len(files), 5)))
 
