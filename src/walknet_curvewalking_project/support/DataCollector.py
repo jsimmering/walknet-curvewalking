@@ -8,7 +8,7 @@ from walknet_curvewalking.msg import robot_control
 
 
 class DataCollector:
-    def __init__(self, circles, required_dis):
+    def __init__(self, circles, required_dis, trial_name):
         self.running = True
         self.walking = False
         self.init_stability = False
@@ -21,6 +21,7 @@ class DataCollector:
         self.steps_since_last = 0
         self.distance = 0
         self.required_distance = required_dis
+        self.trial_name = trial_name
         rospy.loginfo("Data Collector: required_distance = " + str(self.required_distance))
         self.rate = rospy.Rate(2)
         rospy.loginfo("num circles {} distance {}".format(circles, distance))
@@ -29,7 +30,7 @@ class DataCollector:
         rospy.loginfo(rospy.get_caller_id() + " control_callback heard %s", data)
         if data.speed_fact > 0:
             time = datetime.datetime.now()
-            self.file_name = "logs/walknet_position_" + str(round(data.speed_fact, 4)) + "s_" + \
+            self.file_name = self.trial_name + "position/walknet_position_" + str(round(data.speed_fact, 4)) + "s_" + \
                              str(round(data.pull_angle, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
                              "_at_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
             print("DATA COLLECTOR MODEL POSITION NAME: ", self.file_name)
@@ -82,10 +83,10 @@ class DataCollector:
     def check_if_circle_finished(self):
         while not rospy.is_shutdown():
             if self.walking and self.running:
-                # if self.current_position[0] > 0:  # and self.current_position[1] > 0:
-                if self.current_position[1] > 0:  # and self.current_position[0] > 0:
+                if self.current_position[0] >= 0:  #  or self.current_position[1] > 0:
+                # if self.current_position[1] > 0:  # and self.current_position[0] > 0:
                     now = rospy.Time.now()
-                    if now - self.last_in_origin_area > rospy.Duration(30):
+                    if now - self.last_in_origin_area > rospy.Duration(10):
                         self.circle_count += 1
                         rospy.loginfo("Data Collector: circle count = " + str(self.circle_count))
                         if self.circle_count >= self.circles_to_walk:
@@ -116,6 +117,8 @@ if __name__ == '__main__':
     if rospy.has_param('~distance'):
         distance = rospy.get_param('~distance')
 
+    trial_name_param = rospy.get_param('~name', "logs/")
+
     if circles == 0 and (distance == 0.0 or distance == 0):
         rospy.loginfo("Data Collector: walking until stop command")
     elif distance == 0 or distance == 0.0:
@@ -123,7 +126,7 @@ if __name__ == '__main__':
     if circles == 0:
         rospy.loginfo("Data Collector: walk " + str(distance) + " meter")
 
-    data_collector = DataCollector(circles, distance)
+    data_collector = DataCollector(circles, distance, trial_name_param)
 
     rospy.Subscriber('/control_robot', robot_control, data_collector.control_callback)
     rospy.Subscriber('/gazebo/model_states', ModelStates, data_collector.position_callback)

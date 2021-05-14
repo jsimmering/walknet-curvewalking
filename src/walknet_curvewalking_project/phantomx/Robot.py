@@ -12,7 +12,7 @@ from walknet_curvewalking_project.support import stability
 
 
 class Robot:
-    def __init__(self, name, nh, step_length, shift_aep, decrease_inner_stance):
+    def __init__(self, name, nh, step_length, shift_aep, shift_aep_x, decrease_inner_stance, trial_name):
         self.name = name
         self.running = True
 
@@ -28,13 +28,14 @@ class Robot:
         self.body_model = mmcBodyModelStance(self)
         self.stance_speed = 0.0
         self.direction = 0.0
-        self.file_name = "logs/walknet_stability_"
+        self.file_name = trial_name + "stability/walknet_stability_"
         self.file_suffix = ""
 
         self.legs = []
         for name in RSTATIC.leg_names:
             swing = False
-            self.legs.append(SingleLegController(name, nh, swing, self, step_length, shift_aep, decrease_inner_stance))
+            self.legs.append(SingleLegController(name, nh, swing, self, step_length, shift_aep, shift_aep_x,
+                    decrease_inner_stance))
 
         self.viz = False
         if self.viz:
