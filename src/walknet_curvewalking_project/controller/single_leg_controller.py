@@ -145,16 +145,16 @@ class SingleLegController:
         else:
             rospy.loginfo(self.name + ": maintain original default_step_length = " + str(self.default_step_length))
 
-        if self.shift_aep and angle > 0.0:
-            if self.name == "lf" or self.name == "lm" or self.name == "lr":
-                self.target_pos[0] -= 0.04
-            else:
-                self.target_pos[0] -= 0.02
-        elif self.shift_aep and angle < 0.0:
-            if self.name == "rf" or self.name == "rm" or self.name == "rr":
-                self.target_pos[0] -= 0.04 * sin(angle)
-            else:
-                self.target_pos[0] -= 0.02 * sin(angle)
+        # if self.shift_aep_x and angle > 0.0:
+        #     if self.name == "lf" or self.name == "lm" or self.name == "lr":
+        #         self.target_pos[0] -= 0.04
+        #     else:
+        #         self.target_pos[0] -= 0.02
+        # elif self.shift_aep_x and angle < 0.0:
+        #     if self.name == "rf" or self.name == "rm" or self.name == "rr":
+        #         self.target_pos[0] -= 0.04 * sin(angle)
+        #     else:
+        #         self.target_pos[0] -= 0.02 * sin(angle)
 
         if self.leg.viz:
             self.leg.pub_default_pep_threshold()
