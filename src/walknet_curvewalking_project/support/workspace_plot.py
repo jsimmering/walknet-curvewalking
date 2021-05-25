@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import operator
 import os
 import re
 import sys
@@ -10,6 +11,7 @@ import numpy as np
 def plot_workspace_data():
     plot = True
     safe_plot = True
+    print_aep_median = False
 
     files = None
     if sys.argv[1] == "-dir":
@@ -81,7 +83,6 @@ def plot_workspace_data():
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
         for leg in legs:
-            # print("{}: {} leg".format(counter, leg_names[counter]))
             step_length = []
             first_step = True
             for stance in leg:
@@ -96,6 +97,31 @@ def plot_workspace_data():
                     first_step = False
                 if plot:
                     plt.plot(X, Y)
+            if [] in leg:
+                leg.remove([])
+
+            if print_aep_median:
+                print("{} leg".format(leg_names[counter]))
+                aeps = [stance[0] for stance in leg]
+                #aeps.sort(key=operator.itemgetter(0, 1))
+                #print("aeps = " + str(aeps))
+                #print("aeps length = " + str(len(aeps)))
+                #print("aep lower middle value {} = {}".format(len(aeps)//2, aeps[len(aeps)//2]))
+                #print("aep upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
+                print("aep length = {}; / 2 = {}".format(len(aeps), len(aeps)/2))
+                if len(aeps) % 2 == 0:
+                    aeps.sort(key=operator.itemgetter(0))
+                    print("aep x lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
+                    aeps.sort(key=operator.itemgetter(1))
+                    print("aep y lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
+                else:
+                    aeps.sort(key=operator.itemgetter(0))
+                    print("aep x lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
+                    print("aep x upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
+                    aeps.sort(key=operator.itemgetter(1))
+                    print("aep y lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
+                    print("aep y upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
+
             average_step_length = np.sum(step_length) / len(step_length)
             # print("average_step_length = " + str(average_step_length))
             average_step_length_overall[counter] += average_step_length
