@@ -39,6 +39,12 @@ class SingleLegController:
         else:
             self.shift_aep_x = True
         self.aep_x_shift_value = shift_aep_x
+        rospy.loginfo(self.name + ": shift aep y = {}, value = {}, shift aep x = {}, value = {}".format(self.shift_aep,
+                self.aep_y_shift_value, self.shift_aep_x, self.aep_x_shift_value))
+        self.stance_length_sum = 0
+        self.stance_count = 0
+        self.current_stance_start = None
+
         self.decrease_inner_stance = bool(decrease_inner_stance)
         self.stance_diff = decrease_inner_stance  # 0.001  # 0.0025
 
@@ -241,17 +247,25 @@ class SingleLegController:
                 not self.step_length and self.leg.reached_pep() and legs_in_swing < 3):
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
-            if (self.shift_aep or self.shift_aep_x) and not self.first_stance:
+            if (self.shift_aep or self.shift_aep_x) and self.stance_count > 0:
                 self.move_aep()
             self.swing = True
-            if self.first_stance:
-                self.first_stance = False
+            # if self.first_stance:
+            #     self.first_stance = False
+            if self.current_stance_start is not None:
+                self.stance_length_sum += numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start)
+                self.stance_count += 1
+                self.current_stance_start = None
             legs_in_swing = legs_in_swing + 1
         # elif self.leg.reached_pep() and legs_in_swing >= 3:
         elif (self.step_length and self.leg.reached_step_length() and legs_in_swing >= 3) or (
                 not self.step_length and self.leg.reached_pep() and legs_in_swing >= 3):
             rospy.logwarn(self.name + ": delayed swing start.")
             self.swing_delays += 1
+            if self.current_stance_start is not None:
+                self.stance_length_sum += numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start)
+                self.stance_count += 1
+                self.current_stance_start = None
         return legs_in_swing
 
     def move_aep(self):
@@ -259,11 +273,14 @@ class SingleLegController:
 
         ee_pos = self.leg.ee_position()
         step_vector = ee_pos - self.target_pos
+        average_step_length = self.stance_length_sum / self.stance_count
         # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
         #         numpy.array(step_vector))) * step_vector
 
         if self.shift_aep:
-            step_vector_default_length = ((self.default_step_length + self.aep_y_shift_value) / numpy.linalg.norm(
+            # step_vector_default_length = ((self.default_step_length + self.aep_y_shift_value) / numpy.linalg.norm(
+            #         numpy.array(step_vector))) * step_vector
+            step_vector_default_length = (average_step_length / numpy.linalg.norm(
                     numpy.array(step_vector))) * step_vector
 
             ee_default_step = self.target_pos + step_vector_default_length
@@ -294,55 +311,60 @@ class SingleLegController:
         # xdir
         shifted_x = False
         if self.shift_aep_x:
-            step_vector_default_length = ((self.default_step_length + self.aep_x_shift_value) / numpy.linalg.norm(
+            # step_vector_default_length = ((self.default_step_length + self.aep_x_shift_value) / numpy.linalg.norm(
+            #         numpy.array(step_vector))) * step_vector
+            step_vector_default_length = (average_step_length / numpy.linalg.norm(
                     numpy.array(step_vector))) * step_vector
 
-            if self.name == "lm" or self.name == "rm":
-                x_center = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0] - (
-                        (RSTATIC.default_stance_distance * 2) / 3)
-                # offset_center_x_1 = self.target_pos[0] - x_center  # * self.movement_dir
-                # offset_center_x_2 = x_center - ee_default_step[1]
-                # if abs(offset_center_x_1 - (offset_center_x_2 * 2)) > 0.025:
-                debug = False
-                if debug:
-                    # rospy.loginfo(self.name + ": abs(offset_center_x_2 - offset_center_x_1) = " + str(
-                    #         abs(offset_center_x_2 - offset_center_x_1)))
-                    rospy.loginfo(self.name + ": step_vector = {} length = {}".format(step_vector,
-                            numpy.linalg.norm(step_vector)))
-                    rospy.loginfo(self.name + ": step_vector normalized = {} length normalized = {}".format(
-                            step_vector_default_length, numpy.linalg.norm(step_vector_default_length)))
-                    # rospy.loginfo("offset_center_1 = {} offset_center_2 = {}".format(offset_center_x_1, offset_center_x_2))
-                new_aep_x = x_center - ((step_vector_default_length[0] * 2) / 3)
-                if abs(new_aep_x - self.target_pos[0]) > 0.01:
-                    rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep y = {}".format(new_aep_x,
-                            self.target_pos[0],
-                            RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0]))
-                    self.target_pos[0] = new_aep_x
-                    shifted_x = True
-            else:
-                x_center = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0] - (
-                        (RSTATIC.default_stance_distance * 1) / 2)
-                # offset_center_x_1 = self.target_pos[0] - x_center  # * self.movement_dir
-                # offset_center_x_2 = x_center - ee_default_step[1]
-                # if abs(offset_center_x_1 - (offset_center_x_2 * 2)) > 0.025:
-                debug = False
-                if debug:
-                    # rospy.loginfo(self.name + ": abs(offset_center_x_2 - offset_center_x_1) = " + str(
-                    #         abs(offset_center_x_2 - offset_center_x_1)))
-                    rospy.loginfo(self.name + ": step_vector = {} length = {}".format(step_vector,
-                            numpy.linalg.norm(step_vector)))
-                    rospy.loginfo(self.name + ": step_vector normalized = {} length normalized = {}".format(
-                            step_vector_default_length, numpy.linalg.norm(step_vector_default_length)))
-                    # rospy.loginfo("offset_center_1 = {} offset_center_2 = {}".format(offset_center_x_1, offset_center_x_2))
-                new_aep_x = x_center - ((step_vector_default_length[0] * 1) / 2)
-                if abs(new_aep_x - self.target_pos[0]) > 0.01:
-                    rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep y = {}".format(new_aep_x,
-                            self.target_pos[0],
-                            RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0]))
-                    self.target_pos[0] = new_aep_x
-                    shifted_x = True
+            # if self.name == "lm" or self.name == "rm":
+            #     x_center = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0] - (
+            #             (RSTATIC.default_stance_distance * 2) / 3)
+            #     # offset_center_x_1 = self.target_pos[0] - x_center  # * self.movement_dir
+            #     # offset_center_x_2 = x_center - ee_default_step[1]
+            #     # if abs(offset_center_x_1 - (offset_center_x_2 * 2)) > 0.025:
+            #     debug = False
+            #     if debug:
+            #         # rospy.loginfo(self.name + ": abs(offset_center_x_2 - offset_center_x_1) = " + str(
+            #         #         abs(offset_center_x_2 - offset_center_x_1)))
+            #         rospy.loginfo(self.name + ": step_vector = {} length = {}".format(step_vector,
+            #                 numpy.linalg.norm(step_vector)))
+            #         rospy.loginfo(self.name + ": step_vector normalized = {} length normalized = {}".format(
+            #                 step_vector_default_length, numpy.linalg.norm(step_vector_default_length)))
+            #         # rospy.loginfo("offset_center_1 = {} offset_center_2 = {}".format(offset_center_x_1, offset_center_x_2))
+            #     new_aep_x = x_center - ((step_vector_default_length[0] * 2) / 3)
+            #     if abs(new_aep_x - self.target_pos[0]) > 0.01:
+            #         rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep y = {}".format(new_aep_x,
+            #                 self.target_pos[0],
+            #                 RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0]))
+            #         self.target_pos[0] = new_aep_x
+            #         shifted_x = True
+            # else:
+            x_center = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0] - (
+                    (RSTATIC.default_stance_distance * 1) / 2)
+            # offset_center_x_1 = self.target_pos[0] - x_center  # * self.movement_dir
+            # offset_center_x_2 = x_center - ee_default_step[1]
+            # if abs(offset_center_x_1 - (offset_center_x_2 * 2)) > 0.025:
+            debug = False
+            if debug:
+                # rospy.loginfo(self.name + ": abs(offset_center_x_2 - offset_center_x_1) = " + str(
+                #         abs(offset_center_x_2 - offset_center_x_1)))
+                rospy.loginfo(self.name + ": step_vector = {} length = {}".format(step_vector,
+                        numpy.linalg.norm(step_vector)))
+                rospy.loginfo(self.name + ": step_vector normalized = {} length normalized = {}".format(
+                        step_vector_default_length, numpy.linalg.norm(step_vector_default_length)))
+                # rospy.loginfo("offset_center_1 = {} offset_center_2 = {}".format(offset_center_x_1, offset_center_x_2))
+            new_aep_x = x_center - ((step_vector_default_length[0] * 1) / 2)
+            if abs(new_aep_x - self.target_pos[0]) > 0.01:
+                rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep y = {}".format(new_aep_x,
+                        self.target_pos[0],
+                        RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0]))
+                self.target_pos[0] = new_aep_x
+                shifted_x = True
 
         if shifted_y or shifted_x:
+            rospy.loginfo(
+                    self.name + ": average stance length = {}, default stance length = {}".format(average_step_length,
+                            self.default_step_length))
             self.leg.shift_default_aep(self.target_pos)
 
     def execute_swing_step(self, legs_in_swing):
@@ -364,6 +386,7 @@ class SingleLegController:
             legs_in_swing = legs_in_swing - 1
             self.last_stance_activation = rospy.Time.now()
             # rospy.loginfo(self.name + ': swing is finished switch to stance.')
+            self.current_stance_start = self.leg.ee_position()
         return legs_in_swing
 
     # function for moving this leg into the position provided or the init position.
