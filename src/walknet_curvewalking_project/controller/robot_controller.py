@@ -7,6 +7,7 @@ from walknet_curvewalking.msg import robot_control
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
+from math import sin, cos, pi, pow
 
 
 class RobotController:
@@ -35,6 +36,7 @@ class RobotController:
         self.stance_speed = 0
         self.velocity = 0
         self.pull_angle = 0
+        self.back_pull_length_factor = None
         self.controller_steps = 0
         self.counter_damping_fact = 0
         self.trial_name = trial_name
@@ -97,8 +99,20 @@ class RobotController:
             self.stance_speed = (self.velocity * self.counter_damping_fact) / RSTATIC.controller_frequency
             # TODO figure out how if pulling at back can allow for rotation on the spot
             if self.pull_at_back:
-                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed / 2)
-                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(-self.pull_angle, self.stance_speed / 2)
+                if 0.0 <= abs(self.pull_angle) < 1.0:
+                    self.back_pull_length_factor = ((self.stance_speed / 2) * abs(self.pull_angle))
+                else:
+                    self.back_pull_length_factor = self.stance_speed / 2
+                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
+                        self.stance_speed - self.back_pull_length_factor)
+                # ((-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2)))
+                # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
+                # ((self.stance_speed / 2) * sin(self.pull_angle)))  # / 2)
+                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(-self.pull_angle,
+                        self.back_pull_length_factor)
+                # (-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2))
+                # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
+                # ((self.stance_speed / 2) * sin(self.pull_angle)))  # /2)
             else:
                 self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
                 self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
