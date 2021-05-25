@@ -26,8 +26,8 @@ class RobotController:
         # only move body cohesively or actually walk (swig legs)
         self.walk = swing_legs
         # whether robot currently wants to move forward
-        self.walk_motivation = False
         self.walk_start_time = None
+        self.stop = False
         self.walk_duration = walk_duration
 
         self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
@@ -121,7 +121,6 @@ class RobotController:
             self.robot.stance_speed = self.velocity
             self.robot.direction = self.pull_angle
             self.robot.initialize_stability_data_file()
-            self.walk_motivation = True
             self.walk_start_time = rospy.Time.now()
             rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
@@ -142,22 +141,19 @@ class RobotController:
         #     self.robot.stance_speed = self.velocity
         #     self.robot.direction = self.pull_angle
         #     self.robot.initialize_stability_data_file()
-        #     self.walk_motivation = True
         #     self.walk_start_time = rospy.Time.now()
         #     rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
         #     rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
         #     rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
-            self.walk_motivation = False
-            self.robot.stance_speed = 0.0
-            self.robot.direction = 0.0
+            # self.robot.stance_speed = 0.0
+            # self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
-            self.robot.running = False
+            self.stop = True
+            # self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
 
-    # Update the body model state and perform next iteration step
-    # Main Processing Step
     def update_stance_body_model(self):
         self.robot.body_model.updateLegStates()
         # for i in range(0, 6):
@@ -169,28 +165,37 @@ class RobotController:
         self.robot.body_model.mmc_iteration_step()
 
     def walk_body_model(self):
-        while not rospy.is_shutdown() and self.walk_motivation and self.robot.running:
+        while not rospy.is_shutdown() and self.walk_start_time and self.robot.running:
             if self.walk_duration is not None and rospy.Time.now() - self.walk_start_time > self.walk_duration:
+                talker()
                 self.robot.running = False
                 # self.robot.write_all_stability_data_to_file()
             self.controller_steps += 1
             self.update_stance_body_model()
             legs_in_swing = self.robot.body_model.gc.count(False)
+            if self.stop and legs_in_swing == 0:
+                self.robot.running = False
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
                     break
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            # if self.velocity > 0:
-            if self.pull_at_back:
-                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
-                        self.stance_speed / 2)
-                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(-self.pull_angle,
-                        self.stance_speed / 2)
-            else:
-                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
-                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
+            if not self.stop:
+                if self.pull_at_back:
+                    self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
+                            self.stance_speed - self.back_pull_length_factor)
+                    # ((-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2)))
+                    # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
+                    # ((self.stance_speed / 2) * sin(self.pull_angle)))  # / 2)
+                    self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(-self.pull_angle,
+                            self.back_pull_length_factor)
+                    # (-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2))
+                    # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
+                    # ((self.stance_speed / 2) * sin(self.pull_angle)))  # /2)
+                else:
+                    self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
+                    self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             # else:
             #     # for backwards walking
             #     self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(self.pull_angle, -self.stance_speed)
@@ -295,7 +300,6 @@ if __name__ == '__main__':
             robot_controller.walk_body_model()
         if robot_controller.robot.write_at_end:
             robot_controller.robot.write_all_stability_data_to_file()
-        talker()
         if robot_controller.walk_start_time:
             robot_controller.record_additional_data()
             rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
