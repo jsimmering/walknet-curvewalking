@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from math import fabs, exp, cos, sin
+from math import fabs, exp, cos, sin, isnan
 
 import numpy
 import rospy
@@ -26,9 +26,18 @@ class SingleLegController:
             self.movement_dir = -1
 
         self.step_length = step_length
-        self.shift_aep = bool(shift_aep)
+
+        # self.shift_aep = bool(shift_aep)
+        if isnan(shift_aep):
+            self.shift_aep = False
+        else:
+            self.shift_aep = True
         self.aep_y_shift_value = shift_aep
-        self.shift_aep_x = bool(shift_aep_x)
+        # self.shift_aep_x = bool(shift_aep_x)
+        if isnan(shift_aep_x):
+            self.shift_aep_x = False
+        else:
+            self.shift_aep_x = True
         self.aep_x_shift_value = shift_aep_x
         self.decrease_inner_stance = bool(decrease_inner_stance)
         self.stance_diff = decrease_inner_stance  # 0.001  # 0.0025
@@ -86,7 +95,7 @@ class SingleLegController:
             self._contralateral_rules_sub = rospy.Subscriber('/walknet/' + RSTATIC.leg_names[neighbour_leg_idx] +
                                                              '/rules', rules, self.contralateral_rules_callback)
 
-        self.first_stance = True
+        # self.first_stance = True
         self.rule1 = True
         # self.rule2_contra = False
         self.rule2_contra = True
@@ -103,6 +112,7 @@ class SingleLegController:
         self.init_pos = p
 
     def set_pull_dependent_parameter(self, velocity, angle):
+        rospy.loginfo("##################################################################")
         # if velocity >= 0.03:
         # if velocity > 0.0172:
         #    delay = 0.8 - 15 * velocity
@@ -123,17 +133,19 @@ class SingleLegController:
         self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
 
         # self.stance_diff = 0.025 * sin(angle)
-        rospy.loginfo("##################################################################")
-        rospy.loginfo(self.name + ": STANCE DIFF = " + str(self.stance_diff))
         if self.decrease_inner_stance and angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr"):
+            rospy.loginfo(self.name + ": STANCE DIFF = " + str(self.stance_diff))
             self.default_step_length -= self.stance_diff
             rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)
             else:
                 RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
+                rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
+                        RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
         elif self.decrease_inner_stance and angle > 0.0 and (
                 self.name == "lf" or self.name == "lm" or self.name == "lr"):
+            rospy.loginfo(self.name + ": STANCE DIFF = " + str(self.stance_diff))
             self.default_step_length -= self.stance_diff
             rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
             if self.step_length:
