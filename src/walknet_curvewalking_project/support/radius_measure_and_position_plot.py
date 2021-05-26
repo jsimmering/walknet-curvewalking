@@ -185,7 +185,7 @@ def position_plot(axis_position, axis_radius):
             mean_x = float(np.mean([centroid[0] for centroid in centroids[j]]))
             mean_y = float(np.mean([centroid[1] for centroid in centroids[j]]))
             if plot_mean_circles:
-                circle1 = axis_position.Circle((mean_x, mean_y), np.mean(radii[j]), color=circle_colors[circle_count],
+                circle1 = plt.Circle((mean_x, mean_y), np.mean(radii[j]), color=circle_colors[circle_count],
                         fill=False, label="circle line " + str(j), zorder=1)
                 plot_lines_position.append(circle1)
                 axis_position.add_artist(circle1)
@@ -286,10 +286,10 @@ def position_plot(axis_position, axis_radius):
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
         plot = True
-        safe_plot = True
+        safe_plot = False
         plot_position = True
         plot_radius = True
-        plot_mean_circles = False
+        plot_mean_circles = True
         controll_colors = False
         controll_colors_dir = False
 
