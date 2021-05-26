@@ -4,8 +4,9 @@ import sys
 import re
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
-import glob
+from matplotlib import ticker
 
 if len(sys.argv) >= 2:
 
@@ -40,7 +41,10 @@ if len(sys.argv) >= 2:
         y_dim.append([])
 
     if plot:
-        plt.figure()
+        fig, axs = plt.subplots()
+        fig.tight_layout()
+        img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
+        axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
     current_speed = None
     current_dir = None
@@ -118,7 +122,7 @@ if len(sys.argv) >= 2:
                 if current_speed != speed:
                     current_color += 1
                     current_speed = speed
-                plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+                axs.plot(X[j], Y[j], colors[current_color % len(colors)])
             elif controll_colors_dir:
                 if not current_dir:
                     split = re.findall(r"[^/_,]+", files[j], re.ASCII)
@@ -130,12 +134,12 @@ if len(sys.argv) >= 2:
                 if current_dir != dir:
                     current_color += 1
                     current_dir = dir
-                plt.plot(X[j], Y[j], colors[current_color % len(colors)])
+                axs.plot(X[j], Y[j], colors[current_color % len(colors)])
             else:
-                plt.plot(X[j], Y[j])
+                axs.plot(X[j], Y[j])
             split = [i.split("_") for i in files]
-            # plt.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
-            plt.legend(
+            # axs.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
+            axs.legend(
                     [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                      range(0, len(split))], loc='lower right')
 
@@ -150,48 +154,23 @@ if len(sys.argv) >= 2:
 
     if plot:
         ## --- for height plot
-        # plt.figure()
-        # plt.plot(X, Y)
+        # axs.figure()
+        # axs.plot(X, Y)
 
-        # plt.figure()
-        # plt.plot(Z)
+        # axs.figure()
+        # axs.plot(Z)
         ## -----
 
         plt.tick_params(labelsize=20)
-        plt.grid()
+        plt.grid(which='both')
         plt.axis('scaled')
-        # plt.xlim(-1.5, 0.25) # 1.0dir?
-        # plt.xlim(-1.25, 0.75)  # 1.0dir?
-        # plt.xlim(-1.25, 0.5)  # 1.3dir
-        # plt.xlim(-1.5, 0.25)  # 1.57dir
-        # plt.xlim(-2.25, 1.0)  # 0.5dir
-        # plt.xlim(-1.25, 2.25)  # 0.5dir
-        # plt.xlim(-2, 1.0)  # 0.7dir old
-        # plt.xlim(-1.25, 1.5)  # 0.7dir with pull at back
-        # plt.xlim(-1.25, 1.25)  # original
-        # plt.xlim(-2.0, 0.5)  # original2
-        # plt.xlim(-1.5, 1.5)  # step length
-        plt.xlim(-0.75, 0.75)  # step length
-        # plt.xlim(-1.5, 2.5)  # 0.4dir
-        # plt.xlim(-2, 1.0)  # step length2
-        # plt.xlim(-1.0, 1.0)  # 0.9dir
-        # plt.ylim(-0.5, 1.35) # 1.0dir?
-        # plt.ylim(-0.75, 0.75)  # 1.57dir?
-        # plt.ylim(-0.3, 1.5)  # 1.1dir
-        # plt.ylim(-0.4, 1.25)  # 1.3dir
-        # plt.ylim(-0.5, 1.25)  # 1.57dir
-        # plt.ylim(-0.5, 3)  # 0.5dir
-        #plt.ylim(-0.5, 2)  # 0.7dir
-        # plt.ylim(-0.25, 2.25)  # original
-        # plt.ylim(-0.75, 1.75)  # original2
-        # plt.ylim(-0.6, 2.0)  # step length
-        # plt.ylim(-0.5, 4.0)  # 0.4dir
-        # plt.ylim(-0.5, 2.5)  # 0.4dir
-        # plt.ylim(-0.25, 1.75)  # 0.8dir
-        plt.ylim(-0.5, 1.25)  # 1.0dir
-        # plt.ylim(-0.4, 2.2)  # step length2
-        # plt.ylim(-0.5, 1.75)  # 0.9dir
-        # plt.gca().set_aspect('equal', adjustable='box')
+
+        axs.set_xlim(-1.5, 2.5)
+        axs.set_ylim(-0.5, 4.0)
+
+        #axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
+        #axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
+
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
             plt.margins(1, 1)

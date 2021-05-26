@@ -5,12 +5,13 @@ import re
 import sys
 
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
 
 
 def plot_workspace_data():
     plot = True
-    safe_plot = True
+    safe_plot = False
     print_aep_median = False
 
     files = None
@@ -30,9 +31,12 @@ def plot_workspace_data():
     run = 0
     for file in files:
         if plot:
-            plt.figure()
+            fig, axs = plt.subplots()
             plt.xlim(-0.35, 0.3)
             plt.ylim(-0.4, 0.4)
+
+            img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
+            axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
         legs = [[[]], [[]], [[]], [[]], [[]], [[]]]
         steps = [0, 0, 0, 0, 0, 0]
@@ -68,17 +72,17 @@ def plot_workspace_data():
 
         if plot:
             lf_shoulder = np.matrix([0.1248, 0.06164]).T
-            plt.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
+            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
             lm_shoulder = np.matrix([0, 0.1034]).T
-            plt.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
+            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
             lr_shoulder = np.matrix([-0.1248, 0.06164]).T
-            plt.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
+            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
             rf_shoulder = np.matrix([0.1248, -0.06164]).T
-            plt.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
+            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
             rm_shoulder = np.matrix([0, -0.1034]).T
-            plt.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
+            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
             rr_shoulder = np.matrix([-0.1248, -0.06164]).T
-            plt.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
 
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
@@ -96,19 +100,19 @@ def plot_workspace_data():
                 if first_step:
                     first_step = False
                 if plot:
-                    plt.plot(X, Y)
+                    axs.plot(X, Y)
             if [] in leg:
                 leg.remove([])
 
             if print_aep_median:
                 print("{} leg".format(leg_names[counter]))
                 aeps = [stance[0] for stance in leg]
-                #aeps.sort(key=operator.itemgetter(0, 1))
-                #print("aeps = " + str(aeps))
-                #print("aeps length = " + str(len(aeps)))
-                #print("aep lower middle value {} = {}".format(len(aeps)//2, aeps[len(aeps)//2]))
-                #print("aep upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
-                print("aep length = {}; / 2 = {}".format(len(aeps), len(aeps)/2))
+                # aeps.sort(key=operator.itemgetter(0, 1))
+                # print("aeps = " + str(aeps))
+                # print("aeps length = " + str(len(aeps)))
+                # print("aep lower middle value {} = {}".format(len(aeps)//2, aeps[len(aeps)//2]))
+                # print("aep upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
+                print("aep length = {}; / 2 = {}".format(len(aeps), len(aeps) / 2))
                 if len(aeps) % 2 == 0:
                     aeps.sort(key=operator.itemgetter(0))
                     print("aep x lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
@@ -134,20 +138,20 @@ def plot_workspace_data():
             # A.append(polygon_list[4][0][0])
             # A2 = [point[1] for point in polygon_list[4]]
             # A2.append(polygon_list[4][0][1])
-            # plt.plot(A, A2)
+            # axs.plot(A, A2)
 
             # plt.xlim(-0.3, 0.3)
             # plt.ylim(-0.4, 0.4)
 
             # plt.draw()
             # plt.pause(0.0001)
-            plt.axvline(x=0.25, color='b', lw=1)
-            plt.axvline(x=0.05, color='b', lw=1)
-            plt.axvline(x=-0.17, color='b', lw=1)
+            axs.axvline(x=0.25, color='b', lw=1)
+            axs.axvline(x=0.05, color='b', lw=1)
+            axs.axvline(x=-0.17, color='b', lw=1)
 
-            plt.axvline(x=0.25 - 0.08, color='g', lw=1)
-            plt.axvline(x=0.05 - 0.08, color='g', lw=1)
-            plt.axvline(x=-0.17 - 0.08, color='g', lw=1)
+            axs.axvline(x=0.25 - 0.08, color='g', lw=1)
+            axs.axvline(x=0.05 - 0.08, color='g', lw=1)
+            axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
 
             plt.tick_params(labelsize=20)
             plt.grid()
