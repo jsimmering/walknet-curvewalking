@@ -66,6 +66,7 @@ class SingleLegController:
         self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default  # 0.45 # 51.25 percent of step length
         self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default  # 0.0
 
+        self.change_rules_with_angle = False
         self.displ_leg_rule1 = 0.95
         if self.name == "lf" or self.name == "rf":
             # self.displ_leg = 0.025
@@ -172,32 +173,33 @@ class SingleLegController:
         else:
             rospy.loginfo(self.name + ": maintain original default_step_length = " + str(self.default_step_length))
 
-        if angle > 0.0:
-            # self.displ_leg_ipsilateral_rule3 = 0.5125  # 0.45 # 51.25 percent of step length
-            # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
-            if self.name == "lf" or self.name == "lm" or self.name == "lr":
-                self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default - (
+        if self.change_rules_with_angle:
+            if angle > 0.0:
+                # self.displ_leg_ipsilateral_rule3 = 0.5125  # 0.45 # 51.25 percent of step length
+                # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
+                if self.name == "lf" or self.name == "lm" or self.name == "lr":
+                    self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default - (
+                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3125  # 0.45 # 51.25 percent of step length
+                    self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default - (
+                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3375  # 0.0
+                else:
+                    self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default + (
+                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7125  # 0.45 # 51.25 percent of step length
+                    self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
+                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
+            if angle < 0.0:
+                # self.displ_leg_ipsilateral_rule3 = 0.5125  # 0.45 # 51.25 percent of step length
+                # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
+                if self.name == "rf" or self.name == "rm" or self.name == "rr":
+                    self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default - (
                             -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3125  # 0.45 # 51.25 percent of step length
-                self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default - (
+                    self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default - (
                             -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3375  # 0.0
-            else:
-                self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default + (
+                else:
+                    self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default + (
                             -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7125  # 0.45 # 51.25 percent of step length
-                self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
+                    self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
                             -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
-        if angle < 0.0:
-            # self.displ_leg_ipsilateral_rule3 = 0.5125  # 0.45 # 51.25 percent of step length
-            # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
-            if self.name == "rf" or self.name == "rm" or self.name == "rr":
-                self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default - (
-                        -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3125  # 0.45 # 51.25 percent of step length
-                self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default - (
-                        -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3375  # 0.0
-            else:
-                self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default + (
-                        -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7125  # 0.45 # 51.25 percent of step length
-                self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
-                        -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
 
         # if self.shift_aep_x and angle > 0.0:
         #     if self.name == "lf" or self.name == "lm" or self.name == "lr":
