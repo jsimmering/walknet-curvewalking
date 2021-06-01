@@ -33,7 +33,7 @@ class StanceMovementSimple:
             self.finished_Stance = False
         next_angles = self.leg.compute_inverse_kinematics(self.target_point)
         rospy.loginfo('angles to reach current target: ' + str(next_angles))
-        self.leg.set_command(next_angles)
+        self.leg.set_joint_point(next_angles)
         rospy.loginfo('set_angles: ' + str(next_angles))
 
     def check_if_current_target_is_reached(self):

@@ -40,6 +40,8 @@ class RobotController:
         self.controller_steps = 0
         self.counter_damping_fact = 0
         self.trial_name = trial_name
+        self.total_power_command = 0
+        self.total_power_joint_torque = 0
 
     def move_legs_into_init_pos(self):
         for leg in self.robot.legs:
@@ -72,7 +74,7 @@ class RobotController:
                 if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
                     if not leg.leg.is_target_set():
                         rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
-                                leg.leg.alpha_command, leg.leg.beta_command, leg.leg.gamma_command,
+                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point,
                                 leg.leg.get_current_targets()))
                     finished = False
                     leg.move_leg_to()
@@ -181,6 +183,10 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
+            self.total_power_command += self.robot.get_current_power_command()
+            self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
+            #rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
+            #        self.total_power_command, self.total_power_joint_torque))
             if not self.stop:
                 if self.pull_at_back:
                     self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
@@ -232,7 +238,9 @@ class RobotController:
                      "set average velocity = {velocity}\npull angle = {angle}\nstep_length used as pep = " +
                      "{step_length_on}\naep shifted for curve = {shift_aep}\naep shifted in x dir for curve = " +
                      "{shift_aep_x}\ninner stance step decreased for curve by = {decrease_inner_stance}\nduration = " +
-                     "{duration}\ncontroller steps = {cs}\nunstable_count = {unstable}\nunstable_percent = {percent}\n"
+                     "{duration}\ncontroller steps = {cs}\ntotal power command = {power}\n" +
+                     "total power joint torque = {joint_power}\nunstable_count = {unstable}" +
+                     "\nunstable_percent = {percent}\n"
                      ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
                             height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
@@ -241,7 +249,8 @@ class RobotController:
                             factor=self.counter_damping_fact, stance=self.stance_speed, velocity=self.velocity,
                             angle=self.pull_angle, step_length_on=self.step_length, shift_aep=self.shift_aep,
                             shift_aep_x=self.shift_aep_x, decrease_inner_stance=self.decrease_inner_stance,
-                            duration=actual_duration, cs=self.controller_steps, unstable=self.robot.unstable_count,
+                            duration=actual_duration, cs=self.controller_steps, power=self.total_power_command,
+                            joint_power=self.total_power_joint_torque, unstable=self.robot.unstable_count,
                             percent=(self.robot.unstable_count * 100) / self.controller_steps) +
                     value_error_count + swing_delay_count)
 
@@ -259,7 +268,7 @@ if __name__ == '__main__':
     pub = rospy.Publisher('/control_robot', robot_control, queue_size=1)
     nh = rospy.init_node('robot_controller', anonymous=True)
 
-    # if the robot should wait for a controll command
+    # if the robot should wait for a control command
     walk = rospy.get_param('~walk', True)
     # if the robot shoul swing it's legs or only move the body with the body model
     swing = rospy.get_param('~swing', True)
@@ -292,6 +301,8 @@ if __name__ == '__main__':
         robot_controller.move_legs_into_init_pos()
         ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
+        while not rospy.is_shutdown() and not robot_controller.robot.got_joint_data:
+            robot_controller.rate.sleep()
         while not rospy.is_shutdown() and ready_status.__contains__(False):
             robot_controller.rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]

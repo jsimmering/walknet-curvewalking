@@ -84,7 +84,7 @@ class SimpleSwingTrajectoryGen:
         current_angles = self.leg.get_current_angles()
         next_angles = self.leg.compute_inverse_kinematics(target)
         rospy.loginfo('angles to reach current target: ' + str(next_angles))
-        self.leg.set_command(next_angles)
+        self.leg.set_joint_point(next_angles)
         self.set_angles = next_angles
         rospy.loginfo('set_angles: ' + str(self.set_angles))
 

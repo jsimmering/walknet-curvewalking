@@ -3,9 +3,11 @@ import datetime
 
 import numpy
 import rospy
-import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from geometry_msgs.msg import Point
+from sensor_msgs.msg import JointState
 from visualization_msgs.msg import Marker
+
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.controller.single_leg_controller import SingleLegController
 from walknet_curvewalking_project.phantomx.mmcBodyModel3D import mmcBodyModelStance
 from walknet_curvewalking_project.support import stability
@@ -15,6 +17,12 @@ class Robot:
     def __init__(self, name, nh, step_length, shift_aep, shift_aep_x, decrease_inner_stance, trial_name):
         self.name = name
         self.running = True
+
+        self.nh = nh
+
+        self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        self.got_joint_data = False
+        self.current_power_joint_torque = 0
 
         self.log_data = True
         self.write_at_end = False
@@ -61,6 +69,13 @@ class Robot:
             self.shortest_vectors.color.g = 0.0
             self.shortest_vectors.color.a = 1.0
 
+    def joint_state_callback(self, data):
+        # rospy.logwarn(self.name + ": got joint state data = " + str(data))
+        # self.joint_velocity = data.velocity
+        # self.joint_effort = data.effort
+        self.got_joint_data = True
+        self.current_power_joint_torque = numpy.sum(numpy.abs(numpy.array(data.effort) * numpy.array(data.velocity)))
+
     def initialize_body_model(self):
         ee_positions = [leg.leg.ee_position() for leg in self.legs]
         self.body_model.initialize_body_model(ee_positions)
@@ -80,6 +95,12 @@ class Robot:
                 numpy.sum([leg.leg.mass for leg in self.legs]) + self.mass_of_body_segments)
 
         return center_of_mass
+
+    def get_current_power_command(self):
+        return numpy.sum(numpy.abs([leg.leg.leg_current_power() for leg in self.legs]))
+
+    def get_current_power_joint_torque(self):
+        return self.current_power_joint_torque
 
     def pub_com_vectors(self, com):
         if not self.viz:

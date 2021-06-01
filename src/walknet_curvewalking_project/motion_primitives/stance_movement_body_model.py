@@ -58,7 +58,7 @@ class StanceMovementBodyModel:
             target_vec = self.leg_controller.leg.apply_c1_static_transform() + (rotated_leg_vec)
 
             next_angles = self.inverseKinematic_provider.compute_inverse_kinematics(target_vec)
-            self.leg_controller.leg.set_command(next_angles)
+            self.leg_controller.leg.set_joint_point(next_angles)
         except ValueError as ve:
             rospy.logerr("STANCE: ValueError during inverse kinematics computation: " + str(ve))
             #             "\n Tried to reach position " + str(target_vec) +
@@ -66,4 +66,4 @@ class StanceMovementBodyModel:
             #             "\ncurrent angles are: " + str(self.leg_controller.leg.get_current_angles()) +
             #             "\nMaintaining current angles.")
             self.valueError_count += 1
-            self.leg_controller.leg.set_command(self.leg_controller.leg.get_current_angles())
+            self.leg_controller.leg.set_joint_point(self.leg_controller.leg.get_current_angles())

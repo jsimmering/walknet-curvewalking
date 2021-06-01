@@ -30,6 +30,10 @@ class SingleLeg:
         self.gamma = None
         self._c1_static_transform = RSTATIC.body_c1_tf[RSTATIC.leg_names.index(self.name)].copy()
 
+        self.alpha_set_point = None
+        self.beta_set_point = None
+        self.gamma_set_point = None
+
         self.alpha_command = None
         self.beta_command = None
         self.gamma_command = None
@@ -111,7 +115,7 @@ class SingleLeg:
 
     def pub_default_pep_threshold(self):
         # while not rospy.is_shutdown():
-        #self.pep_thresh_line.points.clear()
+        # self.pep_thresh_line.points.clear()
         self.pep_init_thresh_line.points.append(
                 Point(self.default_aep[0] - self.default_step_length, self.movement_dir * 0.20, -0.1))
         self.pep_init_thresh_line.points.append(
@@ -157,18 +161,21 @@ class SingleLeg:
         # rospy.loginfo(self.name + ": got c1 data = " + str(data))
         self.alpha = data.process_value
         self.alpha_target = data.set_point
+        self.alpha_command = data.command
         self.alpha_reached = -0.005 < data.error < 0.005
 
     def thigh_callback(self, data):
         # rospy.loginfo(self.name + ": got thigh data = " + str(data))
         self.beta = data.process_value
         self.beta_target = data.set_point
+        self.beta_command = data.command
         self.beta_reached = -0.05 < data.error < 0.05
 
     def tibia_callback(self, data):
         # rospy.loginfo(self.name + ": got tibia data = " + str(data))
         self.gamma = data.process_value
         self.gamma_target = data.set_point
+        self.gamma_command = data.command
         self.gamma_reached = -0.05 < data.error < 0.05
 
     def ee_position(self):
@@ -184,6 +191,9 @@ class SingleLeg:
 
     def update_com_position(self):
         self._center_of_mass = self.compute_com()
+
+    def leg_current_power(self):
+        return abs(self.alpha_command) + abs(self.beta_command) + abs(self.gamma_command)
 
     ##
     #   Estimate ground ground_contact:
@@ -272,10 +282,11 @@ class SingleLeg:
         # if self.pep_thresh == self.min_pep:
         #     rospy.logerr("go to swing because end of motion range is reached. This should usually not happen!")
         step_length = numpy.linalg.norm(self.default_aep - self.ee_position())
+
         # if step_length > self.step_length:
-        #     rospy.loginfo(self.name + ": aep = {} ee = {} ".format(self.default_aep, self.ee_position()))
-        #     rospy.loginfo(self.name + ": step_length = {} > set step_length = {}?".format(step_length, self.step_length))
-        #     rospy.logwarn(self.name + ": stance done")
+        #     if self.name == "lf" or self.name == "lm" or self.name == "lr":
+        #         rospy.loginfo(self.name + ": current step_length {} > pep_step_length {}? then switch to swing".format(
+        #                 step_length, self.step_length))
         #     return True
         # else:
         #     return False
@@ -501,9 +512,9 @@ class SingleLeg:
         return self.alpha_reached and self.beta_reached and self.gamma_reached
 
     def is_target_set(self):
-        return self.alpha_target == self.alpha_command and self.beta_target == self.beta_command and self.gamma_target == self.gamma_command
+        return self.alpha_target == self.alpha_set_point and self.beta_target == self.beta_set_point and self.gamma_target == self.gamma_set_point
 
-    def set_command(self, next_angles):
+    def set_joint_point(self, next_angles):
         # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
         #               str(self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
@@ -514,7 +525,7 @@ class SingleLeg:
             self._gamma_pub.publish(next_angles[2])
             self._beta_pub.publish(next_angles[1])
 
-    def set_command_and_target(self, next_angles):
+    def set_joint_point_and_target(self, next_angles):
         # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
         #                self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
@@ -524,6 +535,6 @@ class SingleLeg:
             self._alpha_pub.publish(next_angles[0])
             self._beta_pub.publish(next_angles[1])
             self._gamma_pub.publish(next_angles[2])
-            self.alpha_command = next_angles[0]
-            self.beta_command = next_angles[1]
-            self.gamma_command = next_angles[2]
+            self.alpha_set_point = next_angles[0]
+            self.beta_set_point = next_angles[1]
+            self.gamma_set_point = next_angles[2]

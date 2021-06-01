@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from math import fabs, exp, cos, sin, isnan
+from math import fabs, exp, cos, sin, isnan, pi
 
 import numpy
 import rospy
@@ -120,8 +120,7 @@ class SingleLegController:
         self.rule3_contra = True
         self.rule3_ipsi = True
 
-        if self.step_length:
-            self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+        self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.default_step_length = RSTATIC.default_stance_distance
 
     def set_init_pos(self, p):
@@ -179,14 +178,14 @@ class SingleLegController:
                 # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
                 if self.name == "lf" or self.name == "lm" or self.name == "lr":
                     self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default - (
-                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3125  # 0.45 # 51.25 percent of step length
+                            -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3125  # 0.45 # 51.25 percent of step length
                     self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default - (
-                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3375  # 0.0
+                            -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.3375  # 0.0
                 else:
                     self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default + (
-                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7125  # 0.45 # 51.25 percent of step length
+                            -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7125  # 0.45 # 51.25 percent of step length
                     self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
-                                -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
+                            -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
             if angle < 0.0:
                 # self.displ_leg_ipsilateral_rule3 = 0.5125  # 0.45 # 51.25 percent of step length
                 # self.displ_leg_ipsilateral_rule2 = 0.5375  # 0.0
@@ -432,4 +431,4 @@ class SingleLegController:
         if p is None and not rospy.is_shutdown():
             p = self.init_pos
         angles = self.leg.compute_inverse_kinematics(p)
-        self.leg.set_command_and_target(angles)
+        self.leg.set_joint_point_and_target(angles)
