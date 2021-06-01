@@ -6,25 +6,51 @@ import re
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
-from matplotlib import ticker
+import argparse
+from scipy.constants import g
 
 if len(sys.argv) >= 2:
 
     plot = True
     safe_plot = True
+    calculate_cot = True
     controll_colors = False
-    controll_colors_dir =False
+    controll_colors_dir = False
     colors = ['b', 'r', 'g', 'm', 'c', 'y', '#e67e22', '#78281f', '#1abc9c', '#909497', '#34495e', '#17202a']
 
     files = None
-    if sys.argv[1] == "-dir":
-        files = os.listdir(sys.argv[2])
-        files.sort(key=lambda x: os.path.getmtime(sys.argv[2] + "/" + x), reverse=False)
+    parser = argparse.ArgumentParser(
+            description='plot the path the robot walked by providing a file containing the positions of the robot. ' +
+                        'Optionally calculate the cost of transport, by additionally providing a file containing an ' +
+                        'approximation of the power consumption and controller steps.')
+    parser.add_argument('-dir', '--directory',
+            help='the directory containing all walknet_position files that should be considered.')
+    parser.add_argument('-cot_dir', '--costOfTransport_directory',
+            help='the directory containing the walknet_ files corresponding to the provided position files.')
+    parser.add_argument('-f', '--file', help='the walknet_position file that should be considered.')
+    parser.add_argument('-cot_f', '--costOfTransport_file',
+            help='the walknet_ files corresponding to the provided position file.')
+    args = parser.parse_args()
+    if args.directory:
+        files = os.listdir(args.directory)
+        files.sort(key=lambda x: os.path.getmtime(args.directory + "/" + x), reverse=False)
         print(files)
-    elif len(sys.argv) == 2:
-        files = [sys.argv[1]]
+    elif args.file:
+        files = [args.file]
     else:
-        print("wrong parameters provide data-filename or -dir directory with files")
+        print("wrong parameters provide -f data-filename or -dir directory with files")
+        exit()
+    if args.costOfTransport_directory:
+        cot_files = [file for file in os.listdir(args.costOfTransport_directory) if file.find('walknet') != -1]
+        cot_files.sort(key=lambda x: os.path.getmtime(args.costOfTransport_directory + "/" + x), reverse=False)
+        print(cot_files)
+    elif args.costOfTransport_file:
+        cot_files = [args.costOfTransport_file]
+    else:
+        cot_files = []
+
+    if len(cot_files) != len(files):
+        print("same number of position and additional information files need to be provided")
         exit()
 
     distance = [0 for i in range(0, len(files))]
@@ -62,7 +88,7 @@ if len(sys.argv) >= 2:
         line_number = 0
         file_name = None
         if len(sys.argv) > 2:
-            file_name = sys.argv[2] + "/" + str(files[j])
+            file_name = args.directory + "/" + str(files[j])
         else:
             file_name = str(files[j])
         for line in open(file_name, 'r'):
@@ -143,13 +169,51 @@ if len(sys.argv) >= 2:
                     [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                      range(0, len(split))], loc='lower right')
 
-    print("**average velocity** = " + str([round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
+    total_power_command = []
+    total_power_joint_torque = []
+    controller_steps = []
+    for k in range(0, len(cot_files)):
+        file_name = None
+        if args.costOfTransport_directory:
+            file_name = args.costOfTransport_directory + "/" + str(cot_files[k])
+        elif args.costOfTransport_file:
+            file_name = str(cot_files[k])
+        for line in open(file_name, 'r'):
+            line = line.rstrip("\n")
+            split = line.split(" ")
+            if split[0] == "total" and split[1] == "power" and split[2] == "command":
+                total_power_command.append(float(split[-1]))
+            if split[0] == "total" and split[1] == "power" and split[2] == "joint" and split[3] == "torque":
+                total_power_joint_torque.append(float(split[-1]))
+            if split[0] == "controller" and split[1] == "steps":
+                controller_steps.append(float(split[-1]))
+
+    print("**average velocity** = " + str(
+            [round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
 
     print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
     print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
 
-    print("distance traveled = " + str([round(i, 3) for i in distance]))
-    #print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
+    print("**distance traveled** = " + str([round(i, 3) for i in distance]))
+
+    cot_values_command = []
+    cot_values_joint_torque = []
+    if len(total_power_command) != len(controller_steps) != len(distance) != len(total_power_joint_torque):
+        print("not the same number of values for distance ({}), power ({}) and controller steps ({})".format(
+                len(distance), len(total_power_command), len(controller_steps)))
+        print("values for distance ({}), power ({}), controller steps ({})".format(
+                distance, total_power_command, controller_steps))
+        print("could not calculate cot.")
+    else:
+        mass = 2.48  # kg
+        for l in range(0, len(controller_steps)):
+            com_vel = distance[l] / controller_steps[l]
+            cot_values_command.append((total_power_command[l] / controller_steps[l]) / (mass * g * com_vel))
+            cot_values_joint_torque.append((total_power_joint_torque[l] / controller_steps[l]) / (mass * g * com_vel))
+        print("**cost of transport (command)** = " + str([round(i, 3) for i in cot_values_command]))
+        print("**cost of transport (joint torque)** = " + str([round(i, 3) for i in cot_values_joint_torque]))
+
+    # print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
     #        np.linalg.norm(np.array(last_position) - np.array(first_position))))
 
     if plot:
@@ -168,8 +232,8 @@ if len(sys.argv) >= 2:
         axs.set_xlim(-1.5, 2.5)
         axs.set_ylim(-0.5, 4.0)
 
-        #axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
-        #axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
+        # axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
+        # axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
 
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
