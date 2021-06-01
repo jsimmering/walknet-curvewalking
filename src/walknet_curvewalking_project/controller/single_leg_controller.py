@@ -200,7 +200,42 @@ class SingleLegController:
                     self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default + (
                             -pow((0.559 * (angle - 0.8)), 2) + 0.2)  # 0.7375  # 0.0
 
-        # if self.shift_aep_x and angle > 0.0:
+        if self.shift_aep_x and angle > 0.0:
+            if self.name == "lf" or self.name == "lm" or self.name == "lr":
+                # ## inner x  ((AEP - PEP)/2)/1.2)x
+                self.target_pos[0] -= ((RSTATIC.default_stance_distance/2) / 1.2) * angle
+                #                                  (RSTATIC.default_stance_distance / (pi / 2)) * angle
+                #                                  ((self.default_step_length / 2) / 1.2) * angle
+                # ## inner middel only x
+            if self.name == "lf":
+                # ## inner front y -((0.137*(x-1.2)))^2+0.027
+                self.target_pos[1] += -pow((0.137 * (angle - 1.2)), 2) + 0.027
+            if self.name == "lr":
+                # ## inner rear y from front inverted
+                self.target_pos[1] -= -pow((0.137 * (angle - 1.2)), 2) + 0.027
+            if self.name == "rf":
+                # ## outer front y = x  (0.02/pi)x
+                self.target_pos[0] += (0.04 / pi) * angle
+                self.target_pos[1] += (0.04 / pi) * angle
+            self.leg.shift_default_aep(self.target_pos)
+        if self.shift_aep_x and angle < 0.0:
+            if self.name == "rf" or self.name == "rm" or self.name == "rr":
+                # ## inner x  ((AEP - PEP)/2)/1.2)x
+                self.target_pos[0] -= ((RSTATIC.default_stance_distance/2) / 1.2) * angle
+                #                                  (RSTATIC.default_stance_distance / (pi / 2)) * angle
+                #                                  ((self.default_step_length / 2) / 1.2) * angle
+                # ## inner middel only x
+            if self.name == "rf":
+                # ## inner front y -((0.43*(x-1.2)))^2+0.27
+                self.target_pos[1] += -pow((0.43 * (angle - 1.2)), 2) + 0.27
+            if self.name == "rr":
+                # ## inner rear y from front inverted
+                self.target_pos[1] -= -pow((0.43 * (angle - 1.2)), 2) + 0.27
+            if self.name == "lf":
+                # ## outer front y = x  (0.02/pi)x
+                self.target_pos[0] += (0.04 / pi) * angle
+                self.target_pos[1] += (0.04 / pi) * angle
+            self.leg.shift_default_aep(self.target_pos)
         #     if self.name == "lf" or self.name == "lm" or self.name == "lr":
         #         self.target_pos[0] -= 0.04
         #     else:
@@ -284,8 +319,8 @@ class SingleLegController:
                 not self.step_length and self.leg.reached_pep() and legs_in_swing < 3):
             # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
             self.stance_net.reset_stance_trajectory()
-            if (self.shift_aep or self.shift_aep_x) and self.stance_count > 0:
-                self.move_aep()
+            # if (self.shift_aep or self.shift_aep_x) and self.stance_count > 0:
+            #     self.move_aep()
             self.swing = True
             # if self.first_stance:
             #     self.first_stance = False
