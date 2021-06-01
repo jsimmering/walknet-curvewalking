@@ -22,46 +22,153 @@ def main():
     distance = None
 
     pull_at_back = True
-    aep_param = 0.025
-    root_dir = "logs/curvewalk_improvements_with_changing_pull_at_back/parameter_eval/"
+    aep_param = 0.025  # float('nan')  # 0.025
+    root_dir = "logs/test/"  # "logs/test_new_aep_shift_1.2_half_step_length/"  # "logs/curvewalk_improvements_with_increasing_mirrored_pull_at_back/all_velocities/"
     trials = [
-        # all aep_xy
-        {"name": root_dir + "all_aep-xy_2.5cm_xm2-3_decreased_1.0cm/", "length": True, "aep_y": aep_param,
-         "aep_x": aep_param,
-         "decrease": 0.01},
-        # all aep_y
-        {"name": root_dir + "all_aep-y_2.5cm_decreased_1.0cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
-         "decrease": 0.01},
+        {"name": root_dir + "all_aep_xy_new_decreased_0cm/", "length": True,
+         "aep_y": aep_param, "aep_x": aep_param, "decrease": 0.0},  # , "speed": 0.01, "dir": 0.8},
+        # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
+        # {"name": root_dir + "all_aep_xy_average_decreased_0cm_changed_rules_more_with_angle/", "length": True, "aep_y": aep_param,
+        #  "aep_x": aep_param, "decrease": 0.0}  # , "speed": 0.01, "dir": 0.8},
         # all aep_x
-        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_1.0cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
-         "decrease": 0.01},
+        # 0.01s 0.8dir
+        # {"name": root_dir + "all_aep_xm2-3_-1.0cm_decreased_0cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.01, "decrease": 0.0, "speed": 0.01, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0, "speed": 0.01, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0, "speed": 0.01, "dir": 0.8},
+        # # 0.01s 1.4dir
+        # {"name": root_dir + "all_aep_xm2-3_-1.0cm_decreased_0cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.01, "decrease": 0.0, "speed": 0.01, "dir": 1.4},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0, "speed": 0.01, "dir": 1.4},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0, "speed": 0.01, "dir": 1.4},
+        # # 0.02s 0.6dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.5cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.005, "decrease": 0.0025, "speed": 0.02, "dir": 0.6},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 0.6},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 0.6},
+        # # 0.02s 1.0dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.5cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.005, "decrease": 0.0025, "speed": 0.02, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 1.0},
+        # # 0.02s 1.4dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.5cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.005, "decrease": 0.0025, "speed": 0.02, "dir": 1.4},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 1.4},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.25cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0025, "speed": 0.02, "dir": 1.4},
+        # # 0.03s 0.8dir
+        # {"name": root_dir + "all_aep_xm2-3_-1.0cm_decreased_0.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.01, "decrease": 0.005, "speed": 0.03, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.005, "speed": 0.03, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.5cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.005, "speed": 0.03, "dir": 0.8},
+        # # 0.03s 1.0dir
+        # {"name": root_dir + "all_aep_xm2-3_-1.0cm_decreased_0.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.01, "decrease": 0.005, "speed": 0.03, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.005, "speed": 0.03, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.5cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.005, "speed": 0.03, "dir": 1.0},
+        # # 0.04s 0.8dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.25cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.0025, "decrease": 0.0075, "speed": 0.04, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 0.8},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 0.8},
+        # # 0.04s 1.0dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.25cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.0025, "decrease": 0.0075, "speed": 0.04, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 1.0},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 1.0},
+        # # 0.04s 1.2dir
+        # {"name": root_dir + "all_aep_xm2-3_-0.25cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": -0.0025, "decrease": 0.0075, "speed": 0.04, "dir": 1.2},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 1.2},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_0.75cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0075, "speed": 0.04, "dir": 1.2},
+        # # 0.06s 0.4dir
+        # {"name": root_dir + "all_aep_xm2-3_3.0cm_decreased_1.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.03, "decrease": 0.0125, "speed": 0.06, "dir": 0.4},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_1.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0125, "speed": 0.06, "dir": 0.4},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_1.25cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0125, "speed": 0.06, "dir": 0.4},
+        # # 0.06s 1.57dir
+        # {"name": root_dir + "all_aep_xm2-3_3.0cm_decreased_1.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.03, "decrease": 0.0125, "speed": 0.06, "dir": 1.57},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_1.25cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.0125, "speed": 0.06, "dir": 1.57},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_1.25cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.0125, "speed": 0.06, "dir": 1.57},
+        # # 0.07s 0.2dir
+        # {"name": root_dir + "all_aep_xm2-3_3.5cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.035, "decrease": 0.015, "speed": 0.07, "dir": 0.2},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 0.2},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 0.2},
+        # # 0.07s 0.4dir
+        # {"name": root_dir + "all_aep_xm2-3_3.5cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.035, "decrease": 0.015, "speed": 0.07, "dir": 0.4},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 0.4},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 0.4},
+        # # 0.07s 1.57dir
+        # {"name": root_dir + "all_aep_xm2-3_3.5cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.035, "decrease": 0.015, "speed": 0.07, "dir": 1.57},
+        # {"name": root_dir + "all_aep_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": float('nan'),
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 1.57},
+        # {"name": root_dir + "all_aep_xy_xm2-3_0.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0,
+        #  "aep_x": 0.0, "decrease": 0.015, "speed": 0.07, "dir": 1.57},
+        # all aep_xy
+        # {"name": root_dir + "all_aep-xy_2.5cm_xm2-3_decreased_1.0cm/", "length": True, "aep_y": aep_param,
+        # "aep_x": aep_param, "decrease": 0.01},
+        # all aep_y
+        # {"name": root_dir + "all_aep-y_2.5cm_decreased_1.0cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
+        #  "decrease": 0.01},
         # step length aep_xy
-        {"name": root_dir + "step_length_aep-xy_2.5cm_xm2-3/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
-         "decrease": 0.0},
+        # {"name": root_dir + "step_length_aep-xy_2.5cm_xm2-3/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+        #  "decrease": 0.0},
         # step length aep_y
-        {"name": root_dir + "step_length_aep-y_2.5cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
-         "decrease": 0.0},
+        # {"name": root_dir + "step_length_aep-y_2.5cm/", "length": True, "aep_y": aep_param, "aep_x": 0.0,
+        # "decrease": 0.0},
         # step length aep_x
-        {"name": root_dir + "step_length_aep-xm2-3_2.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
-         "decrease": 0.0},
+        # {"name": root_dir + "step_length_aep-xm2-3_2.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+        #  "decrease": 0.0},
         # all aep_x decreased 0.5cm
-        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
-         "decrease": 0.005},
+        # {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+        #  "decrease": 0.005},
         # all aep_x decreased 1.5cm
-        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
-         "decrease": 0.015},
+        # {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+        #  "decrease": 0.015},
         # all aep_x decreased 2.0cm
-        {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
-         "decrease": 0.020},
+        # {"name": root_dir + "all_aep-xm2-3_2.5cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": aep_param,
+        # "decrease": 0.020},
         # all aep_x 5cm decreased 0.5cm
-        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
-         "decrease": 0.005},
+        # {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_0.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+        #  "decrease": 0.005},
         # all aep_x 5cm decreased 1.5cm
-        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
-         "decrease": 0.015},
+        # {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_1.5cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+        #  "decrease": 0.015},
         # all aep_x 5cm decreased 2.0cm
-        {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
-         "decrease": 0.020},
+        # {"name": root_dir + "all_aep-xm2-3_5.0cm_decreased_2.0cm/", "length": True, "aep_y": 0.0, "aep_x": 0.05,
+        #  "decrease": 0.020},
         # step length decreased
         # {"name": root_dir + "step_length_decreased_1cm/", "length": True, "aep_y": 0.0, "aep_x": 0.0,
         #  "decrease": 0.01},
@@ -91,21 +198,37 @@ def main():
     # direction = numpy.arange(0.10, 0.24, 0.05)
     # direction = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
     # direction = [1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
-    direction = [0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
-    for trial in [dic["name"] for dic in trials]:
-        for d in direction:
-            Path(trial + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
-            Path(trial + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
-            Path(trial + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
-
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [0.6, 0.8]
+    # direction = [0.0, 0.2, 0.4, 1.0, 1.2, 1.4, 1.57]
+    # direction.reverse()
+    direction = [0.8]
+    # direction = [0.0, 0.5, 1.0, 1.57]
     # speed = numpy.arange(0.02, 0.065, 0.01)
-    # speed = [0.007, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
+    # speed = [0.01, 0.03, 0.05, 0.07]
+    # speed = [0.02, 0.03, 0.04, 0.05, 0.06]
     speed = [0.05]
+    for s in speed:
+        for trial in [dic["name"] for dic in trials]:
+            for d in direction:
+                Path(trial + str(s) + "s/" + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
+
+    # for trial in trials:
+    #     Path(trial["name"] + "/" + str(trial["speed"]) + "s/" + str(trial["dir"]) + "dir" + "/").mkdir(parents=True, exist_ok=True)
+    #     Path(trial["name"] + "/" + str(trial["speed"]) + "s/" + str(trial["dir"]) + "dir" + "/position").mkdir(parents=True, exist_ok=True)
+    #     Path(trial["name"] + "/" + str(trial["speed"]) + "s/" + str(trial["dir"]) + "dir" + "/stability").mkdir(parents=True, exist_ok=True)
+
     for s in speed:
         for j in range(0, len(trials)):
             for d in direction:
                 for i in range(0, repetitions_per_speed):
-                    trial_name = trials[j]["name"] + str(d) + "dir/"  # trial_root_dir[j] + str(d) + "dir/"
+                    # s = trials[j]["speed"]
+                    # d = trials[j]["dir"]
+                    trial_name = trials[j]["name"] + str(s) + "s/" + str(d) + "dir/"
+                    # trials[j]["name"] + "/" + str(trials[j]["speed"]) + "s/" + str(trials[j]["dir"]) + "dir" + "/"  # trials[j]["name"] + str(s) + "s/" + str(d) + "dir/"  # trial_root_dir[j] + str(d) + "dir/"
                     print("TRIAL NAME: " + str(trial_name))
 
                     print("#############################")
@@ -117,7 +240,8 @@ def main():
                             stand_up_exit_code = stand_up_p.wait(10)
                         except subprocess.TimeoutExpired:
                             print("reset sim")
-                            sim_p = run(["rosservice", "call", "/gazebo/reset_simulation", "{}"])
+                            # sim_p = run(["rosservice", "call", "/gazebo/reset_simulation", "{}"])
+                            sim_p = run(["rosrun", "walknet_curvewalking", "reset_model_pub.py"])
                             sim_exit_code = sim_p.wait(10)
                             if sim_exit_code != 0:
                                 print("resetting simulation failed! This should not happen")
@@ -130,7 +254,8 @@ def main():
                         exit(1)
 
                     print("reset sim")
-                    sim_p = run(["rosservice", "call", "/gazebo/reset_simulation", "{}"])
+                    # sim_p = run(["rosservice", "call", "/gazebo/reset_simulation", "{}"])
+                    sim_p = run(["rosrun", "walknet_curvewalking", "reset_model_pub.py"])
                     sim_exit_code = sim_p.wait(10)
                     if sim_exit_code != 0:
                         print("resetting simulation failed! This should not happen")
@@ -139,6 +264,8 @@ def main():
                     print("initialize Robot")
                     if duration:
                         print("recorder: Robot Collector walk for {} minutes".format(duration))
+                        print("aep_y = " + str(trials[j]["aep_y"]))
+                        print("aep_x = " + str(trials[j]["aep_x"]))
                         robot_p = run(["rosrun", "walknet_curvewalking", "robot_controller.py", "_walk:=True",
                                        "_stepLength:=" + str(trials[j]["length"]),
                                        "_aepShift:=" + str(trials[j]["aep_y"]),

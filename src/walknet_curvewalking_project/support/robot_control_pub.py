@@ -19,7 +19,6 @@ if __name__ == '__main__':
     speed = rospy.get_param('~speed', 0.075)
     direction = rospy.get_param('~direction', 0.0)
     try:
-        pass
         talker(speed, direction)
     except rospy.ROSInterruptException:
         pass
