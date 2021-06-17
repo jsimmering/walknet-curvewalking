@@ -62,18 +62,27 @@ def plot_orientation_data(axs, start_time, stop_time):
                 used_lines += 1
 
                 angles = tf_trans.euler_from_quaternion([values[4], values[5], values[6], values[7]])
-                angle_z = ((2 * pi) + angles[2]) % (2 * pi)
+                angle = None
+                if yaw:
+                    # angle = ((2 * pi) + angles[2]) % (2 * pi)
+                    angle = angles[2]
+                if pitch:
+                    # angle = ((2 * pi) + angles[1]) % (2 * pi)
+                    angle = angles[1]
+                if roll:
+                    # angle = ((2 * pi) + angles[0]) % (2 * pi)
+                    angle = angles[0]
                 if last_orientation is not None:
                     if initial_orientation is None:
-                        initial_orientation = angle_z
+                        initial_orientation = angle
                     # orientation_z[j].append(angles[2] - initial_orientation)
-                    orientation_z[j].append(angle_z)
-                    if abs(angle_z - last_orientation) <= 0.00002:
+                    orientation_z[j].append(angle)
+                    if abs(angle - last_orientation) <= 0.00002:
                         orientation_diff[j].append(0)
                     else:
-                        orientation_diff[j].append(angle_z - last_orientation)
+                        orientation_diff[j].append(angle - last_orientation)
                     time[j].append(values[0])
-                last_orientation = angle_z
+                last_orientation = angle
 
                 line_number += 1
 
@@ -113,7 +122,6 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
     for line in open(str(filename), 'r'):
         if first_line:
             first_line = False
-            pass
         else:
             line = line.rstrip("\n")
             try:
@@ -155,7 +163,7 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
         # marked_step = [1, 1, 1, 0, 0, 0]  # 0.007s 0.0 dir
         marked_step = [0, 1, 1, 1, 1, 1]  # 0.007s 0.3 dir
         # marked_step = [2, 2, 2, 0, 0, 1]  # 0.02s 0.3dir
-        show_steps = True
+        show_steps = False
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
         for leg in stance_times:
             for step in leg:
@@ -187,14 +195,26 @@ def plot_stability_data_to_footfall_pattern(axs, start_time, stop_time):
 if __name__ == '__main__':
     if len(sys.argv) == 3:
         # start_duration = 115
-        start_duration = 70
-        # start_duration = 30
+        # start_duration = 70
+        start_duration = 30
         # stop_duration = 60
-        stop_duration = 100
+        # stop_duration = 100
         # stop_duration = 145
-        # stop_duration = 0
+        stop_duration = 0
         # stop_duration = 45  # 0.05s 0.5dir
+        roll = False
+        pitch = True
+        yaw = False
         fig, axs = plt.subplots(3)
+        if roll and not pitch and not yaw:
+            fig.suptitle('roll')
+        elif pitch and not roll and not yaw:
+            fig.suptitle('pitch')
+        elif yaw and not pitch and not roll:
+            fig.suptitle('yaw')
+        else:
+            print("invalid configuration")
+            sys.exit()
         plt.setp(axs, xticks=range(0, stop_duration, 2))
 
         axs = plot_orientation_data(axs, start_duration, stop_duration)
