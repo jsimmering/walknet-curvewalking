@@ -22,10 +22,14 @@ if len(sys.argv) >= 2:
     unstable_percent = []
     delays_percent = []
     valueError_percent = []
+    average_swing_duration = []
+    average_stance_duration = []
 
     for j in range(0, len(files)):
         delays_dict = {}
         valueError_dict = {}
+        swing_duration_dict = {}
+        stance_duration_dict = {}
 
         line_number = 0
         file_name = None
@@ -36,6 +40,8 @@ if len(sys.argv) >= 2:
 
         is_delay_line = False
         is_error_line = False
+        is_swing_duration_line = False
+        is_stance_duration_line = False
         try:
             for line in open(file_name, 'r'):
                 line = line.rstrip("\n")
@@ -49,6 +55,14 @@ if len(sys.argv) >= 2:
                 elif split[0] == "swing_delay_count:":
                     is_delay_line = True
                     is_error_line = False
+                elif split[0] == "swing_count:":
+                    is_delay_line = False
+                elif split[0] == "average_swing_duration:":
+                    is_swing_duration_line = True
+                elif split[0] == "stance_count:":
+                    is_swing_duration_line = False
+                elif split[0] == "average_stance_duration:":
+                    is_stance_duration_line = True
                 elif is_error_line:
                     split[len(split) - 1] = split[len(split) - 1][0:-1]
                     # print(split)
@@ -61,6 +75,12 @@ if len(sys.argv) >= 2:
                     delay = round(float(split[split.index("=") + 1]), 2)
                     if delay != 0.0:
                         delays_dict[split[0]] = delay
+                elif is_swing_duration_line:
+                    split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    swing_duration_dict[split[0]] = float(split[len(split) - 1])
+                elif is_stance_duration_line:
+                    split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    stance_duration_dict[split[0]] = float(split[len(split) - 1])
                 line_number += 1
 
             # if line_number == 23:
@@ -69,6 +89,8 @@ if len(sys.argv) >= 2:
             # if line_number == 30:
             delays_percent.append(delays_dict)
             # delays_dict = {}
+            average_swing_duration.append(swing_duration_dict)
+            average_stance_duration.append(stance_duration_dict)
         except IsADirectoryError:
             pass
 
@@ -197,6 +219,33 @@ if len(sys.argv) >= 2:
         print(error_str)
         print("")
         # print("**ValueErrors:**\n" + str(valueError_percent))
+
+    print("**average swing durations (all runs):**")
+    swing_str = "* "
+    swing_dict = {}
+    for k in average_swing_duration[0].keys():
+        swing_dict[k] = round(sum(swings[k] for swings in average_swing_duration) / len(average_swing_duration), 2)
+    swing_str += str(swing_dict)
+
+    # for dur in average_swing_duration:
+    #     swing_str += str(dur)
+    #     if not average_swing_duration.index(dur) == len(average_swing_duration) - 1:
+    #         swing_str += "\n* "
+    print(swing_str)
+    print("")
+
+    print("**average stance durations (all runs):**")
+    stance_str = "* "
+    stance_dict = {}
+    for k in average_stance_duration[0].keys():
+        stance_dict[k] = round(sum(stances[k] for stances in average_stance_duration) / len(average_stance_duration), 2)
+    stance_str += str(stance_dict)
+    # for dur in average_stance_duration:
+    #     stance_str += str(dur)
+    #     if not average_stance_duration.index(dur) == len(average_stance_duration) - 1:
+    #         stance_str += "\n* "
+    print(stance_str)
+    print("")
 
     print("")
     print("#############################################################################")
