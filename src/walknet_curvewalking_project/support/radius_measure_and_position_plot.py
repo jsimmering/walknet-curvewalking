@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-import os
-import sys
-import re
 import math
-import PyKDL
+import os
+import re
+import sys
 
+import PyKDL
 import matplotlib.pyplot as plt
 import numpy as np
-
-# https://stackoverflow.com/questions/55816902/finding-the-intersection-of-two-circles
 from matplotlib import ticker
 
 
+# https://stackoverflow.com/questions/55816902/finding-the-intersection-of-two-circles
 def get_intersections(x0, y0, r0, x1, y1, r1):
     # circle 1: (x0, y0), radius r0
     # circle 2: (x1, y1), radius r1
@@ -41,30 +40,28 @@ def get_intersections(x0, y0, r0, x1, y1, r1):
         return x3, y3, x4, y4
 
 
-def handle_line(configuration, line, line_number, start_x, start_y, start_z, first_position, X, Y, Z, x_max, x_min, y_max,
-                y_min, last_position, distance, velocity, positions, quaternions, last_time):
+def handle_line(configuration, run, line, last_position, last_time, distance, velocity, positions, quaternions,
+                start=None):  # X, Y, Z,
     line = line.rstrip("\n")
     values = [float(s) for s in line.split(";")]
-    if not start_x[configuration]:
-        start_x[configuration].append(values[1])
-        start_y[configuration].append(values[2])
-        start_z[configuration].append(values[3])
 
-    if first_position is None:
-        first_position = [values[1], values[2]]
+    if start is None:
+        # save start position of this run to be able to use relative positions
+        start = [values[1], values[2], values[3]]
+        print("configuration {} run {} start position = {}".format(configuration, run, start))
 
-    X[configuration].append(round(values[1] - start_x[configuration][0], 4))
-    Y[configuration].append(round(values[2] - start_y[configuration][0], 4))
-    Z[configuration].append(round(values[3] - start_z[configuration][0], 4))
+    # save current relative position for position plot
+    # X[configuration][run].append(round(values[1] - start[0], 4))
+    # Y[configuration][run].append(round(values[2] - start[1], 4))
+    # Z[configuration][run].append(round(values[3] - start[2], 4))
 
-    if values[1] > x_max:
-        x_max = values[1]
-    if values[1] < x_min:
-        x_min = values[1]
-    if values[2] > y_max:
-        y_max = values[2]
-    if values[2] < y_min:
-        y_min = values[2]
+    # save position and quaternion for radius measure calculation (position not relative)
+    # if line_number % (1000 * 10) == 0:
+    # idea https://math.stackexchange.com/questions/285866/calculating-circle-radius-from-two-points-on-circumference-for-game-movement
+    # execution https://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
+    position = np.array([values[1], values[2], values[3]])
+    positions[configuration][run].append(position)
+    quaternions[configuration][run].append(PyKDL.Rotation.Quaternion(values[4], values[5], values[6], values[7]))
 
     if last_position is not None:
         dis = np.linalg.norm(np.array([values[1], values[2]]) - np.array(last_position))
@@ -74,36 +71,39 @@ def handle_line(configuration, line, line_number, start_x, start_y, start_z, fir
     last_position = [values[1], values[2]]
     last_time = values[0]
 
-    #if line_number % (1000 * 10) == 0:
-    # idea https://math.stackexchange.com/questions/285866/calculating-circle-radius-from-two-points-on-circumference-for-game-movement
-    # execution https://answers.ros.org/question/10124/relative-rotation-between-two-quaternions/
-    positions[configuration].append(np.array([values[1], values[2], values[3]]))
-    quaternions[configuration].append(PyKDL.Rotation.Quaternion(values[4], values[5], values[6], values[7]))
-
-    return first_position, last_position, last_time, x_max, x_min, y_max, y_min
+    return last_position, last_time, start
 
 
-def calculate_radii(radii_number, quaternions, positions, radii, centroids):
+def calculate_radii(radii_number, quaternions, positions, radii, centroids, angles):
     relative_angle_z = (quaternions[radii_number + 1] * quaternions[radii_number].Inverse()).GetRPY()[2]
-    radius = np.linalg.norm(positions[radii_number + 1] - positions[radii_number]) / math.sqrt(
-            2 * (1 - math.cos(relative_angle_z)))
-    radii.append(radius)
-    (x1, y1, x2, y2) = get_intersections(positions[radii_number][0], positions[radii_number][1], radius,
-            positions[radii_number + 1][0], positions[radii_number + 1][1], radius)
-    centroids.append(np.array([x2, y2]))
-    return x2, y2
+    angles.append(relative_angle_z)
+    if len(quaternions) > radii_number + radius_measure_time_step:
+        if radius_measure_time_step != 1:
+            relative_angle_z = \
+                (quaternions[radii_number + radius_measure_time_step] * quaternions[radii_number].Inverse()).GetRPY()[2]
+        radius = np.linalg.norm(
+                positions[radii_number + radius_measure_time_step] - positions[radii_number]) / math.sqrt(
+                2 * (1 - math.cos(relative_angle_z)))
+        radii.append(radius)
+        (x1, y1, x2, y2) = get_intersections(positions[radii_number][0], positions[radii_number][1], radius,
+                positions[radii_number + radius_measure_time_step][0],
+                positions[radii_number + radius_measure_time_step][1], radius)
+        centroids.append(np.array([x2, y2]))
+        return x2, y2
+    else:
+        return None, None
 
 
 def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
     split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
     # print("split lable = " + str(split_label))
-    boxplot_label = [lable[lable.index("walknet") + 2:] for lable in split_label]
+    boxplot_label = [label[label.index("walknet") + 2:] for label in split_label]
     # print("boxplot_label = " + str(boxplot_label))
     if plot_relative_radius:
         relative_radii = []
         for i in range(0, len(files)):
             # todo test
-            relative_radii.append([(radius - mean_radii[i])/mean_radii[i] for radius in radii[i]])
+            relative_radii.append([(radius - mean_radii[i]) / mean_radii[i] for radius in radii[i]])
         # axis_radius.boxplot(relative_radii, labels=['radii line ' + str(j) for j in range(0, len(files))])
         axis_radius.boxplot(relative_radii, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
     else:
@@ -115,107 +115,130 @@ def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
         # axis_radius.xtics(rotation=90)
 
 
-def position_plot(files, axis_position=None, axis_radius=None):
+def plot_angle_boxplot(files, mean_angle, angles, axis_angle):
+    split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
+    # print("split lable = " + str(split_label))
+    boxplot_label = [label[label.index("walknet") + 2:] for label in split_label]
+    # print("boxplot_label = " + str(boxplot_label))
+    relative_angle = []
+    for i in range(0, len(files)):
+        # todo test
+        relative_angle.append([(angle - mean_angle[i]) / mean_angle[i] for angle in angles[i]])
+    # axis_radius.boxplot(relative_angle, labels=['radii line ' + str(j) for j in range(0, len(files))])
+    axis_angle.boxplot(relative_angle, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
+
+
+def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_angle=None):
     colors = plt.get_cmap("tab10")
-    # colors = ['#0000FF', '#FF0000', '#008000', '#ff00ff', '#00ffff', '#ffff00', '#ff8000', '#78281f', '#1abc9c']
     circle_colors = ['#0080ff', '#ffb763', '#80ff00', '#ff80ff', '#80ffff', '#ffff80', '#ffb05d', '#ac4f35', '#49e0b8']
     circle_count = 0
 
-    distance = [0 for _ in range(0, len(files))]
-    X, Y, Z, start_x, start_y, start_z, velocity, x_dim, y_dim = [], [], [], [], [], [], [], [], []
-    positions = []
-    quaternions = []
-    radii = []
-    angles = []
-    centroids = []
+    # distance = [[0 for _ in configurations] for configurations in files]
+    distance = [0 for _ in files]
+    # X, Y, Z = [], [], []
+    velocity = []
+    # x_dim, y_dim = [], []
+    positions, quaternions, radii, angles, centroids = [], [], [], [], []
     plot_lines_position = []
+    # check if X, Y, Z can be replaced with positions
     for i in range(0, len(files)):
-        X.append([])
-        Y.append([])
-        Z.append([])
-        start_x.append([])
-        start_y.append([])
-        start_z.append([])
+        # X.append([])
+        # Y.append([])
+        # Z.append([])
         velocity.append([])
-        x_dim.append([])
-        y_dim.append([])
+        # x_dim.append([])
+        # y_dim.append([])
         positions.append([])
         quaternions.append([])
         radii.append([])
         angles.append([])
         centroids.append([])
+        for m in range(0, len(files[i])):
+            # X[i].append([])
+            # Y[i].append([])
+            # Z[i].append([])
+            # x_dim.append([])
+            # y_dim.append([])
+            positions[i].append([])
+            quaternions[i].append([])
+            # radii.append([])
+            # angles.append([])
+            # centroids.append([])
 
     legend = None
     current_speed = None
     current_dir = None
     current_color = 0
 
-    for j in range(0, len(files)):
-        last_position = None
-        first_position = None
-        last_time = None
-        x_min = float('inf')
-        x_max = float('-inf')
-        y_min = float('inf')
-        y_max = float('-inf')
+    for configuration_number in range(0, len(files)):
+        print("configuration = " + str(configuration_number))
 
-        for run in files[j]:
+        for run_number in range(0, len(files[configuration_number])):
+            print("run " + str(run_number) + " in configuration " + str(configuration_number))
             first_line = True
+            start = None
+            last_position = None
+            last_time = None
             line_number = 0
-            if len(sys.argv) > 2:
-                # file_name = sys.argv[2] + "/" + str(run)
-                file_name = str(run)
-            else:
-                file_name = str(run)
+            used_lines = 0
 
-            # print("configuration = " + str(j))
-            for line in open(file_name, 'r'):
+            for line in open(files[configuration_number][run_number], 'r'):
                 if first_line:
                     first_line = False
-                    pass
                 else:
                     if line_number % 1000 == 0:
-                        first_position, last_position, last_time, x_max, x_min, y_max, y_min = handle_line(j, line,
-                                line_number, start_x, start_y, start_z, first_position, X, Y, Z,
-                                x_max, x_min, y_max, y_min, last_position, distance, velocity, positions,
-                                quaternions, last_time)
+                        if start is not None:
+                            last_position, last_time, start = handle_line(configuration_number, run_number, line,
+                                    last_position, last_time, distance, velocity, positions, quaternions,
+                                    start)  # X, Y, Z,
+                        else:
+                            last_position, last_time, start = handle_line(configuration_number, run_number, line,
+                                    last_position, last_time, distance, velocity, positions, quaternions)  # X, Y, Z,
+                        used_lines += 1
 
                     line_number += 1
+            print("effective lines = " + str(used_lines))
+            print("#of quaternions[{}] = {}".format(configuration_number,
+                    len(quaternions[configuration_number][run_number])))
 
-            # print(
-            #         "j = {}, \nstart_x = {}, \nstart_y = {}, \nstart_z = {}, \nX = {}, \nY = {}, \nZ = {}, \ndistance = {}, \nvelocity = {}, \npositions = {}, \nquaternions = {}\n".format(
-            #                 j, start_x, start_y, start_z, X, Y, Z, distance, velocity, positions, quaternions))
+        radii_label = False
+        print("quaternions len = " + str(len(quaternions)))
+        for i in range(0, len(quaternions[configuration_number])):
+            print("quaternions[{}] len = {}".format(configuration_number, len(quaternions[configuration_number])))
+            print("i = {}".format(i))
+            for run_number in range(0, len(quaternions[configuration_number][i]) - 1):
+                centroid_x, centroid_y = calculate_radii(run_number, quaternions[configuration_number][i],
+                        positions[configuration_number][i], radii[configuration_number],
+                        centroids[configuration_number], angles[configuration_number])
 
-            radii_label = False
-            for i in range(0, len(quaternions[j]) - 1):
-                centroid_x, centroid_y = calculate_radii(i, quaternions[j], positions[j], radii[j], centroids[j])
-
-                # print("centroid_x = {}, centroid_y = {}".format(centroid_x, centroid_y))
-                if plot and plot_position:
-                    line, = axis_position.plot([centroid_x], [centroid_y], 'x', color=circle_colors[circle_count % len(circle_colors)],
-                            label="radii line " + str(j), zorder=0)
+                if plot and plot_position and centroid_x is not None and centroid_y is not None:
+                    line, = axis_position.plot([centroid_x], [centroid_y], 'x',
+                            color=circle_colors[circle_count % len(circle_colors)],
+                            label="centroids for configuration " + str(configuration_number), zorder=0)
                     if not radii_label:
                         plot_lines_position.append(line)
                         radii_label = True
+        print("#of angles[{}] = {}".format(configuration_number, len(angles[configuration_number])))
+        print("#of radii[{}] = {}".format(configuration_number, len(radii[configuration_number])))
 
-            if plot and plot_position:
-                mean_x = float(np.mean([centroid[0] for centroid in centroids[j]]))
-                mean_y = float(np.mean([centroid[1] for centroid in centroids[j]]))
-                if plot_mean_circles:
-                    circle1 = plt.Circle((mean_x, mean_y), np.mean(radii[j]), color=circle_colors[circle_count % len(circle_colors)],
-                            fill=False, label="circle line " + str(j), zorder=1)
-                    plot_lines_position.append(circle1)
-                    axis_position.add_artist(circle1)
-                line, = axis_position.plot([mean_x], [mean_y], '.', color=colors(current_color),
-                        label="mean radius line " + str(j), zorder=2)
-                plot_lines_position.append(line)
-                circle_count += 1
+        if plot and plot_position:
+            mean_x = float(np.mean([centroid[0] for centroid in centroids[configuration_number]]))
+            mean_y = float(np.mean([centroid[1] for centroid in centroids[configuration_number]]))
+            if plot_mean_circles:
+                circle1 = plt.Circle((mean_x, mean_y), np.mean(radii[configuration_number]),
+                        color=circle_colors[circle_count % len(circle_colors)],
+                        fill=False, label="mean circle for configuration " + str(configuration_number), zorder=1)
+                plot_lines_position.append(circle1)
+                axis_position.add_artist(circle1)
+            line, = axis_position.plot([mean_x], [mean_y], '.', color=colors(current_color),
+                    label="mean centroid for configuration " + str(configuration_number), zorder=2)
+            plot_lines_position.append(line)
+            circle_count += 1
 
-            x_dim[j].append(x_max - x_min)
-            y_dim[j].append(y_max - y_min)
+        for run_number in range(0, len(files[configuration_number])):
             if plot and plot_position:
-                # print(files[j])
-                split_control = re.findall(r"[^/_,]+", run, re.ASCII)
+                # split = re.findall(r"[^/_,]+", files[0], re.ASCII)
+                split_control = re.findall(r"[^/_,]+", files[configuration_number][0], re.ASCII)
                 if controll_colors:
                     speed = split_control[split_control.index("position") + 1]
                     if not current_speed:
@@ -234,7 +257,14 @@ def position_plot(files, axis_position=None, axis_radius=None):
                 label = split_control[split_control.index("position") + 3] + "_" + split_control[
                     split_control.index("position") + 4]
                 # print("label = " + str(label))
-                line, _ = axis_position.plot(X[j], Y[j], colors(current_color), linestyle='-', label=label, zorder=2)
+
+                x_positions = [points[0] for points in positions[configuration_number][run_number]]
+                y_positions = [points[1] for points in positions[configuration_number][run_number]]
+                # print("positions x = " + str(x_positions))
+                # print("positions y = " + str(y_positions))
+
+                line, = axis_position.plot(x_positions, y_positions, color=colors(current_color), linestyle='-',
+                        label=label, zorder=2)
                 plot_lines_position.append(line)
                 if not controll_colors and not controll_colors_dir:
                     current_color += 1
@@ -242,21 +272,34 @@ def position_plot(files, axis_position=None, axis_radius=None):
                 legend = axis_position.legend(handles=plot_lines_position, bbox_to_anchor=(0.5, -0.1),
                         loc='upper center', ncol=len(files))  # , ncol=1, mode="expand", borderaxespad=0.)
                 axis_position.add_artist(legend)
+                print("")
 
     print("")
     print("**average velocity** = " + str(
             [round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
 
     # print("**radii** = " + str(radii))
-    print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
-    print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
-    mean_radii = [np.mean(i) for i in radii]
-    print("**mean of radii** = " + str([round(i, 3) for i in mean_radii]))
-    print("**std of radii** = " + str([round(np.std(i), 3) for i in radii]))
-    print("")
+    # print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
+    # print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
 
-    print("distance traveled = " + str([round(i, 3) for i in distance]))
-    print("")
+    mean_radii = [np.mean(i) for i in radii]
+    mean_angles = [np.mean(i) for i in angles]
+    if len(files[0]) > 1:
+        print("**mean of radii per configuration** = " + str([round(i, 3) for i in mean_radii]))
+        print("**std of radii per configuration** = " + str([round(np.std(i), 3) for i in radii]))
+        print("**mean of angles per configuration** = " + str([round(i, 3) for i in mean_angles]))
+        print("**std of angles per configuration** = " + str([round(np.std(i), 3) for i in angles]))
+        print("")
+        print("distance traveled = " + str([round(i, 3) for i in distance]))
+        print("")
+    else:
+        print("**mean of radii** = " + str([round(i, 3) for i in mean_radii]))
+        print("**std of radii** = " + str([round(np.std(i), 3) for i in radii]))
+        print("**mean of angles** = " + str([round(i, 3) for i in mean_angles]))
+        print("**std of angles** = " + str([round(np.std(i), 3) for i in angles]))
+        print("")
+        print("distance traveled (all runs per configuration together) = " + str([round(i, 3) for i in distance]))
+        print("")
 
     if plot and plot_position:
         # --- for height plot
@@ -272,10 +315,12 @@ def position_plot(files, axis_position=None, axis_radius=None):
         axis_position.axis('scaled')
 
     if plot and plot_radius:
-        # print("files = {}, \nmean_radii = {}, \nradii = {}, \naxis_radius = {}\n".format(files, mean_radii, radii, axis_radius))
         plot_radius_boxplot(files, mean_radii, radii, axis_radius)
 
-    return axis_position, axis_radius, legend
+    if plot and plot_angle:
+        plot_angle_boxplot(files, mean_angles, angles, axis_angle)
+
+    return axis_position, axis_radius, axis_angle, legend
 
 
 def save_plot():
@@ -287,6 +332,10 @@ def save_plot():
         rad_plot_path = "/home/jsimmering/plots_masterthesis/radius/" + name + ".png"
         print("file path: " + rad_plot_path)
         fig_rad.savefig(rad_plot_path, bbox_inches='tight', pad_inches=0)
+    if plot_radius:
+        angle_plot_path = "/home/jsimmering/plots_masterthesis/angle/" + name + ".png"
+        print("file path: " + angle_plot_path)
+        fig_angle.savefig(angle_plot_path, bbox_inches='tight', pad_inches=0)
 
 
 if __name__ == '__main__':
@@ -295,6 +344,7 @@ if __name__ == '__main__':
         safe_plot = True
         plot_position = True
         plot_radius = True
+        plot_angle = True
         plot_relative_radius = True
         plot_mean_circles = True
         radius_measure_time_step = 5
@@ -303,9 +353,8 @@ if __name__ == '__main__':
 
         file_names = None
         if sys.argv[1] == "-dir":
-            file_names = [[x] for x in os.listdir(sys.argv[2])]
-            [file_names[i].sort(key=lambda x: os.path.getmtime(sys.argv[2] + "/" + x), reverse=False) for i in
-             range(0, len(file_names))]
+            file_names = [[sys.argv[2] + "/" + x] for x in os.listdir(sys.argv[2])]
+            [file_names[i].sort(key=lambda x: os.path.getmtime(x), reverse=False) for i in range(0, len(file_names))]
             print(file_names)
         elif sys.argv[1] == "-c":
             dirs = os.listdir(sys.argv[2])
@@ -317,9 +366,11 @@ if __name__ == '__main__':
             file_names = [[sys.argv[2] + path + "/position/" + x for x in os.listdir(sys.argv[2] + path + "/position/")]
                           for path in dirs]
             # print(file_names)
-            full_paths = [[re.findall(r"[^/_,]+", file_names[j][i], re.ASCII) for i in range(0, len(file_names[j]))] for j in range(0, len(file_names))]
+            full_paths = [[re.findall(r"[^/_,]+", file_names[j][i], re.ASCII) for i in range(0, len(file_names[j]))] for
+                          j in range(0, len(file_names))]
             file_names_only = [[label[label.index("walknet"):] for label in labels] for labels in full_paths]
-            print("file_names = " + str([["_".join(label) for label in boxplt_label] for boxplt_label in file_names_only]))
+            print("file_names = " + str(
+                    [["_".join(run) for run in configurations] for configurations in file_names_only]))
         elif len(sys.argv) == 2:
             file_names = [[sys.argv[1]]]
         else:
@@ -328,40 +379,60 @@ if __name__ == '__main__':
 
         if plot_position:
             fig_pos, axs_pos = plt.subplots()
+            axs_pos.set_title(
+                    'path of robot including path centroids (points ' + str(radius_measure_time_step) + ' sec apart)')
             axs_pos.grid()
             axs_pos.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_pos.tick_params(labelsize=12)
-            plt.subplots_adjust(top=0.9, bottom=0.1, left=-0.15, hspace=1, wspace=1)
+            #plt.subplots_adjust(top=0.9, bottom=0.1, left=-0.15, hspace=1, wspace=1)
         else:
             axs_pos = None
             fig_pos = None
 
         if plot_radius:
-            #axs_pos.set_xlim(-1.5, 2.5)
             fig_rad, axs_rad = plt.subplots()
+            axs_rad.set_title(
+                    'relative radius of curvature boxplot for positions' + str(radius_measure_time_step) + ' sec apart')
             axs_rad.grid()
             axs_rad.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_rad.tick_params(labelsize=12)
+            if sys.argv[1] == "-dir":
+                axs_rad.set_ylim(-1.0, 1.0)
+            else:
+                # axs_rad.set_ylim(-0.7, 0.9)
+                pass
         else:
             axs_rad = None
             fig_rad = None
 
-        if axs_rad and axs_pos:
-            axs_pos, axs_rad, pos_plot_legend = position_plot(file_names, axs_pos, axs_rad)
+        if plot_angle:
+            fig_angle, axs_angle = plt.subplots()
+            axs_angle.set_title('relative angle boxplot for consecutive points')
+            axs_angle.grid()
+            axs_angle.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
+            axs_angle.tick_params(labelsize=12)
+            if sys.argv[1] == "-dir":
+                axs_angle.set_ylim(-1.25, 1.25)
+            else:
+                # axs_angle.set_ylim(-4.5, 2.25)
+                pass
         else:
-            axs_pos, axs_rad, pos_plot_legend = position_plot(file_names)
+            axs_angle = None
+            fig_angle = None
+
+        axs_pos, axs_rad, axs_angle, pos_plot_legend = plot_position_and_radius(file_names, axs_pos, axs_rad, axs_angle)
 
         if plot_position:
             axs_pos.set_xlim(-1.5, 2.5)
             axs_pos.set_ylim(-0.5, 4.0)
-            # axs_pos.yaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
 
         if plot_radius:
             fig_rad.autofmt_xdate()
 
+        if plot_angle:
+            fig_angle.autofmt_xdate()
+
         if safe_plot:
-            # plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
-            # plt.margins(1, 1)
             if len(file_names) == 1:
                 split = re.findall(r"[^/_,]+", file_names[0][0], re.ASCII)
                 print("split = " + str(split))
@@ -381,7 +452,7 @@ if __name__ == '__main__':
                 if min(directions) != max(directions):
                     name += str(min(directions)) + "-to-" + str(max(directions)) + "dir"
                 else:
-                    name += str(max(directions)) + "dir"
+                    name += str(min(directions)) + "dir"
                 name += "_"
                 name += "_".join(split[0][split[0].index("position") + 3:])
                 print("multiple files:")

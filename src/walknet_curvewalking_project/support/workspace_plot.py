@@ -11,7 +11,7 @@ import numpy as np
 
 def plot_workspace_data():
     plot = True
-    safe_plot = False
+    safe_plot = True
     print_aep_median = False
 
     files = None
