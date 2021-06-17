@@ -8,6 +8,7 @@ import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
 from math import sin, cos, pi, pow
+import csv
 
 
 class RobotController:
@@ -153,7 +154,7 @@ class RobotController:
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.stop = True
-            # self.robot.running = False
+            self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
 
     def update_stance_body_model(self):
@@ -176,6 +177,7 @@ class RobotController:
             self.update_stance_body_model()
             legs_in_swing = self.robot.body_model.gc.count(False)
             if self.stop and legs_in_swing == 0:
+                talker()
                 self.robot.running = False
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
@@ -185,7 +187,7 @@ class RobotController:
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             self.total_power_command += self.robot.get_current_power_command()
             self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
-            #rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
+            # rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
             #        self.total_power_command, self.total_power_joint_torque))
             if not self.stop:
                 if self.pull_at_back:
@@ -205,30 +207,88 @@ class RobotController:
             # else:
             #     # for backwards walking
             #     self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(self.pull_angle, -self.stance_speed)
-            # if self.controller_steps > 50:
-            #    self.robot.running = False
+            # if self.controller_steps > 1000:
+            #     talker()
+            #     self.robot.running = False
             self.rate.sleep()
         self.rate.sleep()
 
-    def record_additional_data(self):
-        file_name = self.trial_name + "walknet"  # "logs/walknet_"
+    def record_swing_stance_durations(self):
+        file_name = self.trial_name + "durations/walknet_durations_"  # "logs/walknet_"
         file_suffix = self.robot.file_suffix
         if file_suffix == "":
             time = datetime.datetime.now()
             file_suffix = str(RSTATIC.controller_frequency) + "hz_" + str(round(self.velocity, 4)) + "s_" + \
                           str(round(self.pull_angle, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
                           "_till_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
-        print("DATA COLLECTOR MODEL ROBOT NAME: ", file_name + file_suffix)
+        print("Robot Controller: DURATION DATA NAME: ", file_name + file_suffix)
+
+        swing_durations = []
+        stance_durations = []
+        leg_names = []
+        for leg in self.robot.legs:
+            leg_names.append(leg.name + "_swing_duration")
+            leg_names.append(leg.name + "_stance_duration")
+            swing_durations.append(leg.swing_durations)
+            stance_durations.append(leg.stance_durations)
+
+        with open(file_name + file_suffix + ".csv", "w") as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=',')
+            csv_writer.writerow(leg_names)
+            least_swings = min(len(elem) for elem in swing_durations)
+            least_stances = min(len(elem) for elem in stance_durations)
+            # rospy.loginfo("least stance {} or swing {} = {}".format(least_stances, least_swings, min([least_swings, least_stances])))
+            for i in range(0, min([least_swings, least_stances])):
+                csv_writer.writerow(
+                        [swing_durations[0][i], stance_durations[0][i], swing_durations[1][i], stance_durations[1][i],
+                         swing_durations[2][i], stance_durations[2][i], swing_durations[3][i], stance_durations[3][i],
+                         swing_durations[4][i], stance_durations[4][i], swing_durations[5][i], stance_durations[5][i]])
+            most_swings = max(len(elem) for elem in swing_durations)
+            most_stances = max(len(elem) for elem in stance_durations)
+            # rospy.loginfo("max stance {} or swing {} = {}".format(most_stances, most_swings, max([most_swings, most_stances])))
+            # rospy.loginfo("additional line range = min {} max {}".format(min([least_swings, least_stances]), max([most_swings, most_stances])))
+            for i in range(min([least_swings, least_stances]), max([most_swings, most_stances])):
+                row = []
+                for j in range(0, len(self.robot.legs)):
+                    if len(swing_durations[j]) > i:
+                        row.append(swing_durations[j][i])
+                    else:
+                        row.append(float('nan'))
+                    if len(stance_durations[j]) > i:
+                        row.append(stance_durations[j][i])
+                    else:
+                        row.append(float('nan'))
+                csv_writer.writerow(row)
+
+    def record_additional_data(self):
+        file_name = self.trial_name + "walknet_"  # "logs/walknet_"
+        file_suffix = self.robot.file_suffix
+        if file_suffix == "":
+            time = datetime.datetime.now()
+            file_suffix = str(RSTATIC.controller_frequency) + "hz_" + str(round(self.velocity, 4)) + "s_" + \
+                          str(round(self.pull_angle, 3)) + "dir_on_" + str(time.month) + "-" + str(time.day) + \
+                          "_till_" + str(time.hour) + "-" + str(time.minute) + "-" + str(time.second)
+        print("Robot Controller: TRIAL NAME: ", file_name + file_suffix)
         actual_duration = 0
         if self.walk_start_time:
             actual_duration = (rospy.Time.now() - self.walk_start_time).to_sec()
         value_error_count = "value_error_count: \n"
         swing_delay_count = "swing_delay_count: \n"
+        swing_count = "swing_count: \n"
+        average_swing_duration = "average_swing_duration: \n"
+        average_stance_duration = "average_stance_duration: \n"
+        stance_count = "stance_count: \n"
         for leg in self.robot.legs:
             value_error_count += leg.name + " " + str(leg.stance_net.valueError_count) + " = " + str(
                     (leg.stance_net.valueError_count * 100) / self.controller_steps) + "%\n"
             swing_delay_count += leg.name + " " + str(leg.swing_delays) + " = " + str(
                     (leg.swing_delays * 100) / self.controller_steps) + "%\n"
+            swing_count += leg.name + " " + str(len(leg.swing_durations)) + "\n"
+            average_swing = sum(leg.swing_durations) / len(leg.swing_durations)
+            average_swing_duration += leg.name + " " + str(average_swing) + "\n"
+            stance_count += leg.name + " " + str(len(leg.stance_durations)) + "\n"
+            average_stance = sum(leg.stance_durations) / len(leg.stance_durations)
+            average_stance_duration += leg.name + " " + str(average_stance) + "\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
@@ -252,7 +312,7 @@ class RobotController:
                             duration=actual_duration, cs=self.controller_steps, power=self.total_power_command,
                             joint_power=self.total_power_joint_torque, unstable=self.robot.unstable_count,
                             percent=(self.robot.unstable_count * 100) / self.controller_steps) +
-                    value_error_count + swing_delay_count)
+                    value_error_count + swing_delay_count + swing_count + average_swing_duration + stance_count + average_stance_duration)
 
 
 def talker():
@@ -314,6 +374,7 @@ if __name__ == '__main__':
             robot_controller.robot.write_all_stability_data_to_file()
         if robot_controller.walk_start_time:
             robot_controller.record_additional_data()
+            robot_controller.record_swing_stance_durations()
             rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
         else:
             rospy.loginfo("DURATION = 0. No walk command received")
