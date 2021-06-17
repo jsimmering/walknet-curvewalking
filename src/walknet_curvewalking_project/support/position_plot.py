@@ -13,6 +13,7 @@ if len(sys.argv) >= 2:
 
     plot = True
     safe_plot = True
+    plot_heigth = True
     calculate_cot = True
     controll_colors = False
     controll_colors_dir = False
@@ -48,8 +49,9 @@ if len(sys.argv) >= 2:
         cot_files = [args.costOfTransport_file]
     else:
         cot_files = []
+        calculate_cot = False
 
-    if len(cot_files) != len(files):
+    if calculate_cot and len(cot_files) != len(files):
         print("same number of position and additional information files need to be provided")
         exit()
 
@@ -87,7 +89,7 @@ if len(sys.argv) >= 2:
 
         line_number = 0
         file_name = None
-        if len(sys.argv) > 2:
+        if not args.file:
             file_name = args.directory + "/" + str(files[j])
         else:
             file_name = str(files[j])
@@ -113,7 +115,7 @@ if len(sys.argv) >= 2:
                     # print("x = " + str(round(values[1],4)) + "y = " + str(round(values[2],4)) + "z = " + str(round(values[3],4)))
                     X[j].append(round(values[1] - start_x[j][0], 4))
                     Y[j].append(round(values[2] - start_y[j][0], 4))
-                    Z[j].append(round(values[3] - start_z[j][0], 4))
+                    Z[j].append(round(values[3], 4))
 
                     if values[1] > x_max:
                         x_max = values[1]
@@ -169,49 +171,62 @@ if len(sys.argv) >= 2:
                     [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                      range(0, len(split))], loc='lower right')
 
-    total_power_command = []
-    total_power_joint_torque = []
-    controller_steps = []
-    for k in range(0, len(cot_files)):
-        file_name = None
-        if args.costOfTransport_directory:
-            file_name = args.costOfTransport_directory + "/" + str(cot_files[k])
-        elif args.costOfTransport_file:
-            file_name = str(cot_files[k])
-        for line in open(file_name, 'r'):
-            line = line.rstrip("\n")
-            split = line.split(" ")
-            if split[0] == "total" and split[1] == "power" and split[2] == "command":
-                total_power_command.append(float(split[-1]))
-            if split[0] == "total" and split[1] == "power" and split[2] == "joint" and split[3] == "torque":
-                total_power_joint_torque.append(float(split[-1]))
-            if split[0] == "controller" and split[1] == "steps":
-                controller_steps.append(float(split[-1]))
+    if calculate_cot:
+        total_power_command = []
+        total_power_joint_torque = []
+        controller_steps = []
+        duration = []
+        for k in range(0, len(cot_files)):
+            file_name = None
+            if args.costOfTransport_directory:
+                file_name = args.costOfTransport_directory + "/" + str(cot_files[k])
+            elif args.costOfTransport_file:
+                file_name = str(cot_files[k])
+            for line in open(file_name, 'r'):
+                line = line.rstrip("\n")
+                split = line.split(" ")
+                if split[0] == "total" and split[1] == "power" and split[2] == "command":
+                    total_power_command.append(float(split[-1]))
+                if split[0] == "total" and split[1] == "power" and split[2] == "joint" and split[3] == "torque":
+                    total_power_joint_torque.append(float(split[-1]))
+                if split[0] == "controller" and split[1] == "steps":
+                    controller_steps.append(float(split[-1]))
+                if split[0] == "duration":
+                    duration.append(float(split[-1]))
 
     print("**average velocity** = " + str(
             [round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
 
     print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
     print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
+    print("")
 
-    print("**distance traveled** = " + str([round(i, 3) for i in distance]))
+    if calculate_cot:
+        print("**duration in seconds** = " + str(duration))
+        print("**duration in steps** = " + str(controller_steps))
 
-    cot_values_command = []
-    cot_values_joint_torque = []
-    if len(total_power_command) != len(controller_steps) != len(distance) != len(total_power_joint_torque):
-        print("not the same number of values for distance ({}), power ({}) and controller steps ({})".format(
-                len(distance), len(total_power_command), len(controller_steps)))
-        print("values for distance ({}), power ({}), controller steps ({})".format(
-                distance, total_power_command, controller_steps))
-        print("could not calculate cot.")
-    else:
-        mass = 2.48  # kg
-        for l in range(0, len(controller_steps)):
-            com_vel = distance[l] / controller_steps[l]
-            cot_values_command.append((total_power_command[l] / controller_steps[l]) / (mass * g * com_vel))
-            cot_values_joint_torque.append((total_power_joint_torque[l] / controller_steps[l]) / (mass * g * com_vel))
-        print("**cost of transport (command)** = " + str([round(i, 3) for i in cot_values_command]))
-        print("**cost of transport (joint torque)** = " + str([round(i, 3) for i in cot_values_joint_torque]))
+        print("**total distance traveled** = " + str([round(i, 3) for i in distance]))
+        print("**total power** = " + str(total_power_joint_torque))
+        print("**velocity [m/step]** = " + str([d / s for d, s in zip(distance, controller_steps)]))
+
+        cot_values_command = []
+        cot_values_joint_torque = []
+        if len(total_power_command) != len(controller_steps) != len(distance) != len(total_power_joint_torque):
+            print("not the same number of values for distance ({}), power ({}) and controller steps ({})".format(
+                    len(distance), len(total_power_command), len(controller_steps)))
+            print("values for distance ({}), power ({}), controller steps ({})".format(
+                    distance, total_power_command, controller_steps))
+            print("could not calculate cot.")
+        else:
+            mass = 2.48  # kg
+            for l in range(0, len(controller_steps)):
+                com_vel = distance[l] / controller_steps[l]
+                cot_values_command.append((total_power_command[l] / controller_steps[l]) / (mass * g * com_vel))
+                cot_values_joint_torque.append((total_power_joint_torque[l] / controller_steps[l]) / (mass * g * com_vel))
+            print("**cost of transport (joint torque)** = " + str([round(i, 3) for i in cot_values_joint_torque]))
+            print("")
+
+            print("**cost of transport (command)** = " + str([round(i, 3) for i in cot_values_command]))
 
     # print("first position = " + str(first_position) + " last position = " + str(last_position) + " distance = " + str(
     #        np.linalg.norm(np.array(last_position) - np.array(first_position))))
@@ -220,9 +235,7 @@ if len(sys.argv) >= 2:
         ## --- for height plot
         # axs.figure()
         # axs.plot(X, Y)
-
-        # axs.figure()
-        # axs.plot(Z)
+        #
         ## -----
 
         plt.tick_params(labelsize=20)
@@ -235,6 +248,7 @@ if len(sys.argv) >= 2:
         # axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
         # axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
 
+        name = ""
         if safe_plot:
             plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
             plt.margins(1, 1)
@@ -266,4 +280,25 @@ if len(sys.argv) >= 2:
                 plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
                         pad_inches=0)
         else:
+            # plt.show()
+            pass
+
+        if plot_heigth:
+            plt.figure()
+            plt.tick_params(labelsize=20)
+            plt.grid(which='both')
+            # plt.axis('scaled')
+            plt.ylim(0.0, 0.1)
+            # plt.axis('scaled')
+            for j in range(0, len(files)):
+                # print("z[{}] = {}".format(j, Z[j]))
+                plt.plot(Z[j])
+            print("**height criterion:** " + str([sum(i < 0.045 for i in files) for files in Z]))
+            plt.axhline(y=0.045, color='r', linestyle='-')
+            if safe_plot:
+                plt.savefig("/home/jsimmering/plots_masterthesis/height/" + name + ".png", bbox_inches='tight',
+                        pad_inches=0)
+                print("height file: " + "/home/jsimmering/plots_masterthesis/height/" + name + ".png")
+
+        if not safe_plot:
             plt.show()
