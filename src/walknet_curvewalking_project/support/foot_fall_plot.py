@@ -14,6 +14,7 @@ from matplotlib.ticker import MultipleLocator
 
 def plot_stability_data_to_footfall_pattern(start, end):
     stance_times = [[], [], [], [], [], []]
+    walk_start_time = None
     last_state_swing = [True, True, True, True, True, True]
     first_line = True
     line_count = 0
@@ -24,7 +25,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
         # print("line count = " + str(line_count))
         if first_line:
             first_line = False
-            pass
         else:
             line = line.rstrip("\n")
             try:
@@ -34,6 +34,9 @@ def plot_stability_data_to_footfall_pattern(start, end):
                 tmp_time = tmp[0].split(".")
                 tmp[0] = tmp_time[0] + '.' + tmp_time[2]
                 values = [float(s) for s in tmp]
+            if walk_start_time is None:
+                walk_start_time = values[0]
+            values[0] -= walk_start_time
             if end != 0:
                 if values[0] > end:
                     break
@@ -63,14 +66,21 @@ def plot_stability_data_to_footfall_pattern(start, end):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         for leg in stance_times:
-            for i in range(0, len(leg) - 1):
-                # for step in leg:
+            # for i in range(0, len(leg) - 1):
+            for step in leg:
                 # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
-                # plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
-                #         linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
-                plt.plot([leg[i][1], leg[i + 1][0]],
-                    [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                     linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+                # plt.plot([leg[i][1], leg[i + 1][0]],
+                #     [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                #     linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+
+        plt.axvline(x=7.25)
+        plt.axvline(x=12.5)
+        plt.axvline(x=21)
+        plt.axvline(x=38)
+        plt.axvline(x=45.5)
+        plt.axvline(x=56)
 
         if end != 0:
             plt.xlim(start, end)
@@ -110,6 +120,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 100  # 150 #90  # 60
-        end_time = 150  # 200 # 120  # 90
+        start_time = 0  # 150 #90  # 60
+        end_time = 60  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)
