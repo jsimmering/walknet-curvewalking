@@ -50,6 +50,9 @@ def plot_stability_data():
     average_pcom_err = 0
     step_count = 0
     last_unstable = -1
+    unstable_after_5sec = 0
+    unstable_before_5sec = 0
+    start_time = None
     first_line = True
     plot = False
     plt.figure()
@@ -73,6 +76,8 @@ def plot_stability_data():
                 tmp[0] = tmp_time[0] + '.' + tmp_time[2]
                 # print("time = " + str(tmp[0]))
                 values = [float(s) for s in tmp]
+            if start_time is None:
+                start_time = values[0]
             foot_polygon = []
             first_leg = -1
             column_idx = 1
@@ -121,6 +126,10 @@ def plot_stability_data():
             if not stable:
                 bins[5] += 1
                 last_unstable = step_count
+                if values[0] - start_time > 5:
+                    unstable_after_5sec += 1
+                elif values[0] - start_time <= 5:
+                    unstable_before_5sec += 1
 
             # pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
             # if pcom_err > max_pcom_err:
@@ -185,7 +194,11 @@ def plot_stability_data():
     # print("average pcom error = {}, max pcom error = {} min pcom error = {}".format(average_pcom_err, max_pcom_err,
     #         min_pcom_err))
     print("step_count = " + str(step_count))
-    print("last unstable controller step was " + str(last_unstable))
+    print("")
+    print("**last unstable controller step:** " + str(last_unstable) + " / " + str(step_count))
+    print("**unstable total:** " + str(bins[5]) + " / " + str(step_count))
+    print("**unstable after 5sec:** " + str(unstable_after_5sec) + " / " + str(step_count))
+    print("**unstable before 5sec:** " + str(unstable_before_5sec) + " / " + str(step_count))
 
 
 # https://progr.interplanety.org/en/python-how-to-find-the-polygon-center-coordinates/
