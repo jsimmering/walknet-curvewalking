@@ -56,9 +56,9 @@ class RobotController:
             if not self.walk:
                 init_pos[0] += (RSTATIC.default_stance_distance * 1)
             elif leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
-                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
+                init_pos[0] += (RSTATIC.default_stance_distance * (4.0 / 5.0))
             elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
-                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 5.0))
             init_pos[1] = init_pos[1] * leg.movement_dir
             leg.set_init_pos(init_pos)
 
