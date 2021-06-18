@@ -41,7 +41,7 @@ class SingleLegController:
         self.aep_x_shift_value = shift_aep_x
         rospy.loginfo(self.name + ": shift aep y = {}, value = {}, shift aep x = {}, value = {}".format(self.shift_aep,
                 self.aep_y_shift_value, self.shift_aep_x, self.aep_x_shift_value))
-        self.stance_length_sum = 0
+        self.stance_length_sum = []
         self.stance_count = 0
         self.current_stance_start = None
         self.current_stance_start_time = None
@@ -359,7 +359,7 @@ class SingleLegController:
             # if self.first_stance:
             #     self.first_stance = False
             if self.current_stance_start is not None:
-                self.stance_length_sum += numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start)
+                self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
                 self.stance_count += 1
                 self.current_stance_start = None
             legs_in_swing = legs_in_swing + 1
@@ -369,7 +369,7 @@ class SingleLegController:
             rospy.logwarn(self.name + ": delayed swing start.")
             self.swing_delays += 1
             if self.current_stance_start is not None:
-                self.stance_length_sum += numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start)
+                self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
                 self.stance_count += 1
                 self.current_stance_start = None
         return legs_in_swing
@@ -379,7 +379,7 @@ class SingleLegController:
 
         ee_pos = self.leg.ee_position()
         step_vector = ee_pos - self.target_pos
-        average_step_length = self.stance_length_sum / self.stance_count
+        average_step_length = numpy.median(self.stance_length_sum) #self.stance_length_sum / self.stance_count
         # step_vector_default_length = (RSTATIC.default_stance_distance / numpy.linalg.norm(
         #         numpy.array(step_vector))) * step_vector
 
@@ -395,7 +395,7 @@ class SingleLegController:
                 1] * self.movement_dir
             offset_center_2 = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[
                                   1] * self.movement_dir - ee_default_step[1]
-            if abs(offset_center_2 - offset_center_1) > 0.02:
+            if abs(offset_center_2 - offset_center_1) > 0.015:
                 debug = False
                 if debug:
                     rospy.loginfo(self.name + ": abs(offset_center_2 - offset_center_1) = " + str(
