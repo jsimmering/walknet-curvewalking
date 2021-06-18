@@ -64,26 +64,28 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = None
         self.threshold_rule3_contralateral = None
 
-        self.displ_leg_ipsilateral_rule3_default = 0.5125
-        self.displ_leg_ipsilateral_rule2_default = 0.5375
+        self.displ_leg_ipsilateral_rule3_default = 0.5125 # 0.83 # 0.5125
+        self.displ_leg_ipsilateral_rule2_default = 0.5375 # 0.21 # 0.5375
         # self.displ_leg_ipsilateral = 0.041
         self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default  # 0.45 # 51.25 percent of step length
         self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default  # 0.0
 
         self.change_rules_with_angle = False
         self.shift_aep_initially = False
-        self.displ_leg_rule1 = 0.95
-        if self.name == "lf" or self.name == "rf":
-            # self.displ_leg = 0.025
-            self.displ_leg_rule3 = 0.3125  # 0.20 # 31.25 percent of step length
-            self.displ_leg_rule2 = 0.1375  # 0.195
-        elif self.name == "lm" or self.name == "rm":
+        self.displ_leg_rule1 = 0.417 # 0.95
+        self.displ_leg_rule1b = self.displ_leg_rule1/4  # 0.1042
+        self.displ_leg_rule2 = self.displ_leg_ipsilateral_rule2_default/4  # 0.0525
+        #if self.name == "lf" or self.name == "rf":
+        #    # self.displ_leg = 0.025
+        self.displ_leg_rule3 = 0.623 #0.3125 # 0.623  # 0.3125  # 0.20 # 31.25 percent of step length
+        #    # self.displ_leg_rule2 = 0.1375  # 0.195
+        if self.name == "lm" or self.name == "rm":
             self.displ_leg_rule3 = 0.0
-            self.displ_leg_rule2 = 0.1375  # 0.13
+            # self.displ_leg_rule2 = 0.1375  # 0.13
         elif self.name == "lr" or self.name == "rr":
             # self.displ_leg = 0.03
-            self.displ_leg_rule3 = 0.375  # 0.19 # 37.5 percent of step length
-            self.displ_leg_rule2 = 0.1375  # 0.20
+            self.displ_leg_rule3 = 0.375  # self.displ_leg_rule3/3  # 0.21  # 0.375  # 0.19 # 37.5 percent of step length
+            # self.displ_leg_rule2 = 0.1375  # 0.20
 
         self.target_pos = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
@@ -135,22 +137,22 @@ class SingleLegController:
         rospy.loginfo("##################################################################")
 
         # RULE 1
-        v1 = 0.013  # ~ 0.02cm/s
-        v2 = 0.024  # ~ 0.04cm/s
-        v3 = 0.033  # ~ 0.05cm/s
-        # 0.0358 ~ 0.07cm/s
-        self.delay_1b = 0.0
-        if velocity < v1:
-            self.delay_1b = 0.27
-        elif v1 < velocity <= v2:
-            self.delay_1b = 0.27 + ((0.27 - 0.2) / (v1 - v2)) * (velocity - v1)
-        elif v2 < velocity <= v3:
-            self.delay_1b = 0.2 + (0.2 / (v2 - v3) * (velocity - v2))
+        # v1 = 0.013  # ~ 0.02cm/s
+        # v2 = 0.024  # ~ 0.04cm/s
+        # v3 = 0.04  # ~ 0.05cm/s
+        # # 0.0358 ~ 0.07cm/s
+        # self.delay_1b = 0.0
+        # if velocity <= v1:
+        #     self.delay_1b = 0.27
+        # elif v1 < velocity <= v2:
+        #     self.delay_1b = 0.27 + ((0.27 - 0.2) / (v1 - v2)) * (velocity - v1)
+        # elif v2 < velocity <= v3:
+        #     self.delay_1b = 0.2 + (0.2 / (v2 - v3) * (velocity - v2))
 
         #if self.delay_1b < 0.2:
         #    self.delay_1b = 0.2
 
-        # self.delay_1b = 0.2
+        self.delay_1b = 0.2
         # elif delay < 0.0:
         #     self.delay_1b = 0
         # else:
@@ -201,7 +203,7 @@ class SingleLegController:
         # self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
         # (0.08/(1.0+exp(200*(x-0.018))))
         self.threshold_rule3_ipsilateral = fabs(self.default_step_length) / \
-                                           (1.0 + exp(100 * (velocity - 0.03)))
+                                           (1.0 + exp(50 * (velocity - 0.037)))
         self.threshold_rule3_contralateral = fabs(self.default_step_length) * (0.5 + 5 * velocity)
         rospy.logerr(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral) +
                 "; threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
@@ -327,7 +329,7 @@ class SingleLegController:
         rules_msg = rules(0.0, 0.0, 0.0, 0.0, 0.0)
         if stance_duration and rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
             rules_msg.rule1 = -0.027
-        if stance_duration and rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.4):
+        if stance_duration and rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.32):
             # rules_msg.rule2_ipsilateral = 0.043
             rules_msg.rule2_ipsilateral = self.displ_leg_ipsilateral_rule2  # 0.5375  # ~54 percent of step length for straight walking
             # rules_msg.rule2_contralateral = 0.011
