@@ -43,6 +43,7 @@ class SingleLegController:
                 self.aep_y_shift_value, self.shift_aep_x, self.aep_x_shift_value))
         self.stance_length_sum = []
         self.stance_count = 0
+        self.current_stance_delayed = False
         self.current_stance_start = None
         self.current_stance_start_time = None
         self.current_swing_start_time = None
@@ -64,32 +65,31 @@ class SingleLegController:
         self.threshold_rule3_ipsilateral = None
         self.threshold_rule3_contralateral = None
 
-        self.displ_leg_ipsilateral_rule3_default = 0.5125 # 0.83 # 0.5125
-        self.displ_leg_ipsilateral_rule2_default = 0.5375 # 0.21 # 0.5375
+        self.displ_leg_ipsilateral_rule3_default = 0.5125  # 0.4 # 0.83 # 0.5125
+        self.displ_leg_ipsilateral_rule2_default = 0.5375  # 0.4 # 0.21 # 0.5375
         # self.displ_leg_ipsilateral = 0.041
         self.displ_leg_ipsilateral_rule3 = self.displ_leg_ipsilateral_rule3_default  # 0.45 # 51.25 percent of step length
         self.displ_leg_ipsilateral_rule2 = self.displ_leg_ipsilateral_rule2_default  # 0.0
 
         self.change_rules_with_angle = False
         self.shift_aep_initially = False
-        self.displ_leg_rule1 = 0.417 # 0.95
+        self.displ_leg_rule1 = 0.5 # 0.417 # 0.95
         self.displ_leg_rule1b = self.displ_leg_rule1/4  # 0.1042
-        self.displ_leg_rule2 = self.displ_leg_ipsilateral_rule2_default/4  # 0.0525
+        self.displ_leg_rule2 = self.displ_leg_ipsilateral_rule2_default/3  # 0.0525
         #if self.name == "lf" or self.name == "rf":
         #    # self.displ_leg = 0.025
-        self.displ_leg_rule3 = 0.623 #0.3125 # 0.623  # 0.3125  # 0.20 # 31.25 percent of step length
+        self.displ_leg_rule3 = 0.45 #0.3125 # 0.623  # 0.3125  # 0.20 # 31.25 percent of step length
         #    # self.displ_leg_rule2 = 0.1375  # 0.195
         if self.name == "lm" or self.name == "rm":
             self.displ_leg_rule3 = 0.0
             # self.displ_leg_rule2 = 0.1375  # 0.13
         elif self.name == "lr" or self.name == "rr":
             # self.displ_leg = 0.03
-            self.displ_leg_rule3 = 0.375  # self.displ_leg_rule3/3  # 0.21  # 0.375  # 0.19 # 37.5 percent of step length
+            self.displ_leg_rule3 = 0.35 # 0.375  # self.displ_leg_rule3/3  # 0.21  # 0.375  # 0.19 # 37.5 percent of step length
             # self.displ_leg_rule2 = 0.1375  # 0.20
 
         self.target_pos = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.target_pos[1] = self.target_pos[1] * self.movement_dir
-        self.aep_x = self.target_pos[0]
 
         if self.robot is None:
             self.stance_net = None
@@ -127,7 +127,6 @@ class SingleLegController:
         self.rule3_contra = True
         self.rule3_ipsi = True
 
-        self.aep = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
         self.default_step_length = RSTATIC.default_stance_distance
 
     def set_init_pos(self, p):
@@ -164,7 +163,7 @@ class SingleLegController:
         # self.stance_diff = -pow(0.142 * (angle - 1.0), 2) + 0.02
         # self.stance_diff = -pow(0.1225 * (angle - 1.0), 2) + 0.015
         # self.stance_diff = -pow(0.3 * (angle - 1.1), 2) + 0.02
-        # self.stance_diff = -pow(0.26 * (angle - 1.1), 2) + 0.02
+        self.stance_diff = -pow(0.26 * (angle - 1.1), 2) + 0.02
 
         if self.stance_diff < 0:
             self.stance_diff = 0
@@ -181,29 +180,29 @@ class SingleLegController:
                 RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] += self.stance_diff
                 rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
                         RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
-        # elif self.decrease_inner_stance and (
-        #         angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
-        #         angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr")):
-        #     rospy.loginfo(self.name + ": STANCE DIFF = +" + str(self.stance_diff))
-        #     self.default_step_length += self.stance_diff
-        #     rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
-        #     if self.step_length:
-        #         self.leg.set_default_step_length(self.default_step_length)
-        #     else:
-        #         RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] -= self.stance_diff
-        #         rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
-        #                 RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
+        elif self.decrease_inner_stance and (
+                angle > 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
+                angle < 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr")):
+            rospy.loginfo(self.name + ": STANCE DIFF = +" + str(self.stance_diff))
+            self.default_step_length += self.stance_diff
+            rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
+            if self.step_length:
+                self.leg.set_default_step_length(self.default_step_length)
+            else:
+                RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0] -= self.stance_diff
+                rospy.loginfo(self.name + ": update RobotSettings new initial pep = " + str(
+                        RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0]))
         else:
             rospy.loginfo(self.name + ": maintain original default_step_length = " + str(self.default_step_length))
 
         # RULE 3
         pep_x = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2][0].copy()
-        # self.threshold_rule3_ipsilateral = fabs(self.aep_x - pep_x) / \
-        #                                    (1.0 + exp(-(fabs(self.aep_x - pep_x)) * (velocity - 0.37)))
-        # self.threshold_rule3_contralateral = fabs(self.aep_x - pep_x) * (0.5 + 0.5 * velocity)
+        # self.threshold_rule3_ipsilateral = fabs(self.target_pos[0] - pep_x) / \
+        #                                    (1.0 + exp(-(fabs(self.target_pos[0] - pep_x)) * (velocity - 0.37)))
+        # self.threshold_rule3_contralateral = fabs(self.target_pos[0] - pep_x) * (0.5 + 0.5 * velocity)
         # (0.08/(1.0+exp(200*(x-0.018))))
         self.threshold_rule3_ipsilateral = fabs(self.default_step_length) / \
-                                           (1.0 + exp(50 * (velocity - 0.037)))
+                                           (1.0 + exp(75 * (velocity - 0.037)))
         self.threshold_rule3_contralateral = fabs(self.default_step_length) * (0.5 + 5 * velocity)
         rospy.logerr(self.name + ": threshold_rule3_ipsilateral = " + str(self.threshold_rule3_ipsilateral) +
                 "; threshold_rule3_contralateral = " + str(self.threshold_rule3_contralateral))
@@ -329,15 +328,15 @@ class SingleLegController:
         rules_msg = rules(0.0, 0.0, 0.0, 0.0, 0.0)
         if stance_duration and rospy.Duration.from_sec(0) <= stance_duration <= rospy.Duration.from_sec(self.delay_1b):
             rules_msg.rule1 = -0.027
-        if stance_duration and rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.32):
+        if stance_duration and rospy.Duration.from_sec(0.27) <= stance_duration <= rospy.Duration.from_sec(0.50): # rospy.Duration.from_sec(0.32):
             # rules_msg.rule2_ipsilateral = 0.043
             rules_msg.rule2_ipsilateral = self.displ_leg_ipsilateral_rule2  # 0.5375  # ~54 percent of step length for straight walking
             # rules_msg.rule2_contralateral = 0.011
             rules_msg.rule2_contralateral = self.displ_leg_rule2  # 0.1375  # ~14 percent of step length
-        if self.step_length:
-            stance_progress = numpy.linalg.norm(self.aep - self.leg.ee_position())
+        if self.step_length and self.current_stance_start is not None:
+            stance_progress = numpy.linalg.norm(self.current_stance_start - self.leg.ee_position())
         else:
-            stance_progress = self.aep_x - self.leg.ee_position()[0]
+            stance_progress = self.target_pos[0] - self.leg.ee_position()[0]
         if self.threshold_rule3_ipsilateral < stance_progress < self.threshold_rule3_ipsilateral + 0.016:
             rules_msg.rule3_ipsilateral = self.displ_leg_ipsilateral_rule3
         if self.threshold_rule3_contralateral < stance_progress < self.threshold_rule3_contralateral + 0.016:
@@ -360,20 +359,22 @@ class SingleLegController:
                 self.current_stance_start_time = None
             # if self.first_stance:
             #     self.first_stance = False
-            if self.current_stance_start is not None:
+            if not self.current_stance_delayed:
                 self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
                 self.stance_count += 1
                 self.current_stance_start = None
+            self.current_stance_delayed = False
             legs_in_swing = legs_in_swing + 1
         # elif self.leg.reached_pep() and legs_in_swing >= 3:
         elif (self.step_length and self.leg.reached_step_length() and legs_in_swing >= 3) or (
                 not self.step_length and self.leg.reached_pep() and legs_in_swing >= 3):
             rospy.logwarn(self.name + ": delayed swing start.")
             self.swing_delays += 1
-            if self.current_stance_start is not None:
+            if not self.current_stance_delayed:
                 self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
                 self.stance_count += 1
-                self.current_stance_start = None
+                # self.current_stance_start = None
+                self.current_stance_delayed = True
         return legs_in_swing
 
     def move_aep(self):
