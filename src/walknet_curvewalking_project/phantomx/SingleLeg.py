@@ -139,7 +139,7 @@ class SingleLeg:
 
     def pub_pep_threshold(self):
         if self.use_step_length:
-            self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = self.step_length
+            self.pep_thresh_line.scale.x = self.pep_thresh_line.scale.y = 2 * self.step_length
             self.pep_thresh_line.pose.position.x = self.default_aep[0]
             self.pep_thresh_line.pose.position.y = self.default_aep[1]
             self.pep_thresh_line.pose.position.z = self.default_aep[2]
