@@ -174,6 +174,33 @@ class Robot:
             self.write_stability_data_to_file(''.join(str_list))
         return True
 
+    def check_stability_if_leg_lifted(self, gc, leg_name):
+        com = self._get_center_of_mass()
+        # rospy.loginfo("Center of Mass = " + str(com))
+        temp_foot_positions = []
+        leg_list = [RSTATIC.leg_names.index('lf'), RSTATIC.leg_names.index('lm'), RSTATIC.leg_names.index('lr'),
+                    RSTATIC.leg_names.index('rr'), RSTATIC.leg_names.index('rm'), RSTATIC.leg_names.index('rf')]
+        for i in leg_list:
+            if gc[i]:
+                if i != RSTATIC.leg_names.index(leg_name):
+                    temp_foot_position = self.legs[i].leg.ee_position()
+                    temp_foot_positions.append(temp_foot_position)
+        if len(temp_foot_positions) > 0:
+            convex_hull_points = stability.convex_hull(list(temp_foot_positions))
+
+            # removed com projection, pcom usually less than 0.004meters = 4mm away from com and
+            # can be calculated afterwards from com and ee data ⇒ remove pcom computation and logging from walknet
+            projected_com = stability.project_com_onto_ground_plane(temp_foot_positions, com)
+            if projected_com is None:
+                rospy.logwarn(leg_name + " Lift would cause instability! Not enough legs on ground temp_foot_positions = " + str(temp_foot_positions))
+                return False
+
+            if not stability.is_point_inside_convex_hull(convex_hull_points, projected_com):
+                rospy.logwarn(leg_name + " Lift would cause instability!")
+                return False
+        # rospy.logwarn(leg_name + " Lift stable")
+        return True
+
     def write_stability_data_to_file(self, data):
         # rospy.loginfo("write to file: " + data)
         if self.log_data:

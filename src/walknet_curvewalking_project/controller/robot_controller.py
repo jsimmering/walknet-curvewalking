@@ -175,6 +175,7 @@ class RobotController:
                 # self.robot.write_all_stability_data_to_file()
             self.controller_steps += 1
             self.update_stance_body_model()
+            gc = self.robot.body_model.gc.copy()
             legs_in_swing = self.robot.body_model.gc.count(False)
             if self.stop and legs_in_swing == 0:
                 talker()
@@ -182,7 +183,7 @@ class RobotController:
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
                     break
-                legs_in_swing = leg.manage_walk(legs_in_swing, swing)
+                gc[self.robot.legs.index(leg)] = leg.manage_walk(gc, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             self.total_power_command += self.robot.get_current_power_command()
