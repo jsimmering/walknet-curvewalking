@@ -94,47 +94,50 @@ if len(sys.argv) >= 2:
         else:
             file_name = str(files[j])
         for line in open(file_name, 'r'):
-            if first_line:
-                first_line = False
-                pass
-            else:
-                if line_number % 1000 == 0:
-                    line = line.rstrip("\n")
+            if line_number % 1000 == 0:
+                line = line.rstrip("\n")
+                try:
                     values = [float(s) for s in line.split(";")]
-                    # print("time = " + str(values[0]))
-                    # if start_x is None:
-                    if not start_x[j]:
-                        start_x[j].append(values[1])
-                        # print("startx = " + str(start_x) + " j = " + str(j))
-                        start_y[j].append(values[2])
-                        start_z[j].append(values[3])
+                except ValueError as err:
+                    if first_line:
+                        first_line = False
+                        continue
+                    else:
+                        raise ValueError('First Line already found') from err
+                # print("time = " + str(values[0]))
+                # if start_x is None:
+                if not start_x[j]:
+                    start_x[j].append(values[1])
+                    # print("startx = " + str(start_x) + " j = " + str(j))
+                    start_y[j].append(values[2])
+                    start_z[j].append(values[3])
 
-                    if first_position is None:
-                        first_position = [values[1], values[2]]
+                if first_position is None:
+                    first_position = [values[1], values[2]]
 
-                    # print("x = " + str(round(values[1],4)) + "y = " + str(round(values[2],4)) + "z = " + str(round(values[3],4)))
-                    X[j].append(round(values[1] - start_x[j][0], 4))
-                    Y[j].append(round(values[2] - start_y[j][0], 4))
-                    Z[j].append(round(values[3], 4))
+                # print("x = " + str(round(values[1],4)) + "y = " + str(round(values[2],4)) + "z = " + str(round(values[3],4)))
+                X[j].append(round(values[1] - start_x[j][0], 4))
+                Y[j].append(round(values[2] - start_y[j][0], 4))
+                Z[j].append(round(values[3], 4))
 
-                    if values[1] > x_max:
-                        x_max = values[1]
-                    if values[1] < x_min:
-                        x_min = values[1]
-                    if values[2] > y_max:
-                        y_max = values[2]
-                    if values[2] < y_min:
-                        y_min = values[2]
+                if values[1] > x_max:
+                    x_max = values[1]
+                if values[1] < x_min:
+                    x_min = values[1]
+                if values[2] > y_max:
+                    y_max = values[2]
+                if values[2] < y_min:
+                    y_min = values[2]
 
-                    # print("gazebo velocity = " + str(gazebo_vel))
-                    if last_position is not None:
-                        dis = np.linalg.norm(np.array([values[1], values[2]]) - np.array(last_position))
-                        distance[j] += dis
-                        vel = dis / (values[0] - last_time)
-                        velocity[j].append(vel)
-                    last_position = [values[1], values[2]]
-                    last_time = values[0]
-                line_number += 1
+                # print("gazebo velocity = " + str(gazebo_vel))
+                if last_position is not None:
+                    dis = np.linalg.norm(np.array([values[1], values[2]]) - np.array(last_position))
+                    distance[j] += dis
+                    vel = dis / (values[0] - last_time)
+                    velocity[j].append(vel)
+                last_position = [values[1], values[2]]
+                last_time = values[0]
+            line_number += 1
 
         x_dim[j].append(x_max - x_min)
         y_dim[j].append(y_max - y_min)
@@ -222,7 +225,8 @@ if len(sys.argv) >= 2:
             for l in range(0, len(controller_steps)):
                 com_vel = distance[l] / controller_steps[l]
                 cot_values_command.append((total_power_command[l] / controller_steps[l]) / (mass * g * com_vel))
-                cot_values_joint_torque.append((total_power_joint_torque[l] / controller_steps[l]) / (mass * g * com_vel))
+                cot_values_joint_torque.append(
+                        (total_power_joint_torque[l] / controller_steps[l]) / (mass * g * com_vel))
             print("**cost of transport (joint torque)** = " + str([round(i, 3) for i in cot_values_joint_torque]))
             print("")
 

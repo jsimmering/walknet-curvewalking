@@ -59,130 +59,135 @@ def plot_stability_data():
     plt.xlim(-0.3, 0.3)
     plt.ylim(-0.4, 0.4)
     for line in open(str(sys.argv[1]), 'r'):
-        if first_line:
-            first_line = False
-            pass
-        else:
-            # Clear old plot
-            plt.clf()
+        # Clear old plot
+        plt.clf()
 
-            line = line.rstrip("\n")
-            try:
-                values = [float(s) for s in line.split(";")]
-            except ValueError:
-                tmp = line.split(";")
-                # print("time = " + str(tmp[0]))
-                tmp_time = tmp[0].split(".")
-                tmp[0] = tmp_time[0] + '.' + tmp_time[2]
-                # print("time = " + str(tmp[0]))
-                values = [float(s) for s in tmp]
-            if start_time is None:
-                start_time = values[0]
-            foot_polygon = []
-            first_leg = -1
-            column_idx = 1
-            legs_with_gc_count = 0
-            while column_idx < 19:
-                # print("column_idx = {}, len(values) = {}".format(column_idx, len(values)))
-                if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
-                    legs_with_gc_count += 1
-                    if first_leg == -1:
-                        first_leg = column_idx
-                    # append_value_to_plot_polygons(values[column_idx], values[column_idx + 1], X, Y, A, B, C, D, E, F, G, H)
-                    foot_polygon.append([values[column_idx], values[column_idx + 1]])
-                    # append_foot_position_to_polygons(values[column_idx], values[column_idx + 1], foot_positions_poly1,
-                    #        foot_positions_poly2, foot_positions_poly3, foot_positions_poly4, foot_positions_poly5)
-                column_idx += 3
-            # append_value_to_plot_polygons(values[first_leg], values[first_leg + 1], X, Y, A, B, C, D, E, F, G, H)
-            legs_with_gc[legs_with_gc_count - 3] += 1
+        line = line.rstrip("\n")
+        # try:
+        #     values = [float(s) for s in line.split(";")]
+        # except ValueError:
+        #     tmp = line.split(";")
+        #     # print("time = " + str(tmp[0]))
+        #     tmp_time = tmp[0].split(".")
+        #     tmp[0] = tmp_time[0] + '.' + tmp_time[2]
+        #     # print("time = " + str(tmp[0]))
+        #     values = [float(s) for s in tmp]
+        try:
+            values = [float(s) for s in line.split(";")]
+        except ValueError as err:
+            if first_line:
+                first_line = False
+                continue
+            else:
+                raise ValueError('First Line already found') from err
+        if start_time is None:
+            start_time = values[0]
+        foot_polygon = []
+        first_leg = -1
+        column_idx = 1
+        legs_with_gc_count = 0
+        while column_idx < 19:
+            # print("column_idx = {}, len(values) = {}".format(column_idx, len(values)))
+            if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
+                legs_with_gc_count += 1
+                if first_leg == -1:
+                    first_leg = column_idx
+                # append_value_to_plot_polygons(values[column_idx], values[column_idx + 1], X, Y, A, B, C, D, E, F, G, H)
+                foot_polygon.append([values[column_idx], values[column_idx + 1]])
+                # append_foot_position_to_polygons(values[column_idx], values[column_idx + 1], foot_positions_poly1,
+                #        foot_positions_poly2, foot_positions_poly3, foot_positions_poly4, foot_positions_poly5)
+            column_idx += 3
+        # append_value_to_plot_polygons(values[first_leg], values[first_leg + 1], X, Y, A, B, C, D, E, F, G, H)
+        legs_with_gc[legs_with_gc_count - 3] += 1
 
-            centroid_pt = centroid(foot_polygon)
+        centroid_pt = centroid(foot_polygon)
 
-            if plot:
-                marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
-                plt.plot(marker.T[:, 0], marker.T[:, 1], 'xb')
-                marker = np.matrix(centroid_pt).T
-                plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
+        if plot:
+            marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
+            plt.plot(marker.T[:, 0], marker.T[:, 1], 'xb')
+            marker = np.matrix(centroid_pt).T
+            plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
 
-            polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
-            # if len(values) >= 24:
-            # print("values = " + str(values))
-            p_com_x, p_com_y = calculate_projected_com(values[1:19], [values[19], values[20], values[21]])
-            stable = False
-            if plot:
-                # marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
-                # marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
-                marker = np.matrix([round(p_com_x, 4), round(p_com_y, 4)]).T
-                plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
-            for i in range(0, len(polygon_list)):  # polygon in polygon_list:
-                # print("check bin " + str(polygon_list.index(polygon)))
-                # if check_stability([values[22], values[23]], polygon_list[i]):
-                # if check_stability([values[19], values[20]], polygon_list[i]):
-                if check_stability([p_com_x, p_com_y], polygon_list[i]):
-                    bins[i] += 1
-                    stable = True
-                    # print("increase bin " + str(polygon_list.index(polygon)))
-                    break
-            if not stable:
-                bins[5] += 1
-                last_unstable = step_count
-                if values[0] - start_time > 5:
-                    unstable_after_5sec += 1
-                elif values[0] - start_time <= 5:
-                    unstable_before_5sec += 1
+        polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
+        # if len(values) >= 24:
+        # print("values = " + str(values))
+        p_com_x, p_com_y = calculate_projected_com(values[1:19], [values[19], values[20], values[21]])
+        stable = False
+        if plot:
+            # marker = np.matrix([round(values[22], 4), round(values[23], 4)]).T
+            # marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
+            marker = np.matrix([round(p_com_x, 4), round(p_com_y, 4)]).T
+            plt.plot(marker.T[:, 0], marker.T[:, 1], 'xr')
+        for i in range(0, len(polygon_list)):  # polygon in polygon_list:
+            # print("check bin " + str(polygon_list.index(polygon)))
+            # if check_stability([values[22], values[23]], polygon_list[i]):
+            # if check_stability([values[19], values[20]], polygon_list[i]):
+            if check_stability([p_com_x, p_com_y], polygon_list[i]):
+                bins[i] += 1
+                stable = True
+                # print("increase bin " + str(polygon_list.index(polygon)))
+                break
+        if not stable:
+            bins[5] += 1
+            # TODO count steps before and after 5 sec. for percentages
+            last_unstable = step_count
+            if values[0] - start_time > 10:
+                unstable_after_5sec += 1
+            elif values[0] - start_time <= 10:
+                unstable_before_5sec += 1
 
-            # pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
-            # if pcom_err > max_pcom_err:
-            #     max_pcom_err = pcom_err
-            # if pcom_err < min_pcom_err:
-            #     min_pcom_err = pcom_err
-            # average_pcom_err += pcom_err
-            step_count += 1
-            # print("step_count = " + str(step_count))
-            # else:
-            #     print("unstable len(values) " + str(len(values)) + " >= 24")
-            #     bins[5] += 1
-            #     last_unstable = step_count
-            #     # print("unstable")
+        # pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
+        # if pcom_err > max_pcom_err:
+        #     max_pcom_err = pcom_err
+        # if pcom_err < min_pcom_err:
+        #     min_pcom_err = pcom_err
+        # average_pcom_err += pcom_err
+        step_count += 1
+        # print("step_count = " + str(step_count))
+        # else:
+        #     print("unstable len(values) " + str(len(values)) + " >= 24")
+        #     bins[5] += 1
+        #     last_unstable = step_count
+        #     # print("unstable")
 
-            if plot:
-                A = [point[0] for point in polygon_list[4]]
-                A.append(polygon_list[4][0][0])
-                A2 = [point[1] for point in polygon_list[4]]
-                A2.append(polygon_list[4][0][1])
-                B = [point[0] for point in polygon_list[3]]
-                B.append(polygon_list[3][0][0])
-                B2 = [point[1] for point in polygon_list[3]]
-                B2.append(polygon_list[3][0][1])
-                C = [point[0] for point in polygon_list[2]]
-                C.append(polygon_list[2][0][0])
-                C2 = [point[1] for point in polygon_list[2]]
-                C2.append(polygon_list[2][0][1])
-                D = [point[0] for point in polygon_list[1]]
-                D.append(polygon_list[1][0][0])
-                D2 = [point[1] for point in polygon_list[1]]
-                D2.append(polygon_list[1][0][1])
-                E = [point[0] for point in polygon_list[0]]
-                E.append(polygon_list[0][0][0])
-                E2 = [point[1] for point in polygon_list[0]]
-                E2.append(polygon_list[0][0][1])
-                plt.plot(A, A2)
-                plt.plot(B, B2)
-                plt.plot(C, C2)
-                plt.plot(D, D2)
-                plt.plot(E, E2)
+        if plot:
+            A = [point[0] for point in polygon_list[4]]
+            A.append(polygon_list[4][0][0])
+            A2 = [point[1] for point in polygon_list[4]]
+            A2.append(polygon_list[4][0][1])
+            B = [point[0] for point in polygon_list[3]]
+            B.append(polygon_list[3][0][0])
+            B2 = [point[1] for point in polygon_list[3]]
+            B2.append(polygon_list[3][0][1])
+            C = [point[0] for point in polygon_list[2]]
+            C.append(polygon_list[2][0][0])
+            C2 = [point[1] for point in polygon_list[2]]
+            C2.append(polygon_list[2][0][1])
+            D = [point[0] for point in polygon_list[1]]
+            D.append(polygon_list[1][0][0])
+            D2 = [point[1] for point in polygon_list[1]]
+            D2.append(polygon_list[1][0][1])
+            E = [point[0] for point in polygon_list[0]]
+            E.append(polygon_list[0][0][0])
+            E2 = [point[1] for point in polygon_list[0]]
+            E2.append(polygon_list[0][0][1])
+            plt.plot(A, A2)
+            plt.plot(B, B2)
+            plt.plot(C, C2)
+            plt.plot(D, D2)
+            plt.plot(E, E2)
 
-                # for i in range(25, len(values), 3):
-                #    plt.plot([round(values[22], 4), round(values[i], 4)], [round(values[23], 4), round(values[i + 1], 4)])
+            # for i in range(25, len(values), 3):
+            #    plt.plot([round(values[22], 4), round(values[i], 4)], [round(values[23], 4), round(values[i + 1], 4)])
 
-                plt.xlim(-0.3, 0.3)
-                plt.ylim(-0.4, 0.4)
+            plt.xlim(-0.3, 0.3)
+            plt.ylim(-0.4, 0.4)
 
-                # plt.grid()
-                plt.draw()
-                plt.pause(0.0001)
+            # plt.grid()
+            plt.draw()
+            plt.pause(0.0001)
 
-                # input('Press ENTER to continue...')
+            # input('Press ENTER to continue...')
 
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))
@@ -196,9 +201,12 @@ def plot_stability_data():
     print("step_count = " + str(step_count))
     print("")
     print("**last unstable controller step:** " + str(last_unstable) + " / " + str(step_count))
-    print("**unstable total:** " + str(bins[5]) + " / " + str(step_count))
-    print("**unstable after 5sec:** " + str(unstable_after_5sec) + " / " + str(step_count))
-    print("**unstable before 5sec:** " + str(unstable_before_5sec) + " / " + str(step_count))
+    print("**unstable total:** " + str(bins[5]) + " / " + str(step_count) + " = " + str(
+            round((bins[5] * 100) / step_count, 2)) + "%")
+    print("**unstable after 10sec:** " + str(unstable_after_5sec) + " / " + str(step_count) + " = " + str(round(
+            (unstable_after_5sec * 100) / step_count, 2)) + "%")
+    print("**unstable before 10sec:** " + str(unstable_before_5sec) + " / " + str(step_count) + " = " + str(round(
+            (unstable_before_5sec * 100) / step_count, 2)) + "%")
 
 
 # https://progr.interplanety.org/en/python-how-to-find-the-polygon-center-coordinates/
