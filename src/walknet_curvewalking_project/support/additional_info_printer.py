@@ -77,10 +77,16 @@ if len(sys.argv) >= 2:
                         delays_dict[split[0]] = delay
                 elif is_swing_duration_line:
                     split[len(split) - 1] = split[len(split) - 1][0:-1]
-                    swing_duration_dict[split[0]] = float(split[len(split) - 1])
+                    try:
+                        swing_duration_dict[split[0]] = float(split[len(split) - 1])
+                    except ValueError:
+                        swing_duration_dict[split[0]] = float('nan')
                 elif is_stance_duration_line:
                     split[len(split) - 1] = split[len(split) - 1][0:-1]
-                    stance_duration_dict[split[0]] = float(split[len(split) - 1])
+                    try:
+                        stance_duration_dict[split[0]] = float(split[len(split) - 1])
+                    except ValueError:
+                        stance_duration_dict[split[0]] = float('nan')
                 line_number += 1
 
             # if line_number == 23:
