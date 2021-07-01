@@ -92,9 +92,8 @@ class TrajectoryGenerator:
                 # delta_distance needs to be smaller than desired distance otherwise swing movement gets stuck sometimes.
                 # if the current_position is more than desired_distance away from the last_target_position,
                 # a velocity vector will be returned that points to the last target (its norm is the desired_distance).
-                if abs(delta_distance - desired_distance) > 2 * desired_distance:
-                    rospy.logerr(
-                            self.name + " current distance is more than 2x desired distance away from last target. This should not happen!")
+                if abs(delta_distance - desired_distance) > desired_distance:
+                    rospy.logerr(self.name + " current distance is more than desired distance away from last target.")
                 if RSTATIC.DEBUG:
                     rospy.loginfo("+++RETURN velocity vector pointing to the last_target_position vec = " +
                                   str(current_position + delta_position /
