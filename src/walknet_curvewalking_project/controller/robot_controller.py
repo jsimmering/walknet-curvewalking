@@ -31,7 +31,8 @@ class RobotController:
         self.stop = False
         self.walk_duration = walk_duration
 
-        self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback)
+        self.control_robot_sub = rospy.Subscriber('/control_robot', robot_control, self.control_robot_callback,
+                queue_size=5)
 
         # variables saving additional information
         self.stance_speed = 0
@@ -56,9 +57,9 @@ class RobotController:
             if not self.walk:
                 init_pos[0] += (RSTATIC.default_stance_distance * 1)
             elif leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
-                init_pos[0] += (RSTATIC.default_stance_distance * (4.0 / 5.0))
+                init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
             elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
-                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 5.0))
+                init_pos[0] += (RSTATIC.default_stance_distance * (1.0 / 4.0))
             init_pos[1] = init_pos[1] * leg.movement_dir
             leg.set_init_pos(init_pos)
 
@@ -80,6 +81,11 @@ class RobotController:
                     finished = False
                     leg.move_leg_to()
                     self.rate.sleep()
+            for leg in self.robot.legs:
+                rospy.logwarn(
+                        leg.name + ": reached init positions! set targets: a={} b={} c={}; real targets: {}".format(
+                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point,
+                                leg.leg.get_current_targets()))
         rospy.loginfo("reached init positions")
 
     def initialize_body_model(self):
@@ -120,7 +126,7 @@ class RobotController:
                 self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
                 self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             for leg in self.robot.legs:
-                leg.set_pull_dependent_parameter(self.stance_speed, self.pull_angle)
+                leg.set_pull_dependent_parameter(self.velocity, self.pull_angle)
             self.robot.stance_speed = self.velocity
             self.robot.direction = self.pull_angle
             self.robot.initialize_stability_data_file()
@@ -186,8 +192,8 @@ class RobotController:
                 gc[self.robot.legs.index(leg)] = leg.manage_walk(gc, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            self.total_power_command += self.robot.get_current_power_command()
-            self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
+            #self.total_power_command += self.robot.get_current_power_command()
+            #self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
             # rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
             #        self.total_power_command, self.total_power_joint_torque))
             if not self.stop:
@@ -285,11 +291,17 @@ class RobotController:
             swing_delay_count += leg.name + " " + str(leg.swing_delays) + " = " + str(
                     (leg.swing_delays * 100) / self.controller_steps) + "%\n"
             swing_count += leg.name + " " + str(len(leg.swing_durations)) + "\n"
-            average_swing = sum(leg.swing_durations) / len(leg.swing_durations)
-            average_swing_duration += leg.name + " " + str(average_swing) + "\n"
+            if len(leg.stance_durations) != 0:
+                average_swing = sum(leg.swing_durations) / len(leg.swing_durations)
+                average_swing_duration += leg.name + " " + str(average_swing) + "\n"
+            else:
+                average_swing_duration += leg.name + " " + str(float('nan')) + "\n"
             stance_count += leg.name + " " + str(len(leg.stance_durations)) + "\n"
-            average_stance = sum(leg.stance_durations) / len(leg.stance_durations)
-            average_stance_duration += leg.name + " " + str(average_stance) + "\n"
+            if len(leg.stance_durations) != 0:
+                average_stance = sum(leg.stance_durations) / len(leg.stance_durations)
+                average_stance_duration += leg.name + " " + str(average_stance) + "\n"
+            else:
+                average_stance_duration += leg.name + " " + str(float('nan')) + "\n"
         with open(file_name + file_suffix, "a") as f_handle:
             # leg_list = 'lf', 'lm', 'lr', 'rr', 'rm', 'rf'
             f_handle.write(
@@ -362,8 +374,8 @@ if __name__ == '__main__':
         robot_controller.move_legs_into_init_pos()
         ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
-        while not rospy.is_shutdown() and not robot_controller.robot.got_joint_data:
-            robot_controller.rate.sleep()
+        # while not rospy.is_shutdown() and not robot_controller.robot.got_joint_data:
+        #     robot_controller.rate.sleep()
         while not rospy.is_shutdown() and ready_status.__contains__(False):
             robot_controller.rate.sleep()
             ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
