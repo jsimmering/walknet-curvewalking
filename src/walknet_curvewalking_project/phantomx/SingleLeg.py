@@ -491,6 +491,7 @@ class SingleLeg:
             raise ValueError(self.name + ': beta: The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' +
                              str(p[2]) + ') is not valid for the given geometry.')
 
+
         beta_angle = pi - (h1 + h2 + self.thigh_tibia_angle)
         if RSTATIC.joint_angle_limits[1][0] >= beta_angle:
             rospy.logerr(self.name + " beta limit = " + str(

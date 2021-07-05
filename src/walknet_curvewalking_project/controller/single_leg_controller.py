@@ -196,17 +196,20 @@ class SingleLegController:
     def manage_walk(self, gc, swing):
         if self.leg.viz:
             self.leg.pub_pep_threshold()
+        # if self.name == "lf" or self.name == "lm":
+        #     rospy.loginfo(self.name + ": gc = " + str(gc))
         if self.swing:
             if swing:
-                return self.execute_swing_step()
+                return self.execute_swing_step(), False
             else:
                 self.robot.running = False
-                return True
+                return True, False
         else:
             return self.execute_stance_step(gc)
 
     def execute_stance_step(self, gc):
         self_gc = True
+        delayed = False
         # rospy.loginfo(self.name + ": execute stance step.")
         if self.last_stance_activation:
             stance_duration = rospy.Time.now() - self.last_stance_activation
@@ -261,6 +264,7 @@ class SingleLegController:
             else:
                 rospy.logwarn(self.name + ": delayed swing start for instability prevention.")
                 self.swing_delays += 1
+                delayed = True
                 if not self.current_stance_delayed:
                     if self.current_stance_start is not None:
                         if len(self.stance_length_sum) > 10:
@@ -274,7 +278,7 @@ class SingleLegController:
                     #     str(self.stance_count))
                     self.current_stance_delayed = True
 
-        return self_gc
+        return self_gc, delayed
 
     def move_aep(self):
         shifted_y = False

@@ -45,6 +45,8 @@ class RobotController:
         self.total_power_command = 0
         self.total_power_joint_torque = 0
 
+        self.delayed_count = 0
+
     def move_legs_into_init_pos(self):
         for leg in self.robot.legs:
             while not leg.leg.is_ready() and not rospy.is_shutdown():
@@ -98,7 +100,7 @@ class RobotController:
         self.robot.body_model.updateLegStates()
 
     def control_robot_callback(self, data):
-        if data.speed_fact > 0:
+        if 0 < data.speed_fact <= 0.06 and abs(data.pull_angle) <= pi/2:
             self.velocity = data.speed_fact
             self.pull_angle = data.pull_angle
             # self.counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
@@ -155,12 +157,14 @@ class RobotController:
         #     rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
         #     rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
+            if data.speed_fact > 0.06 or abs(data.pull_angle) > pi / 2:
+                rospy.logerr("provided speed or direction outside of save operating range. Stop execution")
             # self.robot.stance_speed = 0.0
             # self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.stop = True
-            self.robot.running = False
+            # self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
 
     def update_stance_body_model(self):
@@ -177,7 +181,7 @@ class RobotController:
         while not rospy.is_shutdown() and self.walk_start_time and self.robot.running:
             if self.walk_duration is not None and rospy.Time.now() - self.walk_start_time > self.walk_duration:
                 talker()
-                self.robot.running = False
+                # self.robot.running = False
                 # self.robot.write_all_stability_data_to_file()
             self.controller_steps += 1
             self.update_stance_body_model()
@@ -186,28 +190,29 @@ class RobotController:
             if self.stop and legs_in_swing == 0:
                 talker()
                 self.robot.running = False
+            delayed = False
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
                     break
-                gc[self.robot.legs.index(leg)] = leg.manage_walk(gc, swing)
+                gc[self.robot.legs.index(leg)], single_delay = leg.manage_walk(gc, swing)
+                if delayed or single_delay:
+                    delayed = True
+                # if leg.name == "lf" or leg.name == "lm":
+                #     rospy.loginfo(leg.name + ": gc = " + str(gc))
+            if delayed:
+                self.delayed_count += 1
             if not self.robot.check_stability():
-                rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            #self.total_power_command += self.robot.get_current_power_command()
-            #self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
+                rospy.logerr("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
+            # self.total_power_command += self.robot.get_current_power_command()
+            # self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
             # rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
             #        self.total_power_command, self.total_power_joint_torque))
             if not self.stop:
                 if self.pull_at_back:
                     self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
                             self.stance_speed - self.back_pull_length_factor)
-                    # ((-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2)))
-                    # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
-                    # ((self.stance_speed / 2) * sin(self.pull_angle)))  # / 2)
                     self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(-self.pull_angle,
                             self.back_pull_length_factor)
-                    # (-pow(1 / 30, self.pull_angle) + 1) * (self.stance_speed / 2))
-                    # (((2 * self.pull_angle) / pi) * (self.stance_speed / 2)))
-                    # ((self.stance_speed / 2) * sin(self.pull_angle)))  # /2)
                 else:
                     self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle, self.stance_speed)
                     self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
@@ -313,7 +318,8 @@ class RobotController:
                      "{shift_aep_x}\ninner stance step decreased for curve by = {decrease_inner_stance}\nduration = " +
                      "{duration}\ncontroller steps = {cs}\ntotal power command = {power}\n" +
                      "total power joint torque = {joint_power}\nunstable_count = {unstable}" +
-                     "\nunstable_percent = {percent}\n"
+                     "\nunstable_percent [%] = {percent}\ncs with delay and enforced stability = {stability}\n" +
+                     "cs with delay and enforced stability [%] = {stability_per}\n"
                      ).format(
                             hz=RSTATIC.controller_frequency, step_length=RSTATIC.default_stance_distance,
                             height=RSTATIC.stance_height, width=RSTATIC.default_stance_width,
@@ -324,7 +330,9 @@ class RobotController:
                             shift_aep_x=self.shift_aep_x, decrease_inner_stance=self.decrease_inner_stance,
                             duration=actual_duration, cs=self.controller_steps, power=self.total_power_command,
                             joint_power=self.total_power_joint_torque, unstable=self.robot.unstable_count,
-                            percent=(self.robot.unstable_count * 100) / self.controller_steps) +
+                            percent=(self.robot.unstable_count * 100) / self.controller_steps,
+                            stability=self.delayed_count,
+                            stability_per=(self.delayed_count * 100) / self.controller_steps) +
                     value_error_count + swing_delay_count + swing_count + average_swing_duration + stance_count + average_stance_duration)
 
 
