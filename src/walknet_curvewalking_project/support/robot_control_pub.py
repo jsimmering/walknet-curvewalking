@@ -16,6 +16,7 @@ def talker(speed_fact, pull_angle):
 if __name__ == '__main__':
     pub = rospy.Publisher('/control_robot', robot_control, queue_size=5)
     rospy.init_node('talker', anonymous=True)
+    # rospy.Rate(1).sleep()
     speed = rospy.get_param('~speed', 0.075)
     direction = rospy.get_param('~direction', 0.0)
     try:

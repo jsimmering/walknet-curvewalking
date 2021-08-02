@@ -7,6 +7,8 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
+import svgutils.compose as sc
+from IPython.display import SVG
 
 
 def plot_workspace_data():
@@ -35,8 +37,8 @@ def plot_workspace_data():
             plt.xlim(-0.35, 0.3)
             plt.ylim(-0.4, 0.4)
 
-            img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
-            axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
+            #img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
+            #axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
         legs = [[[]], [[]], [[]], [[]], [[]], [[]]]
         steps = [0, 0, 0, 0, 0, 0]
@@ -166,10 +168,16 @@ def plot_workspace_data():
                 # print("split = " + str(split))
                 name = "_".join(split[(split.index("stability") + 4):])
                 # print("name = " + name)
-                print("single file: " + "/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".pdf")
-                plt.savefig("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".png",
-                        bbox_inches='tight',
-                        pad_inches=0)
+                print("single file: " + "/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg")
+                plt.savefig("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg",
+                        bbox_inches='tight', pad_inches=0, format='svg', transparent=True)
+
+                sc.Figure("13.9cm", "15.75cm",
+                        # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
+                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.03175).move(4.35, 5.1)),
+                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg").scale(0.022))
+                ).save("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
+                SVG("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
             else:
                 plt.show()
         print("")

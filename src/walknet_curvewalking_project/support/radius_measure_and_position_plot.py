@@ -325,17 +325,17 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
 
 def save_plot():
     if plot_position:
-        pos_plot_path = "/home/jsimmering/plots_masterthesis/path/" + name + ".png"
+        pos_plot_path = "/home/jsimmering/plots_masterthesis/path/" + name + ".svg"
         print("file path: " + pos_plot_path)
-        fig_pos.savefig(pos_plot_path, bbox_inches='tight', bbox_extra_artists=(pos_plot_legend,), pad_inches=0)
+        fig_pos.savefig(pos_plot_path, bbox_inches='tight', bbox_extra_artists=(pos_plot_legend,), pad_inches=0, format='svg')
     if plot_radius:
-        rad_plot_path = "/home/jsimmering/plots_masterthesis/radius/" + name + ".png"
+        rad_plot_path = "/home/jsimmering/plots_masterthesis/radius/" + name + ".svg"
         print("file path: " + rad_plot_path)
-        fig_rad.savefig(rad_plot_path, bbox_inches='tight', pad_inches=0)
+        fig_rad.savefig(rad_plot_path, bbox_inches='tight', pad_inches=0, format='svg')
     if plot_radius:
-        angle_plot_path = "/home/jsimmering/plots_masterthesis/angle/" + name + ".png"
+        angle_plot_path = "/home/jsimmering/plots_masterthesis/angle/" + name + ".svg"
         print("file path: " + angle_plot_path)
-        fig_angle.savefig(angle_plot_path, bbox_inches='tight', pad_inches=0)
+        fig_angle.savefig(angle_plot_path, bbox_inches='tight', pad_inches=0, format='svg')
 
 
 if __name__ == '__main__':

@@ -110,10 +110,10 @@ def plot_stability_data_to_footfall_pattern(start, end):
             print("split = " + str(split))
             name = "_".join(split[split.index("50hz") + 1:])
             print("name = " + name)
-            print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".pdf")
+            print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg")
 
-            plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".png", bbox_inches='tight',
-                   pad_inches=0)
+            plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg", bbox_inches='tight',
+                   pad_inches=0, format='svg')
         else:
             plt.show()
 

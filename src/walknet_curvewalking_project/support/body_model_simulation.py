@@ -316,7 +316,9 @@ class mmcBodyModelStance:
 
 def initialise_drawing_window(mmc):
     py.ion()
-    fig = plt.figure(figsize=(12, 6))
+    # fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure()
+    plt.axis('scaled')
     # py.rcParams['figure.figsize'] = 2, 2
     for i in range(0, 6):
         print("{}: mmc.get_leg_triangle({})[1] = {}".format(i, i, mmc.get_leg_triangle(i)[1]))
@@ -326,8 +328,8 @@ def initialise_drawing_window(mmc):
         py.plot(mmc.get_leg_triangle(i)[0], mmc.get_leg_triangle(i)[1], linewidth=1.0, color='gray', marker='o',
                 alpha=0.7, mfc='gray')[0] \
         for i in range(0, 6)]
-    py.xlim(-0.5, 1.5)
-    py.ylim(-0.5, 0.5)
+    py.xlim(-0.5, 0.25)
+    py.ylim(-0.3, 0.3)
     py.ioff()
     py.draw()
     return (leg_lines, 0, fig)

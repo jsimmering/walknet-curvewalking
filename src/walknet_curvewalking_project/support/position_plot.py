@@ -9,6 +9,9 @@ import numpy as np
 import argparse
 from scipy.constants import g
 
+import svgutils.compose as sc
+from IPython.display import SVG
+
 if len(sys.argv) >= 2:
 
     plot = True
@@ -71,8 +74,10 @@ if len(sys.argv) >= 2:
     if plot:
         fig, axs = plt.subplots()
         fig.tight_layout()
-        img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
-        axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
+
+        # img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
+        # img = mpimg.imread('/home/jsimmering/plots_masterthesis/body.svg')
+        # axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
     current_speed = None
     current_dir = None
@@ -170,9 +175,10 @@ if len(sys.argv) >= 2:
                 axs.plot(X[j], Y[j])
             split = [i.split("_") for i in files]
             # axs.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
-            axs.legend(
-                    [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
-                     range(0, len(split))], loc='lower right')
+            axs.legend([str(n+1) for n in range(0, len(files))],
+                    # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
+                    #  range(0, len(split))],
+                    loc='lower right')
 
     if calculate_cot:
         total_power_command = []
@@ -249,6 +255,19 @@ if len(sys.argv) >= 2:
         axs.set_xlim(-1.5, 2.5)
         axs.set_ylim(-0.5, 4.0)
 
+        # lf_shoulder = np.matrix([0.1248, 0.06164]).T
+        # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
+        # lm_shoulder = np.matrix([0, 0.1034]).T
+        # axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
+        # lr_shoulder = np.matrix([-0.1248, 0.06164]).T
+        # axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
+        # rf_shoulder = np.matrix([0.1248, -0.06164]).T
+        # axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
+        # rm_shoulder = np.matrix([0, -0.1034]).T
+        # axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
+        # rr_shoulder = np.matrix([-0.1248, -0.06164]).T
+        # axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+
         # axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
         # axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
 
@@ -262,9 +281,9 @@ if len(sys.argv) >= 2:
                 print("split = " + str(split))
                 name = "_".join(split[split.index("walknet"):])
                 print("name = " + name)
-                print("single file: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".pdf")
-                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
-                        pad_inches=0)
+                print("single file: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".svg")
+                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".svg", bbox_inches='tight',
+                        pad_inches=0, format='svg', transparent=True)
             else:
                 split = [i.split("_") for i in files]
                 speeds = [float(split[i][split[i].index("position") + 1][:-1]) for i in range(0, len(split))]
@@ -280,12 +299,20 @@ if len(sys.argv) >= 2:
                     name += str(max(directions)) + "dir"
                 name += "_"
                 name += "_".join(split[0][split[0].index("position") + 3:])
-                print("multiple files: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".png")
-                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".png", bbox_inches='tight',
-                        pad_inches=0)
+                print("multiple files: " + "/home/jsimmering/plots_masterthesis/path/" + name + ".svg")
+                plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".svg", bbox_inches='tight',
+                        pad_inches=0, format='svg', transparent=True)
+
+            sc.Figure("15.1cm", "15.95cm",
+                    # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
+                    sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.00475).move(5.815, 13.275)),
+                    sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/path/" + name + ".svg").scale(0.022))
+            ).save("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
+            SVG("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
+            # axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
         else:
-            # plt.show()
-            pass
+            plt.show()
+            # pass
 
         if plot_heigth:
             plt.figure()
@@ -300,9 +327,9 @@ if len(sys.argv) >= 2:
             print("**height criterion:** " + str([sum(i < 0.045 for i in files) for files in Z]))
             plt.axhline(y=0.045, color='r', linestyle='-')
             if safe_plot:
-                plt.savefig("/home/jsimmering/plots_masterthesis/height/" + name + ".png", bbox_inches='tight',
-                        pad_inches=0)
-                print("height file: " + "/home/jsimmering/plots_masterthesis/height/" + name + ".png")
+                plt.savefig("/home/jsimmering/plots_masterthesis/height/" + name + ".svg", bbox_inches='tight',
+                        pad_inches=0, format='svg')
+                print("height file: " + "/home/jsimmering/plots_masterthesis/height/" + name + ".svg")
 
         if not safe_plot:
             plt.show()

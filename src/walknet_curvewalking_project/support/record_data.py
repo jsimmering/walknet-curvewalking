@@ -5,6 +5,7 @@ import time
 import datetime
 import numpy
 from pathlib import Path
+from math import pi
 
 
 def run(args):
@@ -16,10 +17,11 @@ def run(args):
 def record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance):
     start_time = datetime.datetime.now()
 
-    for s in speed:
-        for j in range(0, len(trials)):
-            for d in direction:
-                for i in range(0, repetitions_per_speed):
+    for i in range(0, repetitions_per_speed):
+        for s in speed:
+            for j in range(0, len(trials)):
+                for d in direction:
+                    # for i in range(0, repetitions_per_speed):
                     # s = trials[j]["speed"]
                     # d = trials[j]["dir"]
                     trial_name = trials[j]["name"] + str(s) + "s/" + str(d) + "dir/"
@@ -388,33 +390,33 @@ def main_3():
     record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, False, circles, distance)
 
 
-def main():
-    repetitions_per_speed = 3
+def main_straight():
+    repetitions_per_speed = 6
     duration = 2  # 0.83
     circles = None
     distance = None
 
     pull_at_back = True
-    first_straight = True
+    first_straight = False
     if first_straight:
         duration += 0.5
     aep_param = 0.025  # float('nan')  # 0.025
     root_dir = "logs/check_rules/first_straight/"  # "logs/check_rules/fixed_rules/"
     trials = [
-        {"name": root_dir + "all_aep_xy_average_decre_func_FIXED_stanceDiff/", "length": True, "aep_y": aep_param,
-         "aep_x": aep_param,
+        {"name": root_dir + "straight_with_all_improvements/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
          "decrease": 0.01},
         # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
         #  "decrease": 0.0}
-        # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
+        {"name": root_dir + "straight_original/", "length": False, "aep_y": float('nan'),
+         "aep_x": float('nan'), "decrease": 0.0}
     ]
     # direction = [0.0, 0.4, 0.8, 1.2, 1.57]
-    direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    direction = [0.0]
     # direction = [1.0, 1.2, 1.4, 1.57]
     # direction.reverse()
     # direction = [0.4, 0.6, 0.8]
 
-    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
+    speed = [0.02, 0.03, 0.04, 0.05, 0.06]
     # speed = [0.06]
     # speed = [0.06]
     # speed.reverse()
@@ -428,7 +430,7 @@ def main():
 
     record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
 
-    repetitions_per_speed = 3
+    repetitions_per_speed = 6
     duration = 2  # 0.83
     circles = None
     distance = None
@@ -440,22 +442,180 @@ def main():
     aep_param = 0.025  # float('nan')  # 0.025
     root_dir = "logs/check_rules/first_straight/"  # "logs/check_rules/fixed_rules/"
     trials = [
-        {"name": root_dir + "all_aep_xy_average_decre_func_FIXED_stanceDiff_not_first_straight/", "length": True,
-         "aep_y": aep_param, "aep_x": aep_param, "decrease": 0.01},
+        # {"name": root_dir + "straight_without_all_improvements/", "length": True, "aep_y": aep_param,
+        #  "aep_x": aep_param, "decrease": 0.01},
+        # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+        #  "decrease": 0.0}
+        {"name": root_dir + "straight_original/", "length": False, "aep_y": float('nan'),
+         "aep_x": float('nan'), "decrease": 0.0}
+    ]
+    # direction = [0.0, 0.4, 0.8, 1.2, 1.57]
+    direction = [0.0]
+    # direction = [1.0, 1.2, 1.4, 1.57]
+    # direction.reverse()
+    # direction = [0.4, 0.6, 0.8]
+
+    speed = [0.01]
+    # speed = [0.06]
+    # speed = [0.06]
+    # speed.reverse()
+    for s in speed:
+        for trial in [dic["name"] for dic in trials]:
+            for d in direction:
+                Path(trial + str(s) + "s/" + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/durations").mkdir(parents=True, exist_ok=True)
+
+    record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
+
+
+def main_4():
+    repetitions_per_speed = 3
+    duration = 2  # 0.83
+    circles = None
+    distance = None
+
+    pull_at_back = True
+    first_straight = False
+    if first_straight:
+        duration += 0.5
+    aep_param = 0.025  # float('nan')  # 0.025
+    root_dir = "logs/test_enforce_stability/"  # "logs/check_rules/fixed_rules/"
+    trials = [
+        {"name": root_dir + "all_aep_xy_average_decre_func_FIXED_stanceDiff/", "length": True, "aep_y": aep_param,
+         "aep_x": aep_param,
+         "decrease": 0.01},
         # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
         #  "decrease": 0.0}
         # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
     ]
     # direction = [0.0, 0.4, 0.8, 1.2, 1.57]
-    direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.0, 1.2, 1.4, 1.57]
-    # direction.reverse()
-    # direction = [0.4, 0.6, 0.8]
+    direction = [0.0, 0.5, 1.0, 1.57]
+    direction.reverse()
 
-    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
-    # speed = [0.06]
-    # speed = [0.06]
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
+    speed = [0.06]
     # speed.reverse()
+    for s in speed:
+        for trial in [dic["name"] for dic in trials]:
+            for d in direction:
+                Path(trial + str(s) + "s/" + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
+                Path(trial + str(s) + "s/" + str(d) + "dir/durations").mkdir(parents=True, exist_ok=True)
+
+    record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
+
+
+def main():
+    # repetitions_per_speed = 3
+    # duration = 2  # 0.83
+    # circles = None
+    # distance = None
+    #
+    # pull_at_back = True
+    # first_straight = False
+    # if first_straight:
+    #     duration += 0.5
+    # aep_param = 0.025  # float('nan')  # 0.025
+    # root_dir = "logs/test_slow_aep_shift/"  # "logs/check_rules/fixed_rules/"
+    # trials = [
+    #     {"name": root_dir + "all_aep_xy_average_higher_decre_FIXED_stanceDiff_not_first_straight/", "length": True,
+    #      "aep_y": aep_param, "aep_x": aep_param, "decrease": 0.01},
+    #     # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+    #     #  "decrease": 0.0}
+    #     # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
+    # ]
+    # # direction = [0.0, 0.4, 0.8, 1.2, 1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # # direction = [1.0, 1.2, 1.4, 1.57]
+    # # direction = [0.0, 0.5, 1.0, 1.57]
+    # # direction.reverse()
+    #
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
+    # # speed = [0.06, 0.04, 0.02]
+    # # speed.reverse()
+    # for s in speed:
+    #     for trial in [dic["name"] for dic in trials]:
+    #         for d in direction:
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/durations").mkdir(parents=True, exist_ok=True)
+    #
+    # record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
+
+    # repetitions_per_speed = 3
+    # duration = 2  # 0.83
+    # circles = None
+    # distance = None
+    #
+    # pull_at_back = True
+    # first_straight = False
+    # if first_straight:
+    #     duration += 0.5
+    # aep_param = 0.025  # float('nan')  # 0.025
+    # root_dir = "logs/fixed_rule3/tuned_for_straight_walking/"  # "logs/check_rules/fixed_rules/"
+    # trials = [
+    #     {"name": root_dir + "all_aep_xy_average_no_decre/", "length": True,
+    #      "aep_y": aep_param, "aep_x": aep_param, "decrease": 0.0},
+    #     # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+    #     #  "decrease": 0.0}
+    #     # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
+    # ]
+    #
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, pi/2]
+    # # direction = [1.2, 1.4, pi / 2]
+    # # direction = [0.0]  # , 0.4, 0.8, 1.2, pi/2]
+    # # direction = [0.0, 0.5, 1.0, pi/2]
+    #
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07]
+    # # speed = [0.01]
+    # # speed = [0.04]
+    #
+    # for s in speed:
+    #     for trial in [dic["name"] for dic in trials]:
+    #         for d in direction:
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/position").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/stability").mkdir(parents=True, exist_ok=True)
+    #             Path(trial + str(s) + "s/" + str(d) + "dir/durations").mkdir(parents=True, exist_ok=True)
+    #
+    # record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
+
+    repetitions_per_speed = 1
+    duration = 2  # 0.83
+    circles = None
+    distance = None
+
+    pull_at_back = True
+    first_straight = False
+    if first_straight:
+        duration += 0.5
+    aep_param = 0.025  # float('nan')  # 0.025
+    root_dir = "logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
+    # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
+    trials = [
+        {"name": root_dir + "all_aep_xy_average_tuned_decre/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+         "decrease": 0.01},
+        # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
+        #  "decrease": 0.0}
+        # {"name": root_dir + "original/", "length": False, "aep_y": float('nan'), "aep_x": float('nan'), "decrease": 0.0}
+    ]
+
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [1.2, 1.4, pi / 2]
+    # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
+    # direction = [0.0, 0.5, 1.0, pi/2]
+    direction = [1.57]
+
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
+    # speed = [0.03, 0.04, 0.05]  # , 0.04, 0.03]
+    speed = [0.06, 0.04, 0.02]
+
     for s in speed:
         for trial in [dic["name"] for dic in trials]:
             for d in direction:
