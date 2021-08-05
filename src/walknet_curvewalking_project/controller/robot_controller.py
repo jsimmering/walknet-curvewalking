@@ -54,7 +54,11 @@ class RobotController:
             init_pos = RSTATIC.initial_pep[RSTATIC.leg_names.index(leg.name) // 2].copy()
             # for backwards walking: switch plus to minus in all statements in if
             if not self.walk:
-                init_pos[0] += (RSTATIC.default_stance_distance * 1)
+                # init_pos[0] += (RSTATIC.default_stance_distance * 1)
+                if leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
+                    init_pos[0] += (RSTATIC.default_stance_distance * (5.0 / 5.0))
+                elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
+                    init_pos[0] += (RSTATIC.default_stance_distance * (5.0 / 5.0))
             elif leg.name == "lf" or leg.name == "rm" or leg.name == "lr":
                 init_pos[0] += (RSTATIC.default_stance_distance * (3.0 / 4.0))
             elif leg.name == "rf" or leg.name == "lm" or leg.name == "rr":
@@ -123,7 +127,8 @@ class RobotController:
                 leg.set_pull_dependent_parameter(self.velocity, self.pull_angle)
             self.robot.stance_speed = self.velocity
             self.robot.direction = self.pull_angle
-            self.robot.initialize_stability_data_file()
+            if self.walk:
+                self.robot.initialize_stability_data_file()
             self.walk_start_time = rospy.Time.now()
             rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
@@ -183,12 +188,9 @@ class RobotController:
                 if rospy.is_shutdown():
                     break
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
-            if not self.robot.check_stability():
-                rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            #self.total_power_command += self.robot.get_current_power_command()
-            #self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
-            # rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
-            #        self.total_power_command, self.total_power_joint_torque))
+            if swing:
+                if not self.robot.check_stability():
+                    rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
             if not self.stop:
                 if self.pull_at_back:
                     self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(self.pull_angle,
@@ -376,11 +378,12 @@ if __name__ == '__main__':
         robot_controller.initialize_body_model()
         while not rospy.is_shutdown() and robot_controller.robot.running and walk:
             robot_controller.walk_body_model()
-        if robot_controller.robot.write_at_end:
+        if robot_controller.robot.write_at_end and swing:
             robot_controller.robot.write_all_stability_data_to_file()
-        if robot_controller.walk_start_time:
+        if robot_controller.walk_start_time and swing:
             robot_controller.record_additional_data()
-            robot_controller.record_swing_stance_durations()
+            if swing:
+                robot_controller.record_swing_stance_durations()
             rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
         else:
             rospy.loginfo("DURATION = 0. No walk command received")
