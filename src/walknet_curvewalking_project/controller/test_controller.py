@@ -4,7 +4,6 @@ from control_msgs.msg import JointControllerState
 from std_msgs.msg import Bool
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
-from walknet_curvewalking_project.motion_primitives.SimpleSwingTrajectoryGen import SimpleSwingTrajectoryGen
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple
 from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier, bezier
 from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
@@ -23,16 +22,16 @@ class TestController:
         self.leg = SingleLeg(name, self.movement_dir)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
-        self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
+        self.swing_trajectory_gen = SwingMovementBezier(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         # self.stance_net = StanceMovementBodyModel(self)
-        self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.c1_callback)
-        self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.thigh_callback)
-        self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.tibia_callback)
-        self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
+        # self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
+        #         JointControllerState, self.leg.c1_callback)
+        # self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
+        #         JointControllerState, self.leg.thigh_callback)
+        # self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
+        #         JointControllerState, self.leg.tibia_callback)
+        # self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
 
     # function for testing the kinematics calculations
     def kinematic_callback(self, data):
@@ -163,43 +162,43 @@ class TestController:
                     self.stance_trajectory_gen.set_start_point(None)
 
     # function for moving a leg alternating between swing and stance.
-    def manage_walk(self):
-        rate = rospy.Rate(RSTATIC.controller_frequency)
-        while not self.leg.is_ready():
-            rospy.loginfo("leg not connected yet! wait...")
-            rate.sleep()
-        rospy.loginfo("leg connected start swing")
-        mid_point = self.leg.compute_forward_kinematics([0, -0.75, -1.0])
-        self.swing_trajectory_gen.set_mid_point(mid_point)
-        end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
-        self.swing_trajectory_gen.set_target_point(end_point)
-        rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
-        rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
-
-        alpha = 0.3
-        if self.movement_dir == 1:
-            alpha = -0.3
-        end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
-        self.stance_trajectory_gen.set_target_point(end_point)
-        while not rospy.is_shutdown():
-            if self.swing:
-                if self.swing_trajectory_gen.start_point is None:
-                    self.swing_trajectory_gen.set_start_point(self.leg.ee_position())
-                    self.swing_trajectory_gen.compute_trajectory_points()
-                self.swing_trajectory_gen.move_to_next_point()
-                rate.sleep()
-                # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
-                if self.swing_trajectory_gen.is_finished():
-                    self.swing = False
-                    self.swing_trajectory_gen.set_start_point(None)
-            else:
-                if self.stance_trajectory_gen.start_point is None:
-                    self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
-                self.stance_trajectory_gen.stance()
-                rate.sleep()
-                if self.stance_trajectory_gen.is_finished():
-                    self.swing = True
-                    self.stance_trajectory_gen.set_start_point(None)
+    # def manage_walk(self):
+    #     rate = rospy.Rate(RSTATIC.controller_frequency)
+    #     while not self.leg.is_ready():
+    #         rospy.loginfo("leg not connected yet! wait...")
+    #         rate.sleep()
+    #     rospy.loginfo("leg connected start swing")
+    #     mid_point = self.leg.compute_forward_kinematics([0, -0.75, -1.0])
+    #     self.swing_trajectory_gen.set_mid_point(mid_point)
+    #     end_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
+    #     self.swing_trajectory_gen.set_target_point(end_point)
+    #     rospy.loginfo('trajectory: ' + str(self.swing_trajectory_gen.trajectory))
+    #     rospy.loginfo('current angles ' + str(self.leg.get_current_angles()))
+    #
+    #     alpha = 0.3
+    #     if self.movement_dir == 1:
+    #         alpha = -0.3
+    #     end_point = self.leg.compute_forward_kinematics([alpha, 0, -1.0])
+    #     self.stance_trajectory_gen.set_target_point(end_point)
+    #     while not rospy.is_shutdown():
+    #         if self.swing:
+    #             if self.swing_trajectory_gen.start_point is None:
+    #                 self.swing_trajectory_gen.set_start_point(self.leg.ee_position())
+    #                 self.swing_trajectory_gen.compute_trajectory_points()
+    #             self.swing_trajectory_gen.move_to_next_point()
+    #             rate.sleep()
+    #             # rospy.loginfo('swing finished is: ' + str(self.swing_trajectory_gen.is_finished()))
+    #             if self.swing_trajectory_gen.is_finished():
+    #                 self.swing = False
+    #                 self.swing_trajectory_gen.set_start_point(None)
+    #         else:
+    #             if self.stance_trajectory_gen.start_point is None:
+    #                 self.stance_trajectory_gen.set_start_point(self.leg.ee_position())
+    #             self.stance_trajectory_gen.stance()
+    #             rate.sleep()
+    #             if self.stance_trajectory_gen.is_finished():
+    #                 self.swing = True
+    #                 self.stance_trajectory_gen.set_start_point(None)
 
     # function for executing a single swing movement.
     def manage_swing(self):

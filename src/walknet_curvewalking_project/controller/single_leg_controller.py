@@ -84,13 +84,6 @@ class SingleLegController:
         else:
             self.stance_net = StanceMovementBodyModel(self)
 
-        self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.c1_callback)
-        self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.thigh_callback)
-        self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
-                JointControllerState, self.leg.tibia_callback)
-
         self._rules_pub = rospy.Publisher('/walknet/' + self.name + '/rules', rules, queue_size=1)
 
         leg_behind_idx = RSTATIC.leg_names.index(self.name) + 2
@@ -355,4 +348,4 @@ class SingleLegController:
         if p is None and not rospy.is_shutdown():
             p = self.init_pos
         angles = self.leg.compute_inverse_kinematics(p)
-        self.leg.set_joint_point_and_target(angles)
+        self.leg.set_joint_point(angles)

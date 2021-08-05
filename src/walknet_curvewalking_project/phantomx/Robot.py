@@ -20,7 +20,7 @@ class Robot:
 
         self.nh = nh
 
-        # self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
         # self.got_joint_data = False
         # self.current_power_joint_torque = 0
 
@@ -73,8 +73,18 @@ class Robot:
         # rospy.logwarn(self.name + ": got joint state data = " + str(data))
         # self.joint_velocity = data.velocity
         # self.joint_effort = data.effort
-        self.got_joint_data = True
-        self.current_power_joint_torque = numpy.sum(numpy.abs(numpy.array(data.effort) * numpy.array(data.velocity)))
+        # self.got_joint_data = True
+        # self.current_power_joint_torque = numpy.sum(numpy.abs(numpy.array(data.effort) * numpy.array(data.velocity)))
+        if RSTATIC.SIM:
+            for leg in self.legs:
+                leg.leg.alpha = data.position[data.name.index("j_c1_" + leg.name)]
+                leg.leg.beta = data.position[data.name.index("j_thigh_" + leg.name)]
+                leg.leg.gamma = data.position[data.name.index("j_tibia_" + leg.name)]
+        else:
+            for leg in self.legs:
+                leg.leg.alpha = data.position[data.name.index("c1_" + leg.name + "_joint")]
+                leg.leg.beta = data.position[data.name.index("thigh_" + leg.name + "_joint")]
+                leg.leg.gamma = data.position[data.name.index("tibia_" + leg.name + "_joint")]
 
     def initialize_body_model(self):
         ee_positions = [leg.leg.ee_position() for leg in self.legs]
@@ -96,8 +106,8 @@ class Robot:
 
         return center_of_mass
 
-    def get_current_power_command(self):
-        return numpy.sum(numpy.abs([leg.leg.leg_current_power() for leg in self.legs]))
+    # def get_current_power_command(self):
+    #     return numpy.sum(numpy.abs([leg.leg.leg_current_power() for leg in self.legs]))
 
     def get_current_power_joint_torque(self):
         return self.current_power_joint_torque

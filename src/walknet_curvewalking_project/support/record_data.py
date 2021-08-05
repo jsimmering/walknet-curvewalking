@@ -596,7 +596,7 @@ def main():
     if first_straight:
         duration += 0.5
     aep_param = 0.025  # float('nan')  # 0.025
-    root_dir = "logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
+    root_dir = "logs/pull-vector/" # "logs/joint_states_test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
     # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
     trials = [
         {"name": root_dir + "all_aep_xy_average_tuned_decre/", "length": True, "aep_y": aep_param, "aep_x": aep_param,
@@ -610,7 +610,7 @@ def main():
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
     # direction = [0.0, 0.5, 1.0, pi/2]
-    direction = [1.57]
+    direction = [0.0, 0.5, 1.0, 1.5]
 
     # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
     # speed = [0.03, 0.04, 0.05]  # , 0.04, 0.03]

@@ -14,12 +14,17 @@ class SingleLeg:
 
     def __init__(self, name, movement_dir, use_step_length):
         self.name = name
-        self._alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
-                queue_size=1)
-        self._beta_pub = rospy.Publisher('/phantomx/j_thigh_' + self.name + '_position_controller/command', Float64,
-                queue_size=1)
-        self._gamma_pub = rospy.Publisher('/phantomx/j_tibia_' + self.name + '_position_controller/command', Float64,
-                queue_size=1)
+        if RSTATIC.SIM:
+            self._alpha_pub = rospy.Publisher('/phantomx/j_c1_' + self.name + '_position_controller/command', Float64,
+                    queue_size=1)
+            self._beta_pub = rospy.Publisher('/phantomx/j_thigh_' + self.name + '_position_controller/command', Float64,
+                    queue_size=1)
+            self._gamma_pub = rospy.Publisher('/phantomx/j_tibia_' + self.name + '_position_controller/command', Float64,
+                    queue_size=1)
+        else:
+            self._alpha_pub = rospy.Publisher('/c1_' + self.name + '_joint/command', Float64, queue_size=1)
+            self._beta_pub = rospy.Publisher('/thigh_' + self.name + '_joint/command', Float64, queue_size=1)
+            self._gamma_pub = rospy.Publisher('/tibia_' + self.name + '_joint/command', Float64, queue_size=1)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
 
@@ -33,18 +38,6 @@ class SingleLeg:
         self.alpha_set_point = None
         self.beta_set_point = None
         self.gamma_set_point = None
-
-        self.alpha_command = None
-        self.beta_command = None
-        self.gamma_command = None
-
-        self.alpha_target = None
-        self.beta_target = None
-        self.gamma_target = None
-
-        self.alpha_reached = True
-        self.beta_reached = True
-        self.gamma_reached = True
 
         self._segment_lengths = RSTATIC.segment_length.copy()
         self._segment_masses = RSTATIC.segment_masses.copy()
@@ -159,26 +152,17 @@ class SingleLeg:
     def is_ready(self):
         return self.alpha is not None and self.beta is not None and self.gamma is not None
 
-    def c1_callback(self, data):
+    def set_c1_position(self, position):
         # rospy.loginfo(self.name + ": got c1 data = " + str(data))
-        self.alpha = data.process_value
-        self.alpha_target = data.set_point
-        self.alpha_command = data.command
-        self.alpha_reached = -0.005 < data.error < 0.005
+        self.alpha = position
 
-    def thigh_callback(self, data):
+    def set_thigh_position(self, position):
         # rospy.loginfo(self.name + ": got thigh data = " + str(data))
-        self.beta = data.process_value
-        self.beta_target = data.set_point
-        self.beta_command = data.command
-        self.beta_reached = -0.05 < data.error < 0.05
+        self.beta = position
 
-    def tibia_callback(self, data):
+    def set_tibia_position(self, position):
         # rospy.loginfo(self.name + ": got tibia data = " + str(data))
-        self.gamma = data.process_value
-        self.gamma_target = data.set_point
-        self.gamma_command = data.command
-        self.gamma_reached = -0.05 < data.error < 0.05
+        self.gamma = position
 
     def ee_position(self):
         self.update_ee_position()
@@ -193,9 +177,6 @@ class SingleLeg:
 
     def update_com_position(self):
         self._center_of_mass = self.compute_com()
-
-    def leg_current_power(self):
-        return abs(self.alpha_command) + abs(self.beta_command) + abs(self.gamma_command)
 
     ##
     #   Estimate ground ground_contact:
@@ -508,33 +489,15 @@ class SingleLeg:
             return None
         return [self.alpha, self.beta, self.gamma]
 
-    def get_current_targets(self):
-        if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
-            return None
-        return [self.alpha_target, self.beta_target, self.gamma_target]
-
     def is_target_reached(self):
-        if self.alpha_target is None or self.beta_target is None or self.gamma_target is None:
+        if self.alpha_set_point is None or self.alpha_set_point is None or self.alpha_set_point is None:
             return None
-        return self.alpha_reached and self.beta_reached and self.gamma_reached
-
-    def is_target_set(self):
-        return self.alpha_target == self.alpha_set_point and self.beta_target == self.beta_set_point and self.gamma_target == self.gamma_set_point
+        return abs(self.alpha - self.alpha_set_point) < 0.05 and abs(self.beta - self.beta_set_point) < 0.05 and abs(
+                self.gamma - self.gamma_set_point) < 0.05
 
     def set_joint_point(self, next_angles):
         # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
         #               str(self.get_current_angles()))
-        if not self.check_joint_ranges(next_angles):
-            rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
-        else:
-            # rospy.loginfo(self.name + ": set angles " + str(next_angles))
-            self._alpha_pub.publish(next_angles[0])
-            self._gamma_pub.publish(next_angles[2])
-            self._beta_pub.publish(next_angles[1])
-
-    def set_joint_point_and_target(self, next_angles):
-        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " + str(
-        #                self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:

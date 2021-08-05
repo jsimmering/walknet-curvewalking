@@ -72,19 +72,14 @@ class RobotController:
         while not rospy.is_shutdown() and not finished:
             finished = True
             for leg in self.robot.legs:
-                if not leg.leg.is_target_set() or not leg.leg.is_target_reached():
-                    if not leg.leg.is_target_set():
-                        rospy.logwarn(leg.name + ": set targets: a={} b={} c={}; real targets: {}".format(
-                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point,
-                                leg.leg.get_current_targets()))
+                if not leg.leg.is_target_reached():
                     finished = False
                     leg.move_leg_to()
                     self.rate.sleep()
             for leg in self.robot.legs:
                 rospy.logwarn(
-                        leg.name + ": reached init positions! set targets: a={} b={} c={}; real targets: {}".format(
-                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point,
-                                leg.leg.get_current_targets()))
+                        leg.name + ": reached init positions! set targets: a={} b={} c={}; real targets: unknown".format(
+                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point))
         rospy.loginfo("reached init positions")
 
     def initialize_body_model(self):
