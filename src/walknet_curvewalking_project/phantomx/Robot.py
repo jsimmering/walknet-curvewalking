@@ -217,8 +217,8 @@ class Robot:
                 rospy.logwarn(leg_name + " Lift could possibly cause instability! Stability margin = " + str(
                         stability_margin))
                 return False
-            elif leg_name == "lf" or leg_name == "rf":
-                rospy.loginfo(leg_name + ": stability margin = " + str(stability_margin))
+            # elif leg_name == "lf" or leg_name == "rf":
+            #     rospy.loginfo(leg_name + ": stability margin = " + str(stability_margin))
         # rospy.logwarn(leg_name + " Lift stable")
         return True
 

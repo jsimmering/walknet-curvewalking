@@ -94,7 +94,7 @@ class RobotController:
         self.robot.body_model.updateLegStates()
 
     def control_robot_callback(self, data):
-        if 0 < data.speed_fact <= 0.06 and abs(data.pull_angle) <= pi/2:
+        if 0 < data.speed_fact < 0.06 and abs(data.pull_angle) < 1.571:
             self.velocity = data.speed_fact
             self.pull_angle = data.pull_angle
             # self.counter_damping_fact = (-109.5 * self.velocity + 0.0145 / self.velocity + 31.53)
@@ -151,8 +151,9 @@ class RobotController:
         #     rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
         #     rospy.loginfo("STANCE SPEED = " + str(self.stance_speed))
         else:
-            if data.speed_fact > 0.06 or abs(data.pull_angle) > pi / 2:
-                rospy.logerr("provided speed or direction outside of save operating range. Stop execution")
+            if data.speed_fact >= 0.06 or abs(data.pull_angle) >= 1.571:
+                rospy.logerr("provided speed {} or direction {} outside of save operating range. Stop execution".format(
+                        data.speed_fact, data.pull_angle))
             # self.robot.stance_speed = 0.0
             # self.robot.direction = 0.0
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
