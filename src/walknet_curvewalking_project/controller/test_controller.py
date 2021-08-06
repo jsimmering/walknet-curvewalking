@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from control_msgs.msg import JointControllerState
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
@@ -19,12 +20,14 @@ class TestController:
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, self.movement_dir)
+        self.leg = SingleLeg(name, self.movement_dir, 1.0)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SwingMovementBezier(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         # self.stance_net = StanceMovementBodyModel(self)
+
+        self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
         # self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
         #         JointControllerState, self.leg.c1_callback)
         # self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
@@ -32,6 +35,21 @@ class TestController:
         # self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
         #         JointControllerState, self.leg.tibia_callback)
         # self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
+
+    def joint_state_callback(self, data):
+        # rospy.logwarn(self.name + ": got joint state data = " + str(data))
+        # self.joint_velocity = data.velocity
+        # self.joint_effort = data.effort
+        # self.got_joint_data = True
+        # self.current_power_joint_torque = numpy.sum(numpy.abs(numpy.array(data.effort) * numpy.array(data.velocity)))
+        if RSTATIC.SIM:
+            self.leg.alpha = data.position[data.name.index("j_c1_" + self.name)]
+            self.leg.beta = data.position[data.name.index("j_thigh_" + self.name)]
+            self.leg.gamma = data.position[data.name.index("j_tibia_" + self.name)]
+        else:
+            self.leg.alpha = data.position[data.name.index("c1_" + self.name + "_joint")]
+            self.leg.beta = data.position[data.name.index("thigh_" + self.name + "_joint")]
+            self.leg.gamma = data.position[data.name.index("tibia_" + self.name + "_joint")]
 
     # function for testing the kinematics calculations
     def kinematic_callback(self, data):
@@ -276,14 +294,14 @@ class TestController:
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('lf', nh, True, None)
+    legController = TestController('rr', nh, True, None)
     # rospy.spin()
     try:
-        legController.test_pep_aep()
+        # legController.test_pep_aep()
         # legController.test_kinematic()
         # legController.manage_walk()
         # legController.manage_walk_bezier()
-        # legController.bezier_swing()
+        legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()
     except rospy.ROSInterruptException:
