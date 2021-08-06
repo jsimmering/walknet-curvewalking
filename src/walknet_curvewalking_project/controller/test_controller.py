@@ -16,9 +16,11 @@ class TestController:
         # rospy.init_node('single_leg_controller', anonymous=True)
         self.nh = note_handle
         self.name = name
-        self.movement_dir = 1
         if 'l' in self.name:
-            rospy.loginfo("leg on left side movement_dir -1")
+            rospy.loginfo("leg on left side movement_dir 1")
+            self.movement_dir = 1
+        else:
+            rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, self.movement_dir, 1.0)
         self.temp = SwingMovementBezier(self.leg)
@@ -122,7 +124,11 @@ class TestController:
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
         self.temp.swing_start_point = self.leg.ee_position()
-        self.temp.swing_target_point = self.leg.compute_forward_kinematics([self.movement_dir * 0.3, 0, -1.0])
+        pep = RSTATIC.initial_pep[RSTATIC.leg_names.index(self.name) // 2].copy()
+        rospy.loginfo("pep = " + str(pep))
+        pep[1] = pep[1] * self.movement_dir
+        rospy.loginfo("pep after movement dir = " + str(pep))
+        self.temp.swing_target_point = self.leg.compute_inverse_kinematics(pep)
         # at which position of the interval between the start and the end point the middle point should be placed
         # the offset that is added to the middle point that was computed on the connecting line between start and
         # end point using the apex_point_ratio concept.
@@ -133,11 +139,42 @@ class TestController:
         self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
         print(self.temp.trajectory_generator.bezier_points)
         while not rospy.is_shutdown() and not (self.leg.predicted_ground_contact() and self.temp.reacht_peak):
+            rospy.loginfo("move to next point")
             self.temp.move_to_next_point(1)
             rate.sleep()
+
         self.temp.move_to_next_point(0)
         rate.sleep()
         self.swing = False
+
+    def execute_swing_step(self):
+        self_gc = False
+        # rospy.loginfo(self.name + ": execute swing step.")
+        if self.temp.swing_start_point is None:
+            rospy.loginfo(self.name + ": reset swing")
+            self.temp.swing_start_point = self.leg.ee_position()
+
+            self.target_pos = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+            self.target_pos[1] = self.target_pos[1] * self.movement_dir
+            self.temp.swing_target_point = self.target_pos
+
+            self.temp.reacht_peak = False
+            # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+            self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+        self.temp.move_to_next_point(1)
+        if self.temp.reacht_peak:
+            rospy.loginfo("reached pep")
+            if self.leg.predicted_ground_contact():
+                rospy.loginfo("gc")
+                self.temp.move_to_next_point(0)
+                self.temp.swing_start_point = None
+                self.swing = False
+                # rospy.logerr(self.name + ": finish swing go to stance")
+
+                self_gc = True
+            else:
+                rospy.loginfo("no gc")
+        return self_gc
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier(self):
@@ -294,14 +331,22 @@ class TestController:
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('rr', nh, True, None)
+    legController = TestController('rm', nh, True, None)
     # rospy.spin()
     try:
         # legController.test_pep_aep()
         # legController.test_kinematic()
         # legController.manage_walk()
         # legController.manage_walk_bezier()
-        legController.bezier_swing()
+        rate = rospy.Rate(RSTATIC.controller_frequency)
+        while not legController.leg.is_ready() and not rospy.is_shutdown():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
+        gc = False
+        while not gc:
+            gc = legController.execute_swing_step()
+            rate.sleep()
+        # legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()
     except rospy.ROSInterruptException:
