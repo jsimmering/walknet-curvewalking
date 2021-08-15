@@ -27,18 +27,9 @@ class SingleLegController:
 
         self.step_length = step_length
 
-        if isnan(shift_aep):
-            self.shift_aep = False
-        else:
-            self.shift_aep = True
-        self.aep_y_shift_value = shift_aep
-        if isnan(shift_aep_x):
-            self.shift_aep_x = False
-        else:
-            self.shift_aep_x = True
-        self.aep_x_shift_value = shift_aep_x
-        rospy.loginfo(self.name + ": shift aep y = {}, value = {}, shift aep x = {}, value = {}".format(self.shift_aep,
-                self.aep_y_shift_value, self.shift_aep_x, self.aep_x_shift_value))
+        self.shift_aep = shift_aep
+        self.shift_aep_x = shift_aep_x
+        rospy.loginfo(self.name + ": shift aep y = {}, shift aep x = {}".format(self.shift_aep, self.shift_aep_x))
 
         self.stance_length_sum = []
         self.stance_count = 0
@@ -50,7 +41,7 @@ class SingleLegController:
         self.swing_durations = []
 
         self.decrease_inner_stance = bool(decrease_inner_stance)
-        self.stance_diff = decrease_inner_stance
+        self.stance_diff = None
 
         self.leg = SingleLeg(name, self.movement_dir, self.step_length)
 

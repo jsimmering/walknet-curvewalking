@@ -350,10 +350,9 @@ if __name__ == '__main__':
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
 
-    step_length_param = rospy.get_param('~stepLength', 0.0)
-    shift_aep_param = float(rospy.get_param('~aepShift', float('nan')))
-    shift_aep_x_param = float(rospy.get_param('~aepShiftX', float('nan')))
-
+    step_length_param = rospy.get_param('~stepLength', True)
+    shift_aep_param = float(rospy.get_param('~aepShift', True))
+    shift_aep_x_param = float(rospy.get_param('~aepShiftX', True))
     decrease_inner_stance_param = rospy.get_param('~innerStep', True)
 
     trial_name_param = rospy.get_param('~name', "logs/")
