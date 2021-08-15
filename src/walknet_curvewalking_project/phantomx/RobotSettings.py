@@ -4,9 +4,9 @@ import numpy
 # Settings for the Phantom robot objects: defining leg namings, joint_limits.
 
 # ====== simulation parameters ========
-controller_frequency = 50
+controller_frequency = 7
 DEBUG = False
-SIM = True
+SIM = False
 
 # ========== naming objects ========
 leg_names = ('lf', 'rf', 'lm', 'rm', 'lr', 'rr')
@@ -57,7 +57,7 @@ body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
 default_stance_distance = 0.08  # 0.10 pep_shifted to aep_shifted
 stance_height = -0.09
-default_stance_width = 0.24
+default_stance_width = 0.29
 middle_leg_offset = 0.04176
 
 _front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])

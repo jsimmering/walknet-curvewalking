@@ -20,7 +20,10 @@ class Robot:
 
         self.nh = nh
 
-        self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        if RSTATIC.SIM:
+            self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        else:
+            self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
         # self.got_joint_data = False
         # self.current_power_joint_torque = 0
 

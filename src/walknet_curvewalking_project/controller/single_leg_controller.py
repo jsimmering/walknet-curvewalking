@@ -234,7 +234,7 @@ class SingleLegController:
                     self.move_aep()
                 self.swing = True
                 self_gc = False
-                # rospy.logerr(self.name + ": finish stance go to swing")
+                # rospy.loginfo(self.name + ": finish stance go to swing.")
                 self.current_swing_start_time = rospy.Time.now()
                 if self.current_stance_start_time is not None:
                     self.stance_durations.append(
@@ -252,6 +252,14 @@ class SingleLegController:
                     # else:
                     #     rospy.logwarn(self.name + " no stance start position available, stance count = " +
                     #     str(self.stance_count))
+                #if len(self.stance_length_sum) > 1:
+                #    rospy.loginfo(self.name + ": finish stance go to swing. Step length = " + str(
+                #            self.stance_length_sum[len(self.stance_length_sum) - 1]) + " end pos = " + str(
+                #            self.leg.ee_position()))
+                #else:
+                #    rospy.loginfo(self.name + ": finish stance go to swing. Step length = " + str(
+                #                    self.stance_length_sum) + " end pos = " + str(self.leg.ee_position()))
+                self.swing_generator.reacht_peak = False
                 self.current_stance_delayed = False
                 # legs_in_swing = legs_in_swing + 1
             else:
@@ -260,8 +268,8 @@ class SingleLegController:
                 delayed = True
                 if not self.current_stance_delayed:
                     if self.current_stance_start is not None:
-                        if len(self.stance_length_sum) > 10:
-                            self.stance_length_sum.pop(0)
+                        # if len(self.stance_length_sum) > 10:
+                        #     self.stance_length_sum.pop(0)
                         self.stance_length_sum.append(
                                 numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
                         self.stance_count += 1
@@ -302,15 +310,19 @@ class SingleLegController:
 
         # xdir
         shifted_x = False
-        if self.shift_aep_x:
+        if self.shift_aep_x and numpy.linalg.norm(numpy.array(step_vector)) > 0.02:
             step_vector_default_length = (average_step_length / numpy.linalg.norm(
                     numpy.array(step_vector))) * step_vector
 
             x_center = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0] - (
                     (RSTATIC.default_stance_distance * 1) / 2)
             new_aep_x = x_center - ((step_vector_default_length[0] * 1) / 2)
+            if abs(new_aep_x - self.target_pos[0]) >= 0.05:
+                rospy.logerr(self.name + " step_vector = {}, length: {}, normalized step vec = {}, new aep = {} (x_center {} - ((step_vector_default_length[0] {} * 1) / 2))".format(
+                                step_vector, numpy.linalg.norm(numpy.array(step_vector)), step_vector_default_length,
+                                new_aep_x, x_center, step_vector_default_length[0]))
             if abs(new_aep_x - self.target_pos[0]) >= 0.01:
-                rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep y = {}".format(new_aep_x,
+                rospy.loginfo(self.name + ": new_aep_x = {} previous aep = {} default aep x = {}".format(new_aep_x,
                         self.target_pos[0],
                         RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()[0]))
                 self.target_pos[0] = new_aep_x
@@ -349,9 +361,10 @@ class SingleLegController:
             # legs_in_swing = legs_in_swing - 1
             self_gc = True
             self.last_stance_activation = rospy.Time.now()
-            # if self.name == "rf":
-            #     rospy.logerr(self.name + ': swing is finished switch to stance.')
             self.current_stance_start = self.leg.ee_position()
+            # if self.name == "rf":
+            #rospy.loginfo(self.name + ': swing is finished switch to stance. Current postition = ' + str(
+            #        self.current_stance_start))
         return self_gc
 
     # function for moving this leg into the position provided or the init position.

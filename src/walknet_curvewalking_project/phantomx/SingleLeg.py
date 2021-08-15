@@ -19,7 +19,8 @@ class SingleLeg:
                     queue_size=1)
             self._beta_pub = rospy.Publisher('/phantomx/j_thigh_' + self.name + '_position_controller/command', Float64,
                     queue_size=1)
-            self._gamma_pub = rospy.Publisher('/phantomx/j_tibia_' + self.name + '_position_controller/command', Float64,
+            self._gamma_pub = rospy.Publisher('/phantomx/j_tibia_' + self.name + '_position_controller/command',
+                    Float64,
                     queue_size=1)
         else:
             self._alpha_pub = rospy.Publisher('/c1_' + self.name + '_joint/command', Float64, queue_size=1)
@@ -187,6 +188,9 @@ class SingleLeg:
         if self.ee_position()[2] < (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][
                                         2] * RSTATIC.predicted_ground_contact_height_factor):
             self.current_stance_start = self.ee_position()
+            #rospy.loginfo(self.name + ": gc, current leg height = " + str(self.ee_position()[2]) + " < " + str(
+            #        RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][
+            #            2] * RSTATIC.predicted_ground_contact_height_factor))
             return True
         else:
             return False
@@ -229,8 +233,8 @@ class SingleLeg:
             rospy.logerr("calling shift_step_length function, but x-pep-thresh is used! Return without action")
             return
         step_length = self.default_step_length - self.pep_shift_ipsilateral - self.pep_shift_ipsilateral_front - self.pep_shift_contralateral
-        if step_length < (self.default_step_length / 6):
-            self.step_length = self.default_step_length / 6  # 0.01
+        if step_length < (self.default_step_length / 5):
+            self.step_length = self.default_step_length / 5  # 0.01
         else:
             self.step_length = step_length
 
@@ -472,7 +476,6 @@ class SingleLeg:
             raise ValueError(self.name + ': beta: The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' +
                              str(p[2]) + ') is not valid for the given geometry.')
 
-
         beta_angle = pi - (h1 + h2 + self.thigh_tibia_angle)
         if RSTATIC.joint_angle_limits[1][0] >= beta_angle:
             rospy.logerr(self.name + " beta limit = " + str(
@@ -497,8 +500,8 @@ class SingleLeg:
                 self.gamma - self.gamma_set_point) < 0.05
 
     def set_joint_point(self, next_angles):
-        # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
-        #               str(self.get_current_angles()))
+        rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
+                      str(self.get_current_angles()))
         if not self.check_joint_ranges(next_angles):
             rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
         else:

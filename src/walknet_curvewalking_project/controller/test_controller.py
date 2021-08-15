@@ -28,8 +28,10 @@ class TestController:
         self.swing_trajectory_gen = SwingMovementBezier(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         # self.stance_net = StanceMovementBodyModel(self)
-
-        self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        if RSTATIC.SIM:
+            self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        else:
+            self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
         # self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
         #         JointControllerState, self.leg.c1_callback)
         # self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
@@ -299,8 +301,8 @@ class TestController:
         while not self.leg.is_ready():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
-        #self.leg.pub_global()
-        #self.leg.pub_local()
+        # self.leg.pub_global()
+        # self.leg.pub_local()
         rospy.loginfo("##########################################################################################")
         cur_angles = self.leg.compute_inverse_kinematics()
         rospy.loginfo('inverse kinematic angles for current ee_pos: ' + str(cur_angles))
@@ -328,24 +330,33 @@ class TestController:
             rate.sleep()
         rospy.loginfo("##########################################################################################")
 
+    def move_leg_to(self, p):
+        if not rospy.is_shutdown():
+            angles = self.leg.compute_inverse_kinematics(p)
+            rospy.loginfo("angles = " + str(angles))
+            self.leg.set_joint_point(angles)
+
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('rm', nh, True, None)
+    legController = TestController('lf', nh, True, None)
     # rospy.spin()
     try:
-        # legController.test_pep_aep()
-        # legController.test_kinematic()
-        # legController.manage_walk()
-        # legController.manage_walk_bezier()
         rate = rospy.Rate(RSTATIC.controller_frequency)
         while not legController.leg.is_ready() and not rospy.is_shutdown():
             rospy.loginfo("leg not connected yet! wait...")
             rate.sleep()
+        # legController.test_pep_aep()
+        # legController.test_kinematic()
+        # legController.manage_walk()
+        # legController.manage_walk_bezier()
+        # legController.move_leg_to([0.17, 0.16, -0.09])
+
         gc = False
         while not gc:
             gc = legController.execute_swing_step()
             rate.sleep()
+
         # legController.bezier_swing()
         # legController.manage_swing()
         # legController.manage_stance()

@@ -178,7 +178,7 @@ if len(sys.argv) >= 2:
             axs.legend([str(n+1) for n in range(0, len(files))],
                     # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                     #  range(0, len(split))],
-                    loc='lower right')
+                    loc='upper left')
 
     if calculate_cot:
         total_power_command = []
@@ -252,21 +252,21 @@ if len(sys.argv) >= 2:
         plt.grid(which='both')
         plt.axis('scaled')
 
-        axs.set_xlim(-1.5, 2.5)
-        axs.set_ylim(-0.5, 4.0)
+        #axs.set_xlim(-1.5, 2.5)
+        #axs.set_ylim(-0.5, 4.0)
 
-        # lf_shoulder = np.matrix([0.1248, 0.06164]).T
-        # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
-        # lm_shoulder = np.matrix([0, 0.1034]).T
-        # axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
-        # lr_shoulder = np.matrix([-0.1248, 0.06164]).T
-        # axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
-        # rf_shoulder = np.matrix([0.1248, -0.06164]).T
-        # axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
-        # rm_shoulder = np.matrix([0, -0.1034]).T
-        # axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
-        # rr_shoulder = np.matrix([-0.1248, -0.06164]).T
-        # axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+        lf_shoulder = np.matrix([0.1248, 0.06164]).T
+        axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'x', color='silver')
+        lm_shoulder = np.matrix([0, 0.1034]).T
+        axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'x', color='silver')
+        lr_shoulder = np.matrix([-0.1248, 0.06164]).T
+        axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'x', color='silver')
+        rf_shoulder = np.matrix([0.1248, -0.06164]).T
+        axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'x', color='silver')
+        rm_shoulder = np.matrix([0, -0.1034]).T
+        axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'x', color='silver')
+        rr_shoulder = np.matrix([-0.1248, -0.06164]).T
+        axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'x', color='silver')
 
         # axs.xaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))
         # axs.yaxis.set_minor_locator(ticker.MultipleLocator(base=0.5))

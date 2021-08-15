@@ -54,7 +54,7 @@ def plot_stability_data():
     unstable_before_5sec = 0
     start_time = None
     first_line = True
-    plot = False
+    plot = True
     plt.figure()
     plt.xlim(-0.3, 0.3)
     plt.ylim(-0.4, 0.4)
@@ -106,7 +106,7 @@ def plot_stability_data():
             marker = np.matrix([round(values[19], 4), round(values[20], 4)]).T
             plt.plot(marker.T[:, 0], marker.T[:, 1], 'xb')
             marker = np.matrix(centroid_pt).T
-            plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
+            #plt.plot(marker.T[:, 0], marker.T[:, 1], 'og')
 
         polygon_list = generate_bin_polygons(centroid_pt, foot_polygon, 5)
         # if len(values) >= 24:
@@ -172,22 +172,23 @@ def plot_stability_data():
             E2 = [point[1] for point in polygon_list[0]]
             E2.append(polygon_list[0][0][1])
             plt.plot(A, A2)
-            plt.plot(B, B2)
-            plt.plot(C, C2)
-            plt.plot(D, D2)
-            plt.plot(E, E2)
+            # plt.plot(B, B2)
+            # plt.plot(C, C2)
+            # plt.plot(D, D2)
+            # plt.plot(E, E2)
 
             # for i in range(25, len(values), 3):
             #    plt.plot([round(values[22], 4), round(values[i], 4)], [round(values[23], 4), round(values[i + 1], 4)])
 
+            plt.grid()
+            # plt.grid(which='both')
+            plt.axis('scaled')
             plt.xlim(-0.3, 0.3)
             plt.ylim(-0.4, 0.4)
-
-            # plt.grid()
             plt.draw()
-            plt.pause(0.0001)
-
             # input('Press ENTER to continue...')
+            plt.pause(0.0001)
+            input('Press ENTER to continue...')
 
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))

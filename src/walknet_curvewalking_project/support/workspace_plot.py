@@ -34,8 +34,12 @@ def plot_workspace_data():
     for file in files:
         if plot:
             fig, axs = plt.subplots()
-            plt.xlim(-0.35, 0.3)
-            plt.ylim(-0.4, 0.4)
+            #plt.xlim(-0.35, 0.3)
+            #plt.xlim(-0.35, 0.3)
+            axs.set_xlim(-0.3, 0.3)
+            # plt.ylim(-0.4, 0.4)
+            #plt.ylim(-0.5, 0.5)
+            axs.set_ylim(-0.5, 0.5)
 
             #img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
             #axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
@@ -74,17 +78,30 @@ def plot_workspace_data():
 
         if plot:
             lf_shoulder = np.matrix([0.1248, 0.06164]).T
-            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
+            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'x', color='silver')
             lm_shoulder = np.matrix([0, 0.1034]).T
-            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
+            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'x', color='silver')
             lr_shoulder = np.matrix([-0.1248, 0.06164]).T
-            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
+            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'x', color='silver')
             rf_shoulder = np.matrix([0.1248, -0.06164]).T
-            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
+            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'x', color='silver')
             rm_shoulder = np.matrix([0, -0.1034]).T
-            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
+            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'x', color='silver')
             rr_shoulder = np.matrix([-0.1248, -0.06164]).T
-            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'x', color='silver')
+
+            # circle_lf = plt.Circle((0.25, 0.24), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_lf)
+            # circle_lm = plt.Circle((0.05, 0.24 + 0.04176), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_lm)
+            # circle_lr = plt.Circle((-0.17, 0.24), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_lr)
+            # circle_rf = plt.Circle((0.25, -0.24), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_rf)
+            # circle_rm = plt.Circle((0.05, -(0.24 + 0.04176)), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_rm)
+            # circle_rr = plt.Circle((-0.17, -0.24), 0.08, color='r', fill=False)
+            # axs.add_patch(circle_rr)
 
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
@@ -147,21 +164,30 @@ def plot_workspace_data():
 
             # plt.draw()
             # plt.pause(0.0001)
-            axs.axvline(x=0.25, color='b', lw=1)
-            axs.axvline(x=0.05, color='b', lw=1)
-            axs.axvline(x=-0.17, color='b', lw=1)
 
-            axs.axvline(x=0.25 - 0.08, color='g', lw=1)
-            axs.axvline(x=0.05 - 0.08, color='g', lw=1)
-            axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
+            # AEPs
+            #axs.axvline(x=0.25, color='b', lw=1)
+            #axs.axvline(x=0.05, color='b', lw=1)
+            #axs.axvline(x=-0.17, color='b', lw=1)
+            # axs.plot((0.25), (0.24), 'x', color='b')
+            # axs.plot((0.05), (0.24 + 0.04176), 'x', color='b')
+            # axs.plot((-0.17), (0.24), 'x', color='b')
+            # axs.plot((0.25), -(0.24), 'x', color='b')
+            # axs.plot((0.05), -(0.24 + 0.04176), 'x', color='b')
+            # axs.plot((-0.17), -(0.24), 'x', color='b')
+            #
+            # PEPs
+            # axs.axvline(x=0.25 - 0.08, color='g', lw=1)
+            # axs.axvline(x=0.05 - 0.08, color='g', lw=1)
+            # axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
 
-            plt.tick_params(labelsize=20)
+            plt.tick_params(labelsize=16)
             plt.grid()
             plt.axis('scaled')
             # plt.gca().set_aspect('equal', adjustable='box')
             if safe_plot:
-                plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
-                plt.margins(1, 1)
+                # plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
+                # plt.margins(1, 1)
 
                 # split = [i.split("_") for i in files]
                 split = re.findall(r"[^/_,]+", file_name, re.ASCII)
