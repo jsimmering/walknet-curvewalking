@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy
 from matplotlib.ticker import MultipleLocator
 
-
 # uses walknet_stability_ files
 import numpy
 from matplotlib.ticker import MultipleLocator
@@ -66,21 +65,23 @@ def plot_stability_data_to_footfall_pattern(start, end):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         for leg in stance_times:
-            # for i in range(0, len(leg) - 1):
-            for step in leg:
+            for i in range(0, len(leg) - 1):
+                # for step in leg:
                 # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
-                plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
-                    linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
-                # plt.plot([leg[i][1], leg[i + 1][0]],
-                #     [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                # plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                 #     linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+                plt.plot([leg[i][1], leg[i + 1][0]],
+                        [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+                        linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
 
-        plt.axvline(x=7.25)
-        plt.axvline(x=12.5)
-        plt.axvline(x=21)
-        plt.axvline(x=38)
-        plt.axvline(x=45.5)
-        plt.axvline(x=56)
+        # plt.axvline(x=7.25)
+        # plt.axvline(x=12.5)
+        # plt.axvline(x=21)
+        # plt.axvline(x=38)
+        # plt.axvline(x=45.5)
+        # plt.axvline(x=56)
+        #plt.axvline(x=66.92)
+        #plt.axvline(x=72.3)
 
         if end != 0:
             plt.xlim(start, end)
@@ -91,14 +92,15 @@ def plot_stability_data_to_footfall_pattern(start, end):
         plt.ylim(-0.5, 5.5)
         # plt.yticks([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         plt.yticks([0, 1, 2, 3, 4, 5],
-            ['right rear', 'right middle', 'right front', 'left rear', 'left middle', 'left front'])
+                ['RR', 'RM', 'RF', 'LR', 'LM', 'LF'])
         # plt.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         # self.ax_footfall.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
+        plt.xlabel('time [s]', fontsize=30)
 
         # plt.rc('xtick', labelsize=20)
         # plt.rc('ytick', labelsize=20)
         # plt.rcParams.update({'font.size': 40})
-        plt.tick_params(labelsize=20)
+        plt.tick_params(labelsize=30)
 
         plt.grid(which='both')
 
@@ -113,13 +115,13 @@ def plot_stability_data_to_footfall_pattern(start, end):
             print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg")
 
             plt.savefig("/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg", bbox_inches='tight',
-                   pad_inches=0, format='svg')
+                    pad_inches=0, format='svg')
         else:
             plt.show()
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 0  # 150 #90  # 60
-        end_time = 60  # 200 # 120  # 90
+        start_time = 60  # 150 #90  # 60
+        end_time = 75  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)

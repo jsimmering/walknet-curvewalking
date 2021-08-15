@@ -205,6 +205,8 @@ if len(sys.argv) >= 2:
 
     print("**average velocity** = " + str(
             [round(np.sum(velocity[i]) / len(velocity[i]), 4) for i in range(0, len(files))]))
+    print("**average velocity over all runs** = " + str(
+            round(np.average([np.sum(velocity[i]) / len(velocity[i]) for i in range(0, len(files))]), 4)))
 
     print("**circle dimensions x** = " + str([round(i[0], 3) for i in x_dim]))
     print("**circle dimensions y** = " + str([round(i[0], 3) for i in y_dim]))
