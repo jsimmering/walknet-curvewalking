@@ -339,7 +339,7 @@ class TestController:
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('lf', nh, True, None)
+    legController = TestController('rr', nh, True, None)
     # rospy.spin()
     try:
         rate = rospy.Rate(RSTATIC.controller_frequency)

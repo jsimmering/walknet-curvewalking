@@ -5,6 +5,8 @@ import numpy
 import rospy
 from geometry_msgs.msg import Point
 from std_msgs.msg import Float64
+from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectoryPoint
 from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
@@ -23,9 +25,11 @@ class SingleLeg:
                     Float64,
                     queue_size=1)
         else:
-            self._alpha_pub = rospy.Publisher('/c1_' + self.name + '_joint/command', Float64, queue_size=1)
-            self._beta_pub = rospy.Publisher('/thigh_' + self.name + '_joint/command', Float64, queue_size=1)
-            self._gamma_pub = rospy.Publisher('/tibia_' + self.name + '_joint/command', Float64, queue_size=1)
+            self._trajectory_pub = rospy.Publisher('/' + self.name + '_controller/command', JointTrajectory,
+                    queue_size=5)
+            # self._alpha_pub = rospy.Publisher('/c1_' + self.name + '_joint/command', Float64, queue_size=1)
+            # self._beta_pub = rospy.Publisher('/thigh_' + self.name + '_joint/command', Float64, queue_size=1)
+            # self._gamma_pub = rospy.Publisher('/tibia_' + self.name + '_joint/command', Float64, queue_size=1)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
 
@@ -188,7 +192,7 @@ class SingleLeg:
         if self.ee_position()[2] < (RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][
                                         2] * RSTATIC.predicted_ground_contact_height_factor):
             self.current_stance_start = self.ee_position()
-            #rospy.loginfo(self.name + ": gc, current leg height = " + str(self.ee_position()[2]) + " < " + str(
+            # rospy.loginfo(self.name + ": gc, current leg height = " + str(self.ee_position()[2]) + " < " + str(
             #        RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2][
             #            2] * RSTATIC.predicted_ground_contact_height_factor))
             return True
@@ -500,15 +504,33 @@ class SingleLeg:
                 self.gamma - self.gamma_set_point) < 0.05
 
     def set_joint_point(self, next_angles):
-        rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
-                      str(self.get_current_angles()))
-        if not self.check_joint_ranges(next_angles):
-            rospy.logerr("provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
-        else:
-            # rospy.loginfo(self.name + ": set angles " + str(next_angles))
-            self._alpha_pub.publish(next_angles[0])
-            self._beta_pub.publish(next_angles[1])
-            self._gamma_pub.publish(next_angles[2])
-            self.alpha_set_point = next_angles[0]
-            self.beta_set_point = next_angles[1]
-            self.gamma_set_point = next_angles[2]
+        if not rospy.is_shutdown():
+            rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
+                          str(self.get_current_angles()))
+            if not self.check_joint_ranges(next_angles):
+                rospy.logerr(
+                        "provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
+                return
+
+            if RSTATIC.SIM:
+                # rospy.loginfo(self.name + ": set angles " + str(next_angles))
+                self._alpha_pub.publish(next_angles[0])
+                self._beta_pub.publish(next_angles[1])
+                self._gamma_pub.publish(next_angles[2])
+                self.alpha_set_point = next_angles[0]
+                self.beta_set_point = next_angles[1]
+                self.gamma_set_point = next_angles[2]
+            else:
+                msg = JointTrajectory()
+                msg.header.stamp = rospy.Time.now()
+                msg.joint_names = ['c1_' + self.name + '_joint', 'thigh_' + self.name + '_joint',
+                                   'tibia_' + self.name + '_joint']
+                point = JointTrajectoryPoint()
+                point.positions = next_angles
+                point.time_from_start = rospy.Duration(0, 50000000)
+                msg.points = [point]
+                rospy.loginfo("publish msg: " + str(msg))
+                self._trajectory_pub.publish(msg)
+                self.alpha_set_point = next_angles[0]
+                self.beta_set_point = next_angles[1]
+                self.gamma_set_point = next_angles[2]
