@@ -505,8 +505,8 @@ class SingleLeg:
 
     def set_joint_point(self, next_angles):
         if not rospy.is_shutdown():
-            rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
-                          str(self.get_current_angles()))
+            # rospy.loginfo("set command " + self.name + ". angles = " + str(next_angles) + " current angles = " +
+            #               str(self.get_current_angles()))
             if not self.check_joint_ranges(next_angles):
                 rospy.logerr(
                         "provided angles " + str(next_angles) + " are not valid for the joint ranges. COMMAND NOT SET")
@@ -529,7 +529,7 @@ class SingleLeg:
                 point.positions = next_angles
                 point.time_from_start = rospy.Duration(0, 50000000)
                 msg.points = [point]
-                rospy.loginfo("publish msg: " + str(msg))
+                # rospy.loginfo("publish msg: " + str(msg))
                 self._trajectory_pub.publish(msg)
                 self.alpha_set_point = next_angles[0]
                 self.beta_set_point = next_angles[1]

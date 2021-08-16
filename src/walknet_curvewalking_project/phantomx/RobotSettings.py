@@ -55,20 +55,20 @@ rr = numpy.array([[0, 0.707032355, -0.707181196, -0.1248],
 
 body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
-default_stance_distance = 0.08  # 0.10 pep_shifted to aep_shifted
-stance_height = -0.09
-default_stance_width = 0.29
+default_stance_distance = 0.07  # 0.10 pep_shifted to aep_shifted
+stance_height = -0.035
+default_stance_width = 0.28 # 0.29
 middle_leg_offset = 0.04176
 
-_front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])
+_front_initial_aep = numpy.array([0.27, default_stance_width, stance_height])
 _front_initial_pep = numpy.array(
         [_front_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 _middle_initial_aep = numpy.array(
-        [0.05, (default_stance_width + middle_leg_offset), stance_height])
+        [0.06, (default_stance_width + middle_leg_offset), stance_height])
 _middle_initial_pep = numpy.array(
         [_middle_initial_aep[0] - default_stance_distance, (default_stance_width + middle_leg_offset),
          stance_height])  # -0.07# for forward walking
-_hind_initial_aep = numpy.array([-0.17, default_stance_width, stance_height])
+_hind_initial_aep = numpy.array([-0.16, default_stance_width, stance_height])
 _hind_initial_pep = numpy.array([_hind_initial_aep[0] - default_stance_distance, default_stance_width, stance_height])
 
 initial_pep = (_front_initial_pep, _middle_initial_pep, _hind_initial_pep)  # for forward walking

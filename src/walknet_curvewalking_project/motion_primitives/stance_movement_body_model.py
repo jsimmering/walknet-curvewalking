@@ -8,6 +8,8 @@ import math
 import numpy
 import rospy
 
+import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
+
 
 ##
 # 	Stance Network.
@@ -52,7 +54,7 @@ class StanceMovementBodyModel:
                                                     [math.sin(-body_angle), math.cos(-body_angle), 0], [0, 0, 1]])
             rotated_leg_vec = rotation_matrix_bm_robot.dot(
                 self.bodyModelStance.get_leg_vector(self.leg_controller.leg.name))
-            rotated_leg_vec[2] = -0.09
+            rotated_leg_vec[2] = RSTATIC.stance_height
 
             # target_vec = self.leg_controller.leg.apply_c1_static_transform() + self.bodyModelStance.get_leg_vector(
             #         self.leg_controller.leg.name)
