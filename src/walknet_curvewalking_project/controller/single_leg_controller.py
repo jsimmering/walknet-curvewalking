@@ -40,7 +40,7 @@ class SingleLegController:
         self.stance_durations = []
         self.swing_durations = []
 
-        self.decrease_inner_stance = bool(decrease_inner_stance)
+        self.decrease_inner_stance = decrease_inner_stance
         self.stance_diff = None
 
         self.leg = SingleLeg(name, self.movement_dir, self.step_length)
@@ -131,9 +131,10 @@ class SingleLegController:
         if self.stance_diff < 0:
             self.stance_diff = 0
 
-        if self.decrease_inner_stance and (
+        rospy.loginfo("self.decrease_inner_stance = " + str(self.decrease_inner_stance))
+        if self.decrease_inner_stance and ((
                 angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
-                angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr")):
+                angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"))):
             rospy.loginfo(self.name + ": STANCE DIFF = -" + str(self.stance_diff))
             self.default_step_length -= self.stance_diff
             rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))

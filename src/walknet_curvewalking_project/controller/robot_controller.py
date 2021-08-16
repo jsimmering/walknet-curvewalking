@@ -190,8 +190,8 @@ class RobotController:
                 legs_in_swing = leg.manage_walk(legs_in_swing, swing)
             if not self.robot.check_stability():
                 rospy.loginfo("gc ('lf', 'rf', 'lm', 'rm', 'lr', 'rr') = " + str(self.robot.body_model.gc))
-            #self.total_power_command += self.robot.get_current_power_command()
-            #self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
+            # self.total_power_command += self.robot.get_current_power_command()
+            # self.total_power_joint_torque += self.robot.get_current_power_joint_torque()
             # rospy.logwarn("update total power : command value = {}\n                     joint torque = {}".format(
             #        self.total_power_command, self.total_power_joint_torque))
             if not self.stop:
@@ -351,9 +351,12 @@ if __name__ == '__main__':
         duration = rospy.get_param('~duration')
 
     step_length_param = rospy.get_param('~stepLength', True)
-    shift_aep_param = float(rospy.get_param('~aepShift', True))
-    shift_aep_x_param = float(rospy.get_param('~aepShiftX', True))
+    shift_aep_param = rospy.get_param('~aepShift', True)
+    shift_aep_x_param = rospy.get_param('~aepShiftX', True)
     decrease_inner_stance_param = rospy.get_param('~innerStep', True)
+    rospy.loginfo(
+            "stepLength = {}, aepShift = {}, aepXShift = {}, innerStep = {}".format(step_length_param, shift_aep_param,
+                    shift_aep_x_param, decrease_inner_stance_param))
 
     trial_name_param = rospy.get_param('~name', "logs/")
 

@@ -17,10 +17,10 @@ def run(args):
 def record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance):
     start_time = datetime.datetime.now()
 
-    for i in range(0, repetitions_per_speed):
-        for s in speed:
-            for j in range(0, len(trials)):
-                for d in direction:
+    for d in direction:
+        for i in range(0, repetitions_per_speed):
+            for s in speed:
+                for j in range(0, len(trials)):
                     # for i in range(0, repetitions_per_speed):
                     # s = trials[j]["speed"]
                     # d = trials[j]["dir"]
@@ -60,6 +60,8 @@ def record(speed, trials, direction, repetitions_per_speed, duration, pull_at_ba
                         exit(1)
 
                     print("initialize Robot")
+                    print("trial = " + str(trials[j]))
+                    print("_innerStep:=" + str(trials[j]["decrease"]))
                     if duration:
                         print("recorder: Robot Collector walk for {} minutes".format(duration))
                         print("aep_y = " + str(trials[j]["aep_y"]))
@@ -586,17 +588,17 @@ def main():
     #
     # record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
 
-    repetitions_per_speed = 6
-    duration = None  # 0.83
+    repetitions_per_speed = 2
+    duration = 2  # 0.83
     circles = None
-    distance = 5
+    distance = None
 
     pull_at_back = True
     first_straight = False
     if first_straight:
         duration += 0.5
     aep_param = True  # float('nan')  # 0.025
-    root_dir = "logs/original_walknet_straightwalking/5meter/"
+    root_dir = "logs/original_walknet_straightwalking/tetrapod/"
     #"logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
     # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
     trials = [
@@ -607,15 +609,15 @@ def main():
         {"name": root_dir + "original/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
     ]
 
-    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    direction = [0.0]
+    # direction = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
     # direction = [0.0, 0.5, 1.0, pi/2]
-    direction = [0.0]
 
-    speed = [0.007, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06]
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06] # 0.007
     # speed = [0.03, 0.04, 0.05]  # , 0.04, 0.03]
-    # speed = [0.06, 0.04, 0.02]
+    speed = [0.02]  # , 0.025, 0.015]
 
     for s in speed:
         for trial in [dic["name"] for dic in trials]:
