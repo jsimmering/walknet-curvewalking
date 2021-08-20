@@ -116,6 +116,7 @@ if len(sys.argv) >= 2:
                     # print("startx = " + str(start_x) + " j = " + str(j))
                     start_y[j].append(values[2])
                     start_z[j].append(values[3])
+                    print("start_z = " + str(start_z))
 
                 if first_position is None:
                     first_position = [values[1], values[2]]
@@ -123,6 +124,7 @@ if len(sys.argv) >= 2:
                 # print("x = " + str(round(values[1],4)) + "y = " + str(round(values[2],4)) + "z = " + str(round(values[3],4)))
                 X[j].append(round(values[1] - start_x[j][0], 4))
                 Y[j].append(round(values[2] - start_y[j][0], 4))
+                # if line_number > 5000:
                 Z[j].append(round(values[3], 4))
 
                 if values[1] > x_max:
@@ -254,8 +256,9 @@ if len(sys.argv) >= 2:
         plt.grid(which='both')
         plt.axis('scaled')
 
-        axs.set_xlim(-1.5, 2.5)
-        axs.set_ylim(-0.5, 4.0)
+        # axs.set_xlim(-1.5, 2.5)
+        # axs.set_ylim(-0.5, 4.0)
+        # axs.set_ylim(-0.55, 0.9)
 
         # lf_shoulder = np.matrix([0.1248, 0.06164]).T
         # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
@@ -305,12 +308,12 @@ if len(sys.argv) >= 2:
                 plt.savefig("/home/jsimmering/plots_masterthesis/path/" + name + ".svg", bbox_inches='tight',
                         pad_inches=0, format='svg', transparent=True)
 
-            sc.Figure("15.1cm", "15.95cm",
-                    # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
-                    sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.00475).move(5.815, 13.275)),
-                    sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/path/" + name + ".svg").scale(0.022))
-            ).save("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
-            SVG("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
+            # sc.Figure("15.1cm", "15.95cm",
+            #         # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
+            #         sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.00475).move(5.815, 13.275)),
+            #         sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/path/" + name + ".svg").scale(0.022))
+            # ).save("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
+            # SVG("/home/jsimmering/plots_masterthesis/path/robot_" + name + ".svg")
             # axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
         else:
             plt.show()
@@ -322,12 +325,35 @@ if len(sys.argv) >= 2:
             plt.grid(which='both')
             # plt.axis('scaled')
             plt.ylim(0.0, 0.1)
+            plt.ylabel("body height [m]", fontsize=20)
+            plt.xlabel("time [s]", fontsize=20)
             # plt.axis('scaled')
             for j in range(0, len(files)):
                 # print("z[{}] = {}".format(j, Z[j]))
-                plt.plot(Z[j])
+                plt.plot(Z[j], label=j)
+            # print(sorted(Z, key=float, reverse=True))
+            # print(type(Z[0]))
+            import itertools
+            heights = list(itertools.chain.from_iterable(Z[1:len(Z)]))
+            last = heights[0]
+            idx = 0
+            for i in range(1, len(Z)):
+                if heights[i] < last:
+                    idx = i
+                else:
+                    break
+            print("idx = " + str(idx))
+            #z_pos = heights[5: len(heights)]
+
+            print(sorted(heights, key=float, reverse=True))
+            print("init height = " + str(Z[0][1]))
+            plt.legend([str(n + 1) for n in range(0, len(files))],
+                    # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
+                    #  range(0, len(split))],
+                    loc='lower right')
             print("**height criterion:** " + str([sum(i < 0.045 for i in files) for files in Z]))
             plt.axhline(y=0.045, color='r', linestyle='-')
+            plt.axhline(y=0.088, color='b', linestyle='-')
             if safe_plot:
                 plt.savefig("/home/jsimmering/plots_masterthesis/height/" + name + ".svg", bbox_inches='tight',
                         pad_inches=0, format='svg')

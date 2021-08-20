@@ -49,6 +49,8 @@ def plot_stability_data():
     min_pcom_err = float('inf')
     average_pcom_err = 0
     step_count = 0
+    step_count_befor_5sec = 0
+    step_count_after_5sec = 0
     last_unstable = -1
     unstable_after_5sec = 0
     unstable_before_5sec = 0
@@ -131,9 +133,9 @@ def plot_stability_data():
             bins[5] += 1
             # TODO count steps before and after 5 sec. for percentages
             last_unstable = step_count
-            if values[0] - start_time > 10:
+            if values[0] - start_time > 5:
                 unstable_after_5sec += 1
-            elif values[0] - start_time <= 10:
+            elif values[0] - start_time <= 5:
                 unstable_before_5sec += 1
 
         # pcom_err = np.linalg.norm(np.array([values[19], values[20]]) - np.array([values[22], values[23]]))
@@ -143,6 +145,10 @@ def plot_stability_data():
         #     min_pcom_err = pcom_err
         # average_pcom_err += pcom_err
         step_count += 1
+        if values[0] - start_time > 5:
+            step_count_after_5sec += 1
+        elif values[0] - start_time <= 5:
+            step_count_befor_5sec += 1
         # print("step_count = " + str(step_count))
         # else:
         #     print("unstable len(values) " + str(len(values)) + " >= 24")
@@ -189,6 +195,7 @@ def plot_stability_data():
 
             # input('Press ENTER to continue...')
 
+    print("step count = {}, before 5 sec = {}, after = {}".format(step_count, step_count_befor_5sec, step_count_after_5sec))
     print("bins: middle = {}, bin 2 = {}, bin 3 = {}, bin 4 = {}, closest to border = {}, unstable = {}".format(bins[0],
             bins[1], bins[2], bins[3], bins[4], bins[5]))
     print("legs with ground contact: 3 = {}, 4 = {}, 5 = {}, 6 = {}".format(legs_with_gc[0], legs_with_gc[1],
@@ -203,10 +210,14 @@ def plot_stability_data():
     print("**last unstable controller step:** " + str(last_unstable) + " / " + str(step_count))
     print("**unstable total:** " + str(bins[5]) + " / " + str(step_count) + " = " + str(
             round((bins[5] * 100) / step_count, 2)) + "%")
-    print("**unstable after 10sec:** " + str(unstable_after_5sec) + " / " + str(step_count) + " = " + str(round(
+    print("**unstable after 5sec over whole run:** " + str(unstable_after_5sec) + " / " + str(step_count) + " = " + str(round(
             (unstable_after_5sec * 100) / step_count, 2)) + "%")
-    print("**unstable before 10sec:** " + str(unstable_before_5sec) + " / " + str(step_count) + " = " + str(round(
+    print("**unstable before 5sec over whole run:** " + str(unstable_before_5sec) + " / " + str(step_count) + " = " + str(round(
             (unstable_before_5sec * 100) / step_count, 2)) + "%")
+    print("**unstable after 5sec:** " + str(unstable_after_5sec) + " / " + str(step_count_after_5sec) + " = " + str(round(
+            (unstable_after_5sec * 100) / step_count_after_5sec, 2)) + "%")
+    print("**unstable before 5sec:** " + str(unstable_before_5sec) + " / " + str(step_count_befor_5sec) + " = " + str(round(
+            (unstable_before_5sec * 100) / step_count_befor_5sec, 2)) + "%")
 
 
 # https://progr.interplanety.org/en/python-how-to-find-the-polygon-center-coordinates/

@@ -91,16 +91,15 @@ def plot_stability_data_to_footfall_pattern(start, end):
             plt.axes().xaxis.set_minor_locator(m1)
         plt.ylim(-0.5, 5.5)
         # plt.yticks([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
-        plt.yticks([0, 1, 2, 3, 4, 5],
-                ['RR', 'RM', 'RF', 'LR', 'LM', 'LF'])
+        plt.yticks([0, 1, 2, 3, 4, 5], ['RR', 'RM', 'RF', 'LR', 'LM', 'LF'])
         # plt.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         # self.ax_footfall.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
-        plt.xlabel('time [s]', fontsize=30)
+        plt.xlabel('time [s]', fontsize=40)
 
         # plt.rc('xtick', labelsize=20)
         # plt.rc('ytick', labelsize=20)
         # plt.rcParams.update({'font.size': 40})
-        plt.tick_params(labelsize=30)
+        plt.tick_params(labelsize=40)
 
         plt.grid(which='both')
 

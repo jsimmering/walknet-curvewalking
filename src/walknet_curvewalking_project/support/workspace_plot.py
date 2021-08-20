@@ -147,9 +147,15 @@ def plot_workspace_data():
 
             # plt.draw()
             # plt.pause(0.0001)
-            axs.axvline(x=0.25, color='b', lw=1)
-            axs.axvline(x=0.05, color='b', lw=1)
-            axs.axvline(x=-0.17, color='b', lw=1)
+            # axs.axvline(x=0.25, color='b', lw=1)
+            # axs.axvline(x=0.05, color='b', lw=1)
+            # axs.axvline(x=-0.17, color='b', lw=1)
+            axs.plot((0.25), (0.24), 'x', color='b')
+            axs.plot((0.05), (0.24 + 0.04176), 'x', color='b')
+            axs.plot((-0.17), (0.24), 'x', color='b')
+            axs.plot((0.25), -(0.24), 'x', color='b')
+            axs.plot((0.05), -(0.24 + 0.04176), 'x', color='b')
+            axs.plot((-0.17), -(0.24), 'x', color='b')
 
             axs.axvline(x=0.25 - 0.08, color='g', lw=1)
             axs.axvline(x=0.05 - 0.08, color='g', lw=1)
