@@ -20,17 +20,18 @@ class TestController:
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, self.movement_dir)
+        self.leg = SingleLeg(name, self.movement_dir, False)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
         self.stance_trajectory_gen = StanceMovementSimple(self.leg)
         # self.stance_net = StanceMovementBodyModel(self)
-        self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
+        topic_prefix = RSTATIC.wx_topics[self.name]
+        self.alpha_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_coxa_controller/state',
                 JointControllerState, self.leg.c1_callback)
-        self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
+        self.beta_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_femur_controller/state',
                 JointControllerState, self.leg.thigh_callback)
-        self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
+        self.gamma_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_tibia_controller/state',
                 JointControllerState, self.leg.tibia_callback)
         self.kinematic_sub = rospy.Subscriber('/kinematic', Bool, self.kinematic_callback)
 
@@ -253,9 +254,9 @@ class TestController:
         actual_angles = self.leg.get_current_angles()
         rospy.loginfo('actually set angles: ' + str(actual_angles))
         ee_pos = self.leg.ee_position()
-        rospy.loginfo('current ee_pos (forward kinematic) = ' + str(ee_pos))
+        rospy.loginfo('current ee_pos (forward kinematic {}) = {}'.format(self.leg.get_current_angles(), ee_pos))
         ee_pos = self.leg.compute_forward_kinematics(cur_angles)
-        rospy.loginfo('ee_pos (inverse kinematic angles) = ' + str(ee_pos))
+        rospy.loginfo('ee_pos (inverse kinematic angles {}) = {}'.format(cur_angles, ee_pos))
         rospy.loginfo("##########################################################################################")
 
     def test_pep_aep(self):
@@ -280,8 +281,8 @@ if __name__ == '__main__':
     legController = TestController('lf', nh, True, None)
     # rospy.spin()
     try:
-        legController.test_pep_aep()
-        # legController.test_kinematic()
+        #legController.test_pep_aep()
+        legController.test_kinematic()
         # legController.manage_walk()
         # legController.manage_walk_bezier()
         # legController.bezier_swing()

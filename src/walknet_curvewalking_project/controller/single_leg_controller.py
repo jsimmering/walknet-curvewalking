@@ -75,11 +75,12 @@ class SingleLegController:
         else:
             self.stance_net = StanceMovementBodyModel(self)
 
-        self.alpha_sub = rospy.Subscriber('/phantomx/j_c1_' + self.name + '_position_controller/state',
+        topic_prefix = RSTATIC.wx_topics[self.name]
+        self.alpha_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_coxa_controller/state',
                 JointControllerState, self.leg.c1_callback)
-        self.beta_sub = rospy.Subscriber('/phantomx/j_thigh_' + self.name + '_position_controller/state',
+        self.beta_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_femur_controller/state',
                 JointControllerState, self.leg.thigh_callback)
-        self.gamma_sub = rospy.Subscriber('/phantomx/j_tibia_' + self.name + '_position_controller/state',
+        self.gamma_sub = rospy.Subscriber('/wxmark4/' + topic_prefix + '_tibia_controller/state',
                 JointControllerState, self.leg.tibia_callback)
 
         self._rules_pub = rospy.Publisher('/walknet/' + self.name + '/rules', rules, queue_size=1)

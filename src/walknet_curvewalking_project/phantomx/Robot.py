@@ -20,7 +20,7 @@ class Robot:
 
         self.nh = nh
 
-        # self.joint_sub = rospy.Subscriber('/phantomx/joint_states', JointState, self.joint_state_callback)
+        # self.joint_sub = rospy.Subscriber('/wxmark4/joint_states', JointState, self.joint_state_callback)
         # self.got_joint_data = False
         # self.current_power_joint_torque = 0
 
