@@ -20,7 +20,7 @@ class TestController:
         if 'l' in self.name:
             rospy.loginfo("leg on left side movement_dir -1")
             self.movement_dir = -1
-        self.leg = SingleLeg(name, self.movement_dir)
+        self.leg = SingleLeg(name, self.movement_dir, False)
         self.temp = SwingMovementBezier(self.leg)
         self.swing = swing
         self.swing_trajectory_gen = SimpleSwingTrajectoryGen(self.leg)
@@ -280,8 +280,8 @@ if __name__ == '__main__':
     legController = TestController('lf', nh, True, None)
     # rospy.spin()
     try:
-        legController.test_pep_aep()
-        # legController.test_kinematic()
+        # legController.test_pep_aep()
+        legController.test_kinematic()
         # legController.manage_walk()
         # legController.manage_walk_bezier()
         # legController.bezier_swing()
