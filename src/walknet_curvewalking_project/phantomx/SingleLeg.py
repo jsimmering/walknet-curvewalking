@@ -74,28 +74,12 @@ class SingleLeg:
         self.pep_shift_ipsilateral_front = 0
         self.pep_shift_contralateral = 0
 
-        # default_ee_pos = self.c1_rotation(0,
-        #         self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0, self.tibia_ee_transformation())))
-        # default_gamma_pos = self.c1_rotation(0, self.c1_thigh_transformation(0, self.thigh_tibia_transformation(0)))
-        # default_beta_pos = self.c1_rotation(0, self.c1_thigh_transformation(0))
-        # self.thigh_tibia_angle = abs(atan2(default_gamma_pos[2] - default_beta_pos[2],
-        #                                    default_gamma_pos[0] - default_beta_pos[0]))  # 0.2211...
-        # self.tibia_z_angle = 0.4185802051725146
-        # self.tibia_z_angle = abs(atan2(default_ee_pos[2] - default_gamma_pos[2], default_ee_pos[0] - default_gamma_pos[
-        #     0])) - self.thigh_tibia_angle  # pi - atan2(0.09, 0.095)  # 0.12435499454676124
-
         gamma_in_beta = self.thigh_tibia_transformation(0)
         self.thigh_tibia_angle = abs(atan2(gamma_in_beta[2], gamma_in_beta[0]))
-
         ee_in_gamma = self.tibia_ee_transformation()
         self.tibia_z_angle = abs(atan2(ee_in_gamma[2], ee_in_gamma[0])) - self.thigh_tibia_angle
-
         rospy.loginfo(self.name + " thigh_tibia_angle = {} tibia_z_angle = {}".format(self.thigh_tibia_angle,
                 self.tibia_z_angle))
-
-        # self.bot = InterbotixHexapodXS('wxmark4', init_node=False)
-        self.T_fb = numpy.identity(4)
-        self.T_fb[2, 3] = 0.033
 
         # publish pep visualization
         self.viz = False
@@ -440,207 +424,39 @@ class SingleLeg:
         if len(p) == 3:
             p = numpy.append(p, [1])
 
-        #p[2] = p[2] + 0.33
-
         tetas, success = self.solve_ik(p)
         return numpy.array(tetas)
 
     # modified from interbotix toolbox inverse kinematic calculation
     # https://github.com/Interbotix/interbotix_ros_toolboxes/blob/541384394eb9b322af886917661e4b3e7f861e52/interbotix_xs_toolbox/interbotix_xs_modules/src/interbotix_xs_modules/hexapod.py#L182
-    def solve_ik(self, p_f, mod_value=0):
-
-        #p_b_alt = numpy.dot(ang.transInv(self.T_fb), numpy.r_[p_f[0:3], 1])
-        #p_b = p_f
-        #p_b[2] -= 0.033 # transform in bottom_base frame
-        #rospy.loginfo("p_b_alt = {}, p_b = {}".format(p_b_alt, p_b))
+    # p_f ee_pos in base frame
+    def solve_ik(self, p_f):
+        # p_cf: ee_pos in static c1 frame
         p_cf = numpy.dot(ang.transInv(self._c1_static_transform), p_f)
-        #p_cf = self.apply_c1_static_transform(p_f)
-        rospy.loginfo("p_cf = {}".format(p_cf))
+        alpha_angle = math.atan2(p_cf[1], p_cf[0])
 
-        theta_1 = math.atan2(p_cf[1], p_cf[0])
-        rospy.loginfo("alpha = " + str(theta_1))
-
+        # rotation matrix alpha
         R_cfcm = numpy.identity(3)
-        R_cfcm[:2,:2] = ang.yawToRotationMatrix(theta_1)
+        R_cfcm[:2,:2] = ang.yawToRotationMatrix(alpha_angle)
 
-        p_cm = numpy.dot(R_cfcm.T, p_cf[:3]) # ee pos in static c1
-        rospy.loginfo("p_cm = {}".format(p_cm))
-        #p_cm[0] += mod_value
+        # ee pos in c1
+        p_cm = numpy.dot(R_cfcm.T, p_cf[:3])
+
+        # ee_pos in femur/thigh frame
         p_femur = numpy.subtract(p_cm, [self._segment_lengths[0], 0, 0])
-        rospy.loginfo("p_femur = " + str(p_femur))
         try:
             beta_to_ee = math.sqrt((p_femur[0]**2 + p_femur[2]**2))
-            rospy.loginfo("c = " + str(beta_to_ee))
+            # cos_gamma_inner = cos(pi - gamma_inner)
             cos_gamma_inner = (beta_to_ee**2 - self._segment_lengths[1]**2 - self._segment_lengths[2]**2) / (2 * self._segment_lengths[1] * self._segment_lengths[2])
-            rospy.loginfo("cos_gamma_inner = " + str(cos_gamma_inner))
             if cos_gamma_inner > 1.:
                 theta_3 = 0
             else:
                 theta_3 = math.acos(cos_gamma_inner)
-            rospy.loginfo("gamma = " + str(theta_3 - self.tibia_z_angle))
             theta_2 = -(math.atan2(p_femur[2], p_femur[0]) + math.atan2((self._segment_lengths[2] * math.sin(theta_3)) , (self._segment_lengths[1] + self._segment_lengths[2] * math.cos(theta_3))))
-            return [theta_1, theta_2 - self.thigh_tibia_angle, theta_3 - self.tibia_z_angle], True
+            return [alpha_angle, theta_2 - self.thigh_tibia_angle, theta_3 - self.tibia_z_angle], True
         except ValueError:
             rospy.logerr("inverse kinematic not successful")
             return [0, 0, 0], False
-
-    #  Calculation of inverse kinematics for a leg:
-    #   Given a position in 3D space a joint configuration is calculated.
-    #   When no position is provided the current position of the current leg is used
-    #   to calculate the complementing angles.
-    #   @param p point in body coordinate system
-    def compute_inverse_kinematics_old(self, p=None):
-        if isinstance(p, (type(None))):
-            p = self.ee_position()
-        if len(p) == 3:
-            p = numpy.append(p, [1])
-        # p_temp = copy.copy(p)
-        # c1_pos = self.apply_c1_static_transform()
-
-        # alpha_angle: float = -atan2(p[1], (p[0]))
-        # switched x and y coordination because the leg points in the direction of the y axis of the MP_BODY frame:
-        c1_static_rotation_inverse = numpy.array([
-            [self._c1_static_transform[0][0], self._c1_static_transform[1][0], self._c1_static_transform[2][0]],
-            [self._c1_static_transform[0][1], self._c1_static_transform[1][1], self._c1_static_transform[2][1]],
-            [self._c1_static_transform[0][2], self._c1_static_transform[1][2], self._c1_static_transform[2][2]]])
-        translation_inverse = numpy.array(numpy.dot(-c1_static_rotation_inverse,
-                [self._c1_static_transform[0][3], self._c1_static_transform[1][3], self._c1_static_transform[2][3]]))
-        c1_static_inverse = numpy.array([
-            [c1_static_rotation_inverse[0][0], c1_static_rotation_inverse[0][1], c1_static_rotation_inverse[0][2],
-             translation_inverse[0]],
-            [c1_static_rotation_inverse[1][0], c1_static_rotation_inverse[1][1], c1_static_rotation_inverse[1][2],
-             translation_inverse[1]],
-            [c1_static_rotation_inverse[2][0], c1_static_rotation_inverse[2][1], c1_static_rotation_inverse[2][2],
-             translation_inverse[2]],
-            [0, 0, 0, 1]])
-        p_c1 = numpy.array(numpy.dot(c1_static_inverse, p))
-        rospy.loginfo("p_c1 = " + str(p_c1))
-        alpha_angle = atan2(p_c1[1], p_c1[0])
-
-        beta_pos = self.c1_rotation(alpha_angle, self.c1_thigh_transformation(0))
-        beta_to_ee = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform(beta_pos))
-        rospy.loginfo("beta_to_ee old = " + str(beta_to_ee))
-        beta_to_ee = numpy.linalg.norm(p_c1 - beta_pos)
-        rospy.loginfo("beta_to_ee new = " + str(beta_to_ee))
-        # beta_to_ee = p_c1[0:3]
-        # beta_to_ee[0] -= self._segment_lengths[0]
-        # rospy.loginfo("beta_to_ee = " + str(beta_to_ee))
-
-        try:
-            # gamma_angle = (acos(
-            #         (pow(self._segment_lengths[2], 2) + pow(self._segment_lengths[1], 2) - pow(beta_to_ee, 2)) / (
-            #                     2 * self._segment_lengths[1] * self._segment_lengths[2]))) - pi / 2
-            gamma_inner = (pow(self._segment_lengths[2], 2) + pow(self._segment_lengths[1], 2) - pow(beta_to_ee, 2)) / (
-                            2 * self._segment_lengths[1] * self._segment_lengths[2])
-            rospy.logerr("gamma_inner = " + str(gamma_inner))
-            if gamma_inner < -1.:
-                gamma_angle = - self.tibia_z_angle
-                if p_c1[2] < 0:
-                    gamma_angle = pi - acos(gamma_inner) - self.tibia_z_angle
-                else:
-                    gamma_angle = pi - acos(gamma_inner) - (
-                                self.tibia_z_angle + self.thigh_tibia_angle) + self.thigh_tibia_angle
-                rospy.logerr("acos(gamma_inner) < -1 => gamma = pi ")
-            else:
-                # gamma_angle = pi - acos(gamma_inner) - self.tibia_z_angle
-                if p_c1[2] < 0:
-                    gamma_angle = pi - acos(gamma_inner) - self.tibia_z_angle
-                else:
-                    gamma_angle = pi - acos(gamma_inner) - (
-                                self.tibia_z_angle + self.thigh_tibia_angle) + self.thigh_tibia_angle
-                rospy.logerr("acos(gamma_inner) = " + str(acos(gamma_inner)))
-
-            rospy.loginfo("pi = " + str(pi))
-            rospy.loginfo("tibia_z_angle = " + str(self.tibia_z_angle))
-            rospy.logerr("gamma_angle = " + str(gamma_angle))
-            rospy.loginfo(" ")
-
-            cos_beta_1_inner = (pow(beta_to_ee, 2) + pow(self._segment_lengths[1], 2) - pow(self._segment_lengths[2], 2)) / (
-                                2 * self._segment_lengths[1] * beta_to_ee)
-            rospy.logerr("cos_beta_1_inner = " + str(cos_beta_1_inner))
-            if cos_beta_1_inner > 1:
-                beta_1_inner = 0
-            else:
-                beta_1_inner = (acos(cos_beta_1_inner))
-            cos_beta_inner = (pow(beta_to_ee, 2) + pow(self._segment_lengths[0], 2) - pow(numpy.linalg.norm(p_c1[0:3]),
-                    2)) / (2 * self._segment_lengths[0] * beta_to_ee)
-            # Avoid running in numerical rounding error
-            if cos_beta_inner < -1.:
-                beta_inner = pi
-            else:
-                beta_inner = (acos(cos_beta_inner))
-            # h2 = (acos((pow(lct, 2) + pow(self.segment_lengths[0], 2) - pow(numpy.linalg.norm(p[0:3]), 2)) /
-            #       (2 * self.segment_lengths[0] * lct)))
-        except ValueError:
-            raise ValueError('The provided position (' + str(p[0]) + ', ' + str(p[1]) + ', ' + str(
-                    p[2]) + ') is not valid for the given geometry for leg ' + self.name + '.')
-        if p_c1[2] < 0:
-            beta_angle = pi - (beta_1_inner + beta_inner + self.thigh_tibia_angle)
-            rospy.loginfo("pi = " + str(pi))
-            rospy.loginfo("thigh_tibia_angle = " + str(self.thigh_tibia_angle))
-            rospy.logerr("beta_1_inner = " + str(beta_1_inner))
-            rospy.logerr("cos_beta_inner = " + str(cos_beta_inner))
-            rospy.logerr("beta_inner = " + str(beta_inner))
-            rospy.logerr("beta_angle = pi - (beta_1_inner + beta_inner + self.tibia_z_angle) = " + str(beta_angle))
-            rospy.loginfo(" ")
-        else:
-            beta_angle = (beta_1_inner + beta_inner) - pi
-            # beta_angle = pi - beta_inner + beta_1_inner + self.thigh_tibia_angle
-            rospy.loginfo("pi = " + str(pi))
-            # rospy.loginfo("tibia_z_angle = " + str(self.tibia_z_angle))
-            rospy.logerr("beta_1_inner = " + str(beta_1_inner))
-            rospy.logerr("cos_beta_inner = " + str(cos_beta_inner))
-            rospy.logerr("beta_inner = " + str(beta_inner))
-            rospy.logerr("beta_angle = pi - (beta_1_inner + beta_inner) = " + str(beta_angle))
-            rospy.loginfo(" ")
-
-        # if self.beta_direction is True:
-        #     gamma_angle *= -1
-        # else:
-        #     beta_angle *= -1
-
-        # cos_gamma = (pow(self._segment_lengths[2], 2) + pow(self._segment_lengths[1], 2) - pow(beta_to_ee, 2)) / (
-        #         2 * self._segment_lengths[1] * self._segment_lengths[2])
-        # rospy.loginfo("cos_gamma = " + str(cos_gamma))
-        # # Avoid running in numerical rounding error
-        # if cos_gamma < -1:
-        #     gamma_inner = pi
-        # else:
-        #     gamma_inner = (acos(cos_gamma))
-        # rospy.loginfo("gamma_inner = " + str(gamma_inner))
-        # rospy.loginfo("pi = " + str(pi))
-        # rospy.loginfo("self.tibia_z_angle = " + str(self.tibia_z_angle))
-        # # gamma_angle = gamma_inner - pi - self.tibia_z_angle
-        # gamma_angle = pi - gamma_inner - self.tibia_z_angle
-        #
-        # cos_beta_inner = (pow(self._segment_lengths[1], 2) + pow(beta_to_ee, 2) -
-        #                   pow(self._segment_lengths[2], 2)) / (2 * self._segment_lengths[1] * beta_to_ee)
-        # # Avoid running in numerical rounding error
-        # if cos_beta_inner > 1:
-        #     gamma_inner = 0
-        # else:
-        #     gamma_inner = (acos(cos_beta_inner))
-        #
-        # vector_c1_ee = numpy.linalg.norm(p[0:3] - self.apply_c1_static_transform())
-        # cos_beta = (pow(beta_to_ee, 2) + pow(self._segment_lengths[0], 2) - pow(vector_c1_ee, 2)) / (
-        #         2 * beta_to_ee * self._segment_lengths[0])
-        # # Avoid running in numerical rounding error
-        # if cos_beta < -1.:
-        #     h2 = pi
-        # else:
-        #     h2 = (acos(cos_beta))
-        #
-        # beta_angle = pi - (gamma_inner + h2 + self.thigh_tibia_angle)
-        # if RSTATIC.joint_angle_limits[1][0] >= beta_angle:
-        #     rospy.logerr(self.name + " beta limit = " + str(
-        #             RSTATIC.joint_angle_limits[1][0]) + " > beta = " + str(beta_angle))
-        #     if not gamma_flipped:
-        #         rospy.logerr(self.name + ": gamma not flipped ")
-        #     # if p[2] >= 0:
-        #     beta_angle = gamma_inner + h2 - pi - self.thigh_tibia_angle
-        #     rospy.logerr(self.name + " flip beta_angle. beta new = " + str(beta_angle))
-
-        return numpy.array([alpha_angle, beta_angle, gamma_angle])
 
     def get_current_angles(self):
         if self.alpha is None or self.beta is None or self.gamma is None:
