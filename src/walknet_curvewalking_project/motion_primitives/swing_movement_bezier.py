@@ -361,7 +361,7 @@ class SwingMovementBezier:
             try:
                 next_angles = self.leg.compute_inverse_kinematics(target_position)
                 if RSTATIC.DEBUG:
-                    rospy.loginfo("current targets: " + str(self.leg.get_current_targets()))
+                    rospy.loginfo("current targets: " + str(self.leg.get_current_set_point()))
                     rospy.loginfo("target position is: " + str(target_position))
                     rospy.loginfo("computed next angles as: " + str(next_angles))
                     rospy.loginfo("would reach pos: " + str(self.leg.compute_forward_kinematics(next_angles)))

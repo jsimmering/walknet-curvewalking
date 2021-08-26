@@ -6,6 +6,7 @@ import numpy
 # ====== simulation parameters ========
 controller_frequency = 50
 DEBUG = False
+SIM = True
 
 # ========== naming objects ========
 leg_names = ('lf', 'rf', 'lm', 'rm', 'lr', 'rr')
