@@ -362,10 +362,10 @@ class SingleLeg:
         # calculate shoulder angle as angle of vector from c1 pos to ee pos in body frame
         x_pos = temp_tarsus_position[0]
         y_pos = temp_tarsus_position[1]
-        rospy.logerr("x_pos = {}, y_pos = {}".format(x_pos, y_pos))
+        #rospy.logerr("x_pos = {}, y_pos = {}".format(x_pos, y_pos))
         alpha_check = atan2(y_pos, x_pos)
-        rospy.logerr(
-                "|alpha_check ({}) - alpha ({})| = {} >= 0.01".format(alpha_check, alpha, abs(alpha_check - alpha)))
+        # rospy.logerr(
+        #         "|alpha_check ({}) - alpha ({})| = {} >= 0.01".format(alpha_check, alpha, abs(alpha_check - alpha)))
         if abs(alpha_check - alpha) >= 0.01:
             raise Exception(
                     'The provided angles for ' + self.name + '(' + str(alpha) + ', ' + str(beta) + ', ' + str(
