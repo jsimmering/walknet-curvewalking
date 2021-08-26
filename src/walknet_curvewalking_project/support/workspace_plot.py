@@ -178,12 +178,12 @@ def plot_workspace_data():
                 plt.savefig("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg",
                         bbox_inches='tight', pad_inches=0, format='svg', transparent=True)
 
-                sc.Figure("13.9cm", "15.75cm",
-                        # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
-                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.03175).move(4.35, 5.1)),
-                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg").scale(0.022))
-                ).save("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
-                SVG("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
+                # sc.Figure("13.9cm", "15.75cm",
+                #         # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
+                #         sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.03175).move(4.35, 5.1)),
+                #         sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg").scale(0.022))
+                # ).save("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
+                # SVG("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
             else:
                 plt.show()
         print("")

@@ -17,6 +17,7 @@ if len(sys.argv) >= 2:
     plot = True
     safe_plot = True
     plot_heigth = True
+    print_height = False
     calculate_cot = True
     controll_colors = False
     controll_colors_dir = False
@@ -116,7 +117,7 @@ if len(sys.argv) >= 2:
                     # print("startx = " + str(start_x) + " j = " + str(j))
                     start_y[j].append(values[2])
                     start_z[j].append(values[3])
-                    print("start_z = " + str(start_z))
+                    # print("start_z = " + str(start_z))
 
                 if first_position is None:
                     first_position = [values[1], values[2]]
@@ -334,7 +335,11 @@ if len(sys.argv) >= 2:
             # print(sorted(Z, key=float, reverse=True))
             # print(type(Z[0]))
             import itertools
+            # print("Z = " + str(Z))
             heights = list(itertools.chain.from_iterable(Z[1:len(Z)]))
+            if len(heights) == 0:
+                heights = Z[0]
+            # print("heights = " + str(heights))
             last = heights[0]
             idx = 0
             for i in range(1, len(Z)):
@@ -342,10 +347,11 @@ if len(sys.argv) >= 2:
                     idx = i
                 else:
                     break
-            print("idx = " + str(idx))
+            # print("idx = " + str(idx))
             #z_pos = heights[5: len(heights)]
 
-            print(sorted(heights, key=float, reverse=True))
+            if print_height:
+                print(sorted(heights, key=float, reverse=True))
             print("init height = " + str(Z[0][1]))
             plt.legend([str(n + 1) for n in range(0, len(files))],
                     # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
