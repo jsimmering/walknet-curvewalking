@@ -26,7 +26,7 @@ class SingleLeg:
             self._gamma_pub = rospy.Publisher('/wxmark4/' + self.interbotix_leg_name + '_tibia_controller/command',
                     Float64, queue_size=1)
         else:
-            self._joint_pub = rospy.Publisher('/wxmark4/command/single_joint', JointSingleCommand, queue_size=2)
+            self._joint_pub = rospy.Publisher('/wxmark4/commands/joint_single', JointSingleCommand, queue_size=2)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
 
