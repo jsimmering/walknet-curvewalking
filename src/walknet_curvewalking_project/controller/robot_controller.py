@@ -358,7 +358,7 @@ if __name__ == '__main__':
             "stepLength = {}, aepShift = {}, aepXShift = {}, innerStep = {}".format(step_length_param, shift_aep_param,
                     shift_aep_x_param, decrease_inner_stance_param))
 
-    trial_name_param = rospy.get_param('~name', "logs/")
+    trial_name_param = rospy.get_param('~name', "logs/test/")
 
     if duration != 0:
         robot_controller = RobotController('robot', nh, swing, step_length_param, shift_aep_param, shift_aep_x_param,

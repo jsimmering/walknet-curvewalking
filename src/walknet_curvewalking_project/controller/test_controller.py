@@ -18,7 +18,10 @@ class TestController:
         self.name = name
         self.movement_dir = 1
         if 'l' in self.name:
-            rospy.loginfo("leg on left side movement_dir -1")
+            rospy.loginfo("leg on left side movement_dir 1")
+            self.movement_dir = 1
+        else:
+            rospy.loginfo("leg on right side movement_dir -1")
             self.movement_dir = -1
         self.leg = SingleLeg(name, self.movement_dir, False)
         self.temp = SwingMovementBezier(self.leg)
@@ -122,6 +125,36 @@ class TestController:
         self.temp.move_to_next_point(0)
         rate.sleep()
         self.swing = False
+
+    def execute_swing_step(self):
+        self_gc = False
+        # rospy.loginfo(self.name + ": execute swing step.")
+        if self.temp.swing_start_point is None:
+            rospy.loginfo(self.name + ": reset swing")
+            self.temp.swing_start_point = self.leg.ee_position()
+
+            self.target_pos = RSTATIC.initial_aep[RSTATIC.leg_names.index(self.name) // 2].copy()
+            self.target_pos[1] = self.target_pos[1] * self.movement_dir
+            self.temp.swing_target_point = self.target_pos
+            rospy.loginfo("swing target point = " + str(self.target_pos))
+
+            self.temp.reacht_peak = False
+            # self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points()
+            self.temp.trajectory_generator.bezier_points = self.temp.compute_bezier_points_with_joint_angles()
+        self.temp.move_to_next_point(1)
+        if self.temp.reacht_peak:
+            rospy.loginfo("reached pep")
+            if self.leg.predicted_ground_contact():
+                rospy.loginfo("gc")
+                self.temp.move_to_next_point(0)
+                self.temp.swing_start_point = None
+                self.swing = False
+                # rospy.logerr(self.name + ": finish swing go to stance")
+
+                self_gc = True
+            else:
+                rospy.loginfo("no gc")
+        return self_gc
 
     # function for moving a leg alternating between swing and stance.
     def manage_walk_bezier(self):
@@ -254,9 +287,9 @@ class TestController:
         actual_angles = self.leg.get_current_angles()
         rospy.loginfo('actually set angles: ' + str(actual_angles))
         ee_pos = self.leg.ee_position()
-        rospy.loginfo('current ee_pos (forward kinematic {}) = {}'.format(self.leg.get_current_angles(), ee_pos))
+        rospy.loginfo('current ee_pos (forward kinematic) = {}'.format(ee_pos))
         ee_pos = self.leg.compute_forward_kinematics(cur_angles)
-        rospy.loginfo('ee_pos (inverse kinematic angles {}) = {}'.format(cur_angles, ee_pos))
+        rospy.loginfo('ee_pos (inverse kinematic angles) = {}'.format(ee_pos))
         rospy.loginfo("##########################################################################################")
 
     def test_pep_aep(self):
@@ -278,14 +311,24 @@ class TestController:
 
 if __name__ == '__main__':
     nh = rospy.init_node('test_controller', anonymous=True)
-    legController = TestController('lf', nh, True, None)
+    legController = TestController('lm', nh, True, None)
     # rospy.spin()
     try:
+        rate = rospy.Rate(RSTATIC.controller_frequency)
+        while not legController.leg.is_ready() and not rospy.is_shutdown():
+            rospy.loginfo("leg not connected yet! wait...")
+            rate.sleep()
         #legController.test_pep_aep()
-        legController.test_kinematic()
+        # legController.test_kinematic()
         # legController.manage_walk()
         # legController.manage_walk_bezier()
         # legController.bezier_swing()
+
+        gc = False
+        while not gc:
+            gc = legController.execute_swing_step()
+            rate.sleep()
+
         # legController.manage_swing()
         # legController.manage_stance()
     except rospy.ROSInterruptException:
