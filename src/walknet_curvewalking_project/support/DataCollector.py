@@ -51,7 +51,7 @@ class DataCollector:
 
     def position_callback(self, data):
         if self.walking and self.running:
-            robot_position = data.pose[data.name.index('phantomx')]
+            robot_position = data.pose[data.name.index('wxmark4')]
             self.current_position = [robot_position.position.x, robot_position.position.y]
             (x, y, self.current_z_angle) = tf_trans.euler_from_quaternion(
                     [robot_position.orientation.x, robot_position.orientation.y, robot_position.orientation.z,
@@ -59,7 +59,7 @@ class DataCollector:
             if not self.start_z_angle:
                 self.start_z_angle = self.current_z_angle
                 rospy.logwarn("Data Collector: start angle = " + str(self.start_z_angle))
-            self.write_positiion_to_file(robot_position, data.twist[data.name.index('phantomx')])
+            self.write_positiion_to_file(robot_position, data.twist[data.name.index('wxmark4')])
             if self.steps_since_last % 1000 == 0 and (self.required_distance != 0.0 or self.required_distance != 0):
                 if self.last_position is not None:
                     dis = np.linalg.norm(np.array(self.current_position) - np.array(self.last_position))
