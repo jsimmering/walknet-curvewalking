@@ -10,7 +10,7 @@ from visualization_msgs.msg import Marker
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from interbotix_common_modules import angle_manipulation as ang
-from interbotix_xs_sdk.msg import JointSingleCommand
+from interbotix_xs_sdk.msg import JointGroupCommand
 
 
 class SingleLeg:
@@ -26,7 +26,7 @@ class SingleLeg:
             self._gamma_pub = rospy.Publisher('/wxmark4/' + self.interbotix_leg_name + '_tibia_controller/command',
                     Float64, queue_size=1)
         else:
-            self._joint_pub = rospy.Publisher('/wxmark4/commands/joint_single', JointSingleCommand, queue_size=2)
+            self._joint_pub = rospy.Publisher('/wxmark4/commands/joint_single', JointGroupCommand, queue_size=2)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
 
@@ -478,12 +478,14 @@ class SingleLeg:
                 self._beta_pub.publish(next_angles[1])
                 self._gamma_pub.publish(next_angles[2])
             else:
-                alpha_command = JointSingleCommand(self.interbotix_leg_name + '_coxa', next_angles[0])
-                self._joint_pub.publish(alpha_command)
-                gamma_command = JointSingleCommand(self.interbotix_leg_name + '_tibia', next_angles[2])
-                self._joint_pub.publish(gamma_command)
-                beta_command = JointSingleCommand(self.interbotix_leg_name + '_femur', next_angles[1])
-                self._joint_pub.publish(beta_command)
+                leg_command = JointGroupCommand(self.interbotix_leg_name, next_angles)
+                self._joint_pub.publish(leg_command)
+                # alpha_command = JointSingleCommand(self.interbotix_leg_name + '_coxa', next_angles[0])
+                # self._joint_pub.publish(alpha_command)
+                # gamma_command = JointSingleCommand(self.interbotix_leg_name + '_tibia', next_angles[2])
+                # self._joint_pub.publish(gamma_command)
+                # beta_command = JointSingleCommand(self.interbotix_leg_name + '_femur', next_angles[1])
+                # self._joint_pub.publish(beta_command)
             self.alpha_set_point = next_angles[0]
             self.beta_set_point = next_angles[1]
             self.gamma_set_point = next_angles[2]
