@@ -479,6 +479,7 @@ class SingleLeg:
                 self._gamma_pub.publish(next_angles[2])
             else:
                 leg_command = JointGroupCommand(self.interbotix_leg_name, [next_angles[0], next_angles[1], next_angles[2]])
+                rospy.loginfo("jointGroupCommand =\n" + str(leg_command))
                 self._joint_pub.publish(leg_command)
                 # alpha_command = JointSingleCommand(self.interbotix_leg_name + '_coxa', next_angles[0])
                 # self._joint_pub.publish(alpha_command)
