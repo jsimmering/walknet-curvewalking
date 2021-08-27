@@ -349,9 +349,11 @@ class SwingMovementBezier:
             target_position, target_parameter = self.trajectory_generator.compute_next_target(
                     desired_distance=self.swing_velocity / RSTATIC.controller_frequency,
                     current_position=self.leg.ee_position())
-            if target_position[2] <= -0.15:
-                rospy.logerr(self.leg.name + " target position = {} target parameter = {}".format(target_position,
-                        target_parameter))
+            if target_position[2] <= RSTATIC.stance_height:
+                # rospy.logerr(self.leg.name + " target position = {} target parameter = {}".format(target_position, target_parameter))
+                if self.reacht_peak:
+                    target_position[2] = RSTATIC.stance_height
+                    self.trajectory_generator.last_target_position[2] = RSTATIC.stance_height
             if target_parameter >= 0.5:
                 # rospy.loginfo("reacht_peak = True")
                 self.reacht_peak = True
