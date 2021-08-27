@@ -170,8 +170,11 @@ class RobotController:
     def walk_body_model(self):
         while not rospy.is_shutdown() and self.walk_start_time and self.robot.running:
             if self.walk_duration is not None and rospy.Time.now() - self.walk_start_time > self.walk_duration:
-                talker()
-                self.robot.running = False
+                self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
+                self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
+                self.stop = True
+                # talker()
+                # self.robot.running = False
                 # self.robot.write_all_stability_data_to_file()
             self.controller_steps += 1
             self.update_stance_body_model()
