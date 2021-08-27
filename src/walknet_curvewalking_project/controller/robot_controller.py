@@ -154,7 +154,7 @@ class RobotController:
             self.robot.body_model.pullBodyModelAtFrontIntoRelativeDirection(0, 0)
             self.robot.body_model.pullBodyModelAtBackIntoRelativeDirection(0, 0)
             self.stop = True
-            self.robot.running = False
+            # self.robot.running = False
             # self.robot.write_all_stability_data_to_file()
 
     def update_stance_body_model(self):
