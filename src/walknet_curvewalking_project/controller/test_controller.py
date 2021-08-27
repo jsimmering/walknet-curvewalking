@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import rospy
-from control_msgs.msg import JointControllerState
-from std_msgs.msg import Bool
+from sensor_msgs.msg import JointState
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 from walknet_curvewalking_project.motion_primitives.stance_movment_simple import StanceMovementSimple

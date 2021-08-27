@@ -166,6 +166,18 @@ class SingleLeg:
         # rospy.loginfo(self.name + ": got tibia data = " + str(data))
         self.gamma = position
 
+    def c1_callback(self, data):
+        # rospy.loginfo(self.name + ": got c1 data = " + str(data))
+        self.alpha = data.process_value
+
+    def thigh_callback(self, data):
+        # rospy.loginfo(self.name + ": got thigh data = " + str(data))
+        self.beta = data.process_value
+
+    def tibia_callback(self, data):
+        # rospy.loginfo(self.name + ": got tibia data = " + str(data))
+        self.gamma = data.process_value
+
     def ee_position(self):
         self.update_ee_position()
         return self.ee_pos

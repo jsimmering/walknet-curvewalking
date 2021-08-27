@@ -59,7 +59,7 @@ body_c1_tf = (lf, rf, lm, rm, lr, rr)
 # ========== walknet settings ==========
 default_stance_distance = 0.08  # 0.09  # 0.10 pep_shifted to aep_shifted
 stance_height = -0.09
-default_stance_width = 0.22 # 0.365/2
+default_stance_width = 0.20 # 0.365/2
 middle_leg_offset = 0.035
 
 _front_initial_aep = numpy.array([0.25, default_stance_width, stance_height])
