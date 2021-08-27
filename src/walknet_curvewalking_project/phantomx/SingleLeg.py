@@ -26,7 +26,7 @@ class SingleLeg:
             self._gamma_pub = rospy.Publisher('/wxmark4/' + self.interbotix_leg_name + '_tibia_controller/command',
                     Float64, queue_size=1)
         else:
-            self._joint_pub = rospy.Publisher('/wxmark4/commands/joint_single', JointGroupCommand, queue_size=2)
+            self._joint_pub = rospy.Publisher('/wxmark4/commands/joint_group', JointGroupCommand, queue_size=2)
 
         self.viz_pub_rate = rospy.Rate(RSTATIC.controller_frequency)
 
@@ -479,7 +479,7 @@ class SingleLeg:
                 self._gamma_pub.publish(next_angles[2])
             else:
                 leg_command = JointGroupCommand(self.interbotix_leg_name, [next_angles[0], next_angles[1], next_angles[2]])
-                rospy.loginfo("jointGroupCommand =\n" + str(leg_command))
+                # rospy.loginfo("jointGroupCommand =\n" + str(leg_command))
                 self._joint_pub.publish(leg_command)
                 # alpha_command = JointSingleCommand(self.interbotix_leg_name + '_coxa', next_angles[0])
                 # self._joint_pub.publish(alpha_command)
