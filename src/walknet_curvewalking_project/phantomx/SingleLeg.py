@@ -478,7 +478,7 @@ class SingleLeg:
                 self._beta_pub.publish(next_angles[1])
                 self._gamma_pub.publish(next_angles[2])
             else:
-                leg_command = JointGroupCommand(self.interbotix_leg_name, next_angles)
+                leg_command = JointGroupCommand(self.interbotix_leg_name, [next_angles[0], next_angles[1], next_angles[2]])
                 self._joint_pub.publish(leg_command)
                 # alpha_command = JointSingleCommand(self.interbotix_leg_name + '_coxa', next_angles[0])
                 # self._joint_pub.publish(alpha_command)
