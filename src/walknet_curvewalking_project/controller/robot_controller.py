@@ -64,7 +64,8 @@ class RobotController:
             leg.set_init_pos(init_pos)
 
             if leg.init_pos is not None:
-                leg.move_leg_one_step_towards_init_pos(leg.init_pos)
+                leg.set_up_moving_to_init_pos()
+                leg.move_leg_one_step_towards_init_pos()
                 self.rate.sleep()
             else:
                 rospy.logerr("leg init pose not set leg = {} init pose = {}".format(leg.name, leg.init_pos))
