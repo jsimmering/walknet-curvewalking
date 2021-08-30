@@ -357,7 +357,7 @@ class SingleLegController:
         desired_angles = self.leg.compute_inverse_kinematics(p)
         rospy.loginfo(self.name + ": desired angles = " + str(desired_angles))
 
-        threshold = 0.01
+        threshold = 0.02
         alpha_diff = (desired_angles[0] - current_angles[0]) / RSTATIC.controller_frequency
         if 0 > alpha_diff > -threshold:
             alpha_diff = -threshold
@@ -388,22 +388,22 @@ class SingleLegController:
         rospy.loginfo(self.name + ": current angles = " + str(current_angles))
         desired_angles = self.leg.compute_inverse_kinematics(p)
         rospy.loginfo(self.name + ": desired angles = " + str(desired_angles))
-        if abs(current_angles[0] - desired_angles[0]) < 0.1 and abs(
-                current_angles[1] - desired_angles[1]) < 0.1 and abs(current_angles[2] - desired_angles[2]) < 0.1:
+        if abs(current_angles[0] - desired_angles[0]) < 0.05 and abs(
+                current_angles[1] - desired_angles[1]) < 0.05 and abs(current_angles[2] - desired_angles[2]) < 0.05:
             self.leg.set_joint_point(desired_angles)
             return True
         else:
-            if abs(current_angles[0] - desired_angles[0]) < 0.1:
+            if abs(current_angles[0] - desired_angles[0]) < 0.05:
                 new_alpha = desired_angles[0]
             else:
                 new_alpha = current_angles[0] + self.init_pos_stepsizes[0]
 
-            if abs(current_angles[1] - desired_angles[1]) < 0.1:
+            if abs(current_angles[1] - desired_angles[1]) < 0.05:
                 new_beta = desired_angles[1]
             else:
                 new_beta = current_angles[1] + self.init_pos_stepsizes[1]
 
-            if abs(current_angles[2] - desired_angles[2]) < 0.1:
+            if abs(current_angles[2] - desired_angles[2]) < 0.05:
                 new_gamma = desired_angles[2]
             else:
                 new_gamma = current_angles[2] + self.init_pos_stepsizes[2]
