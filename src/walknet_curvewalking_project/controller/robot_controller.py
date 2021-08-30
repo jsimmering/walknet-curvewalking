@@ -75,13 +75,10 @@ class RobotController:
         while not rospy.is_shutdown() and not finished:
             finished = True
             for leg in self.robot.legs:
-                if not leg.leg.is_target_reached() or numpy.linalg.norm(leg.init_pos - leg.leg.ee_position()) > desired_distance:
-                    rospy.logwarn(
-                            leg.name + ": init position NOT reached! set targets: a={} b={} c={}".format(
-                                    leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point))
+                result = leg.move_leg_one_step_towards_init_pos()
+                if not result:
                     finished = False
-                    leg.move_leg_one_step_towards_init_pos()
-                    self.rate.sleep()
+                self.rate.sleep()
         rospy.loginfo("reached init positions")
 
     def initialize_body_model(self):

@@ -410,3 +410,4 @@ class SingleLegController:
 
             rospy.logerr(self.name + ": new angles = " + str([new_alpha, new_beta, new_gamma]))
             self.leg.set_joint_point([new_alpha, new_beta, new_gamma])
+            return False
