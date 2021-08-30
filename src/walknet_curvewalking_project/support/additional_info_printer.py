@@ -20,6 +20,7 @@ if len(sys.argv) >= 2:
 
     durations = []
     unstable_percent = []
+    stability_delay = []
     delays_percent = []
     valueError_percent = []
     average_swing_duration = []
@@ -50,6 +51,9 @@ if len(sys.argv) >= 2:
                     durations.append(float(split[-1]))
                 if split[0] == "unstable_percent":  # line_number == 16:
                     unstable_percent.append(round(float(split[split.index("=") + 1]), 2))
+                if split[0] == "cs" and split[1] == "with" and split[2] == "delay" and split[3] == "and" and \
+                        split[4] == "enforced" and split[5] == "stability" and split[6] == "[%]":  # line_number == 16:
+                    stability_delay.append(round(float(split[split.index("=") + 1]), 2))
                 elif split[0] == "value_error_count:":
                     is_error_line = True
                 elif split[0] == "swing_delay_count:":
@@ -127,6 +131,25 @@ if len(sys.argv) >= 2:
             unstable_str += ", "
     print("**unstable:**")
     print(unstable_str)
+    print("")
+
+    max_stability_delay = max(stability_delay)
+    max_stability_delay_str = "* "
+    for value in stability_delay:
+        if value >= 3.0:
+            if value == max_stability_delay:
+                max_stability_delay_str += "**_" + str(value) + "_**"
+            else:
+                max_stability_delay_str += "**" + str(value) + "**"
+        else:
+            if value == max_stability_delay:
+                max_stability_delay_str += "_" + str(value) + "_"
+            else:
+                max_stability_delay_str += str(value)
+        if not stability_delay.index(value) == len(stability_delay) - 1:
+            max_stability_delay_str += ", "
+    print("**delay for stability per controller step:**")
+    print(max_stability_delay_str)
     print("")
 
     try:

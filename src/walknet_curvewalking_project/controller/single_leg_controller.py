@@ -189,19 +189,23 @@ class SingleLegController:
         self.leg.shift_pep_contralateral(shift_distance)
 
     # function for executing a single step in either stance or swing movement depending on current phase.
-    def manage_walk(self, legs_in_swing, swing):
+    def manage_walk(self, gc, swing):
         if self.leg.viz:
             self.leg.pub_pep_threshold()
+        # if self.name == "lf" or self.name == "lm":
+        #     rospy.loginfo(self.name + ": gc = " + str(gc))
         if self.swing:
             if swing:
-                return self.execute_swing_step(legs_in_swing)
+                return self.execute_swing_step(), False
             else:
                 self.robot.running = False
-                return legs_in_swing
+                return True, False
         else:
-            return self.execute_stance_step(legs_in_swing)
+            return self.execute_stance_step(gc)
 
-    def execute_stance_step(self, legs_in_swing):
+    def execute_stance_step(self, gc):
+        self_gc = True
+        delayed = False
         # rospy.loginfo(self.name + ": execute stance step.")
         if self.last_stance_activation:
             stance_duration = rospy.Time.now() - self.last_stance_activation
@@ -225,48 +229,52 @@ class SingleLegController:
         self.stance_net.modulated_routine_function_call()
         # rospy.loginfo(self.name + ': current pep_thresh = ' + str(self.leg.pep_thresh))
         # if self.leg.reached_pep() and legs_in_swing < 3:
-        if (self.step_length and self.leg.reached_step_length() and legs_in_swing < 3) or (
-                not self.step_length and self.leg.reached_pep() and legs_in_swing < 3):
-            # if self.name == "rf":
-            #     rospy.logerr(self.name + ": reached_pep. switch to swing mode.")
-            self.stance_net.reset_stance_trajectory()
-            if (self.shift_aep or self.shift_aep_x) and self.stance_count > 0:
-                self.move_aep()
-            self.swing = True
-            self.current_swing_start_time = rospy.Time.now()
-            if self.current_stance_start_time is not None:
-                self.stance_durations.append((self.current_swing_start_time - self.current_stance_start_time).to_sec())
-                # rospy.loginfo(self.name + ": append stance, stance_durations = " + str(self.stance_durations))
-                self.current_stance_start_time = None
-            if not self.current_stance_delayed:
-                if self.current_stance_start is not None:
-                    if len(self.stance_length_sum) > 10:
-                        self.stance_length_sum.pop(0)
-                    self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
-                    self.stance_count += 1
-                    self.current_stance_start = None
-                # else:
-                #     rospy.logwarn(self.name + " no stance start position available, stance count = " +
-                #     str(self.stance_count))
-            self.current_stance_delayed = False
-            legs_in_swing = legs_in_swing + 1
-        # elif self.leg.reached_pep() and legs_in_swing >= 3:
-        elif (self.step_length and self.leg.reached_step_length() and legs_in_swing >= 3) or (
-                not self.step_length and self.leg.reached_pep() and legs_in_swing >= 3):
-            rospy.logwarn(self.name + ": delayed swing start.")
-            self.swing_delays += 1
-            if not self.current_stance_delayed:
-                if self.current_stance_start is not None:
-                    if len(self.stance_length_sum) > 10:
-                        self.stance_length_sum.pop(0)
-                    self.stance_length_sum.append(numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
-                    self.stance_count += 1
-                    # self.current_stance_start = None
-                # else:
-                #     rospy.logwarn(self.name + " no stance start position available, stance count = " +
-                #     str(self.stance_count))
-                self.current_stance_delayed = True
-        return legs_in_swing
+        if (self.step_length and self.leg.reached_step_length()) or (not self.step_length and self.leg.reached_pep()):
+            if self.robot.check_stability_if_leg_lifted(gc, self.name):
+                # rospy.loginfo(self.name + ": reached_pep. switch to swing mode.")
+                self.stance_net.reset_stance_trajectory()
+                if (self.shift_aep or self.shift_aep_x) and self.stance_count > 0:  # and not self.shift_aep_initially:
+                    self.move_aep()
+                self.swing = True
+                self_gc = False
+                # rospy.logerr(self.name + ": finish stance go to swing")
+                self.current_swing_start_time = rospy.Time.now()
+                if self.current_stance_start_time is not None:
+                    self.stance_durations.append(
+                            (self.current_swing_start_time - self.current_stance_start_time).to_sec())
+                    # rospy.loginfo(self.name + ": append stance, stance_durations = " + str(self.stance_durations))
+                    self.current_stance_start_time = None
+                if not self.current_stance_delayed:
+                    if self.current_stance_start is not None:
+                        if len(self.stance_length_sum) > 10:
+                            self.stance_length_sum.pop(0)
+                        self.stance_length_sum.append(
+                                numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
+                        self.stance_count += 1
+                        self.current_stance_start = None
+                    # else:
+                    #     rospy.logwarn(self.name + " no stance start position available, stance count = " +
+                    #     str(self.stance_count))
+                self.current_stance_delayed = False
+                # legs_in_swing = legs_in_swing + 1
+            else:
+                rospy.logwarn(self.name + ": delayed swing start for instability prevention.")
+                self.swing_delays += 1
+                delayed = True
+                if not self.current_stance_delayed:
+                    if self.current_stance_start is not None:
+                        if len(self.stance_length_sum) > 10:
+                            self.stance_length_sum.pop(0)
+                        self.stance_length_sum.append(
+                                numpy.linalg.norm(self.leg.ee_position() - self.current_stance_start))
+                        self.stance_count += 1
+                        # self.current_stance_start = None
+                    # else:
+                    #     rospy.logwarn(self.name + " no stance start position available, stance count = " +
+                    #     str(self.stance_count))
+                    self.current_stance_delayed = True
+
+        return self_gc, delayed
 
     def move_aep(self):
         shifted_y = False
@@ -317,7 +325,8 @@ class SingleLegController:
                             self.default_step_length))
             self.leg.shift_default_aep(self.target_pos)
 
-    def execute_swing_step(self, legs_in_swing):
+    def execute_swing_step(self):
+        self_gc = False
         # rospy.loginfo(self.name + ": execute swing step.")
         if self.swing_generator.swing_start_point is None:
             # rospy.loginfo(self.name + ": reset swing")
@@ -333,18 +342,20 @@ class SingleLegController:
             self.swing_generator.move_to_next_point(0)
             self.swing_generator.swing_start_point = None
             self.swing = False
+            # rospy.logerr(self.name + ": finish swing go to stance")
             self.current_stance_start_time = rospy.Time.now()
             if self.current_swing_start_time is not None:
                 self.swing_durations.append((self.current_stance_start_time - self.current_swing_start_time).to_sec())
                 # rospy.loginfo(self.name + ": append swing, swing_durations = " + str(self.swing_durations))
                 self.current_swing_start_time = None
 
-            legs_in_swing = legs_in_swing - 1
+            # legs_in_swing = legs_in_swing - 1
+            self_gc = True
             self.last_stance_activation = rospy.Time.now()
             # if self.name == "rf":
             #     rospy.logerr(self.name + ': swing is finished switch to stance.')
             self.current_stance_start = self.leg.ee_position()
-        return legs_in_swing
+        return self_gc
 
     def set_up_moving_to_init_pos(self, p=None):
         if p is None and not rospy.is_shutdown():
