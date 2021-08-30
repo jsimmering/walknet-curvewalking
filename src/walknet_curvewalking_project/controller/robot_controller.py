@@ -8,6 +8,7 @@ import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
 import csv
+import numpy
 
 
 class RobotController:
@@ -44,7 +45,7 @@ class RobotController:
         self.total_power_command = 0
         self.total_power_joint_torque = 0
 
-    def move_legs_into_init_pos(self):
+    def move_legs_into_init_pos_trajectory(self):
         for leg in self.robot.legs:
             while not leg.leg.is_ready() and not rospy.is_shutdown():
                 rospy.loginfo("leg not connected yet! wait...")
@@ -63,23 +64,23 @@ class RobotController:
             leg.set_init_pos(init_pos)
 
             if leg.init_pos is not None:
-                leg.move_leg_to(leg.init_pos)
+                leg.move_leg_one_step_towards_init_pos(leg.init_pos)
                 self.rate.sleep()
             else:
                 rospy.logerr("leg init pose not set leg = {} init pose = {}".format(leg.name, leg.init_pos))
 
         finished = False
+        desired_distance = CONST.DEFAULT_SWING_VELOCITY / RSTATIC.controller_frequency
         while not rospy.is_shutdown() and not finished:
             finished = True
             for leg in self.robot.legs:
-                if not leg.leg.is_target_reached():
+                if not leg.leg.is_target_reached() or numpy.linalg.norm(leg.init_pos - leg.leg.ee_position()) > desired_distance:
+                    rospy.logwarn(
+                            leg.name + ": init position NOT reached! set targets: a={} b={} c={}".format(
+                                    leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point))
                     finished = False
-                    leg.move_leg_to()
+                    leg.move_leg_one_step_towards_init_pos()
                     self.rate.sleep()
-            for leg in self.robot.legs:
-                rospy.logwarn(
-                        leg.name + ": reached init positions! set targets: a={} b={} c={}; real targets: unknown".format(
-                                leg.leg.alpha_set_point, leg.leg.beta_set_point, leg.leg.gamma_set_point))
         rospy.loginfo("reached init positions")
 
     def initialize_body_model(self):
@@ -369,7 +370,7 @@ if __name__ == '__main__':
         rospy.loginfo("Robot Controller: Walk until stop command")
 
     try:
-        robot_controller.move_legs_into_init_pos()
+        robot_controller.move_legs_into_init_pos_trajectory()
         ready_status = [leg.leg.is_ready() for leg in robot_controller.robot.legs]
         rospy.loginfo("ready status = " + str(ready_status))
         # while not rospy.is_shutdown() and not robot_controller.robot.got_joint_data:
