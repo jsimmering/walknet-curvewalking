@@ -50,6 +50,7 @@ class SingleLegController:
         self.swing = swing
         self.swing_delays = 0
         self.init_pos = None
+        self.init_pos_stepsizes = []
         self.last_stance_activation = None
 
         self.delay_1b = None
@@ -135,8 +136,8 @@ class SingleLegController:
             self.stance_diff = 0
 
         rospy.loginfo("self.decrease_inner_stance = " + str(self.decrease_inner_stance))
-        if self.decrease_inner_stance and ((
-                angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
+        if self.decrease_inner_stance and (
+                (angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
                 angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"))):
             rospy.loginfo(self.name + ": STANCE DIFF = -" + str(self.stance_diff))
             self.default_step_length -= self.stance_diff
@@ -345,26 +346,66 @@ class SingleLegController:
             self.current_stance_start = self.leg.ee_position()
         return legs_in_swing
 
-    # function for moving this leg in the direction of the position provided or the init position.
+    def set_up_moving_to_init_pos(self, p=None):
+        if p is None and not rospy.is_shutdown():
+            p = self.init_pos
+        if len(self.init_pos_stepsizes) > 0:
+            self.init_pos_stepsizes = []
+        rospy.loginfo(self.name + ": init pos = " + str(p))
+        current_angles = self.leg.get_current_angles()
+        rospy.loginfo(self.name + ": current angles = " + str(current_angles))
+        desired_angles = self.leg.compute_inverse_kinematics(p)
+        rospy.loginfo(self.name + ": desired angles = " + str(desired_angles))
+
+        alpha_diff = (desired_angles[0] - current_angles[0]) / RSTATIC.controller_frequency
+        if 0 > alpha_diff > -0.05:
+            alpha_diff = -0.05
+        if 0 < alpha_diff < 0.05:
+            alpha_diff = 0.05
+        self.init_pos_stepsizes.append(alpha_diff)
+
+        beta_diff = (desired_angles[1] - current_angles[1]) / RSTATIC.controller_frequency
+        if 0 > beta_diff > -0.05:
+            beta_diff = -0.05
+        if 0 < beta_diff < 0.05:
+            beta_diff = 0.05
+        self.init_pos_stepsizes.append(beta_diff)
+
+        gamma_diff = (desired_angles[2] - current_angles[2]) / RSTATIC.controller_frequency
+        if 0 > gamma_diff > -0.05:
+            gamma_diff = -0.05
+        if 0 < gamma_diff < 0.05:
+            gamma_diff = 0.05
+        self.init_pos_stepsizes.append(gamma_diff)
+        rospy.logerr(self.name + ": step sizes = " + str(self.init_pos_stepsizes))
+
+    # function for moving this leg into the position provided or the init position.
     def move_leg_one_step_towards_init_pos(self, p=None):
         if p is None and not rospy.is_shutdown():
             p = self.init_pos
-        rospy.loginfo(self.name + ": init pos = " + str(p))
-        desired_distance = CONST.DEFAULT_SWING_VELOCITY / RSTATIC.controller_frequency
-        rospy.loginfo(self.name + ": desired distance to next target = " + str(desired_distance))
-        current_ee_pos = self.leg.ee_position()
-        rospy.loginfo(self.name + ": current ee pos = " + str(current_ee_pos))
-        if numpy.linalg.norm(p - current_ee_pos) < desired_distance:
-            rospy.loginfo("init pos is less than desired distance away from current")
-            angles = self.leg.compute_inverse_kinematics(p)
-            self.leg.set_joint_point(angles)
+        current_angles = self.leg.get_current_angles()
+        rospy.loginfo(self.name + ": current angles = " + str(current_angles))
+        desired_angles = self.leg.compute_inverse_kinematics(p)
+        rospy.loginfo(self.name + ": desired angles = " + str(desired_angles))
+        if abs(current_angles[0] - desired_angles[0]) < 0.1 and abs(
+                current_angles[1] - desired_angles[1]) < 0.1 and abs(current_angles[2] - desired_angles[2]) < 0.1:
+            self.leg.set_joint_point(desired_angles)
+            return True
         else:
-            rospy.loginfo("init pos is MORE than desired distance away from current")
-            direction_vector = p - current_ee_pos
-            next_step = (desired_distance / numpy.linalg.norm(numpy.array(direction_vector))) * direction_vector
-            next_target = current_ee_pos + next_step
-            rospy.loginfo(
-                    self.name + ": direction_vector = {}, next_step = {}, next_target = {}".format(direction_vector,
-                            next_step, next_target))
-            angles = self.leg.compute_inverse_kinematics(next_target)
-            self.leg.set_joint_point(angles)
+            if abs(current_angles[0] - desired_angles[0]) < 0.1:
+                new_alpha = desired_angles[0]
+            else:
+                new_alpha = current_angles[0] + self.init_pos_stepsizes[0]
+
+            if abs(current_angles[1] - desired_angles[1]) < 0.1:
+                new_beta = desired_angles[1]
+            else:
+                new_beta = current_angles[1] + self.init_pos_stepsizes[1]
+
+            if abs(current_angles[2] - desired_angles[2]) < 0.1:
+                new_gamma = desired_angles[2]
+            else:
+                new_gamma = current_angles[2] + self.init_pos_stepsizes[2]
+
+            rospy.logerr(self.name + ": new angles = " + str([new_alpha, new_beta, new_gamma]))
+            self.leg.set_joint_point([new_alpha, new_beta, new_gamma])
