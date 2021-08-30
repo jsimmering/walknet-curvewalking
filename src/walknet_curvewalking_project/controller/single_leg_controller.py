@@ -357,25 +357,26 @@ class SingleLegController:
         desired_angles = self.leg.compute_inverse_kinematics(p)
         rospy.loginfo(self.name + ": desired angles = " + str(desired_angles))
 
+        threshold = 0.01
         alpha_diff = (desired_angles[0] - current_angles[0]) / RSTATIC.controller_frequency
-        if 0 > alpha_diff > -0.05:
-            alpha_diff = -0.05
-        if 0 < alpha_diff < 0.05:
-            alpha_diff = 0.05
+        if 0 > alpha_diff > -threshold:
+            alpha_diff = -threshold
+        if 0 < alpha_diff < threshold:
+            alpha_diff = threshold
         self.init_pos_stepsizes.append(alpha_diff)
 
         beta_diff = (desired_angles[1] - current_angles[1]) / RSTATIC.controller_frequency
-        if 0 > beta_diff > -0.05:
-            beta_diff = -0.05
-        if 0 < beta_diff < 0.05:
-            beta_diff = 0.05
+        if 0 > beta_diff > -threshold:
+            beta_diff = -threshold
+        if 0 < beta_diff < threshold:
+            beta_diff = threshold
         self.init_pos_stepsizes.append(beta_diff)
 
         gamma_diff = (desired_angles[2] - current_angles[2]) / RSTATIC.controller_frequency
-        if 0 > gamma_diff > -0.05:
-            gamma_diff = -0.05
-        if 0 < gamma_diff < 0.05:
-            gamma_diff = 0.05
+        if 0 > gamma_diff > -threshold:
+            gamma_diff = -threshold
+        if 0 < gamma_diff < threshold:
+            gamma_diff = threshold
         self.init_pos_stepsizes.append(gamma_diff)
         rospy.logerr(self.name + ": step sizes = " + str(self.init_pos_stepsizes))
 
