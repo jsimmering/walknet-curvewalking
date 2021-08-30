@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from math import fabs, exp, cos, sin, isnan, pi
+from math import fabs, exp
 
 import numpy
 import rospy
@@ -7,6 +7,7 @@ from control_msgs.msg import JointControllerState
 from walknet_curvewalking.msg import rules
 
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
+import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.motion_primitives.stance_movement_body_model import StanceMovementBodyModel
 from walknet_curvewalking_project.motion_primitives.swing_movement_bezier import SwingMovementBezier
 from walknet_curvewalking_project.phantomx.SingleLeg import SingleLeg
@@ -344,9 +345,26 @@ class SingleLegController:
             self.current_stance_start = self.leg.ee_position()
         return legs_in_swing
 
-    # function for moving this leg into the position provided or the init position.
-    def move_leg_to(self, p=None):
+    # function for moving this leg in the direction of the position provided or the init position.
+    def move_leg_one_step_towards_init_pos(self, p=None):
         if p is None and not rospy.is_shutdown():
             p = self.init_pos
-        angles = self.leg.compute_inverse_kinematics(p)
-        self.leg.set_joint_point(angles)
+        rospy.loginfo(self.name + ": init pos = " + str(p))
+        desired_distance = CONST.DEFAULT_SWING_VELOCITY / RSTATIC.controller_frequency
+        rospy.loginfo(self.name + ": desired distance to next target = " + str(desired_distance))
+        current_ee_pos = self.leg.ee_position()
+        rospy.loginfo(self.name + ": current ee pos = " + str(current_ee_pos))
+        if numpy.linalg.norm(p - current_ee_pos) < desired_distance:
+            rospy.loginfo("init pos is less than desired distance away from current")
+            angles = self.leg.compute_inverse_kinematics(p)
+            self.leg.set_joint_point(angles)
+        else:
+            rospy.loginfo("init pos is MORE than desired distance away from current")
+            direction_vector = p - current_ee_pos
+            next_step = (desired_distance / numpy.linalg.norm(numpy.array(direction_vector))) * direction_vector
+            next_target = current_ee_pos + next_step
+            rospy.loginfo(
+                    self.name + ": direction_vector = {}, next_step = {}, next_target = {}".format(direction_vector,
+                            next_step, next_target))
+            angles = self.leg.compute_inverse_kinematics(next_target)
+            self.leg.set_joint_point(angles)
