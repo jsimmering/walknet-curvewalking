@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import csv
 import datetime
+from math import pi
 
 import rospy
 from walknet_curvewalking.msg import robot_control
@@ -7,8 +9,6 @@ from walknet_curvewalking.msg import robot_control
 import walknet_curvewalking_project.phantomx.RobotSettings as RSTATIC
 import walknet_curvewalking_project.support.constants as CONST
 from walknet_curvewalking_project.phantomx.Robot import Robot
-import csv
-import numpy
 
 
 class RobotController:

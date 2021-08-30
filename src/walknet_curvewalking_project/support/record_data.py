@@ -598,7 +598,7 @@ def main():
     if first_straight:
         duration += 0.5
     aep_param = True  # float('nan')  # 0.025
-    root_dir = "logs/widowX-final_results/"  # "logs/original_walknet_straightwalking/tetrapod/"
+    root_dir = "logs/test/" # "logs/widowX-final_results/"  # "logs/original_walknet_straightwalking/tetrapod/"
     #"logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
     # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
     trials = [
@@ -609,16 +609,16 @@ def main():
         # {"name": root_dir + "original/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
     ]
 
-    # direction = [0.0]
+    direction = [0.0]
     # direction = [1.57]
-    direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
     # direction = [0.0, 0.5, 1.0, pi/2]
 
-    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06] # 0.007
+    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06] # 0.007
     # speed = [0.03, 0.04, 0.05]  # , 0.04, 0.03]
-    # speed = [0.03]  # , 0.025, 0.015]
+    speed = [0.01]  # , 0.025, 0.015]
 
     for s in speed:
         for trial in [dic["name"] for dic in trials]:

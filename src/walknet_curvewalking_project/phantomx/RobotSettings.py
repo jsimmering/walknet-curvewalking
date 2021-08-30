@@ -4,7 +4,7 @@ import numpy
 # Settings for the Phantom robot objects: defining leg namings, joint_limits.
 
 # ====== simulation parameters ========
-controller_frequency = 50
+controller_frequency = 35  # sim works with 50; real WidowX with 35
 DEBUG = False
 SIM = True
 
