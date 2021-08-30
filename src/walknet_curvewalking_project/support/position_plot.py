@@ -257,9 +257,8 @@ if len(sys.argv) >= 2:
         plt.grid(which='both')
         plt.axis('scaled')
 
-        # axs.set_xlim(-1.5, 2.5)
+        # axs.set_xlim(-1.5, 3)
         # axs.set_ylim(-0.5, 4.0)
-        # axs.set_ylim(-0.55, 0.9)
 
         # lf_shoulder = np.matrix([0.1248, 0.06164]).T
         # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')

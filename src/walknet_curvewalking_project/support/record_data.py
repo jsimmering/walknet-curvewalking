@@ -588,29 +588,32 @@ def main():
     #
     # record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
 
-    repetitions_per_speed = 4 # 6
+    repetitions_per_speed = 6 # 6
     duration = 2  # 0.83
     circles = None
     distance = None
 
-    pull_at_back = True
+    pull_at_back = False
     first_straight = False
     if first_straight:
         duration += 0.5
     aep_param = True  # float('nan')  # 0.025
-    root_dir = "logs/widowX-final_results/"  # "logs/original_walknet_straightwalking/tetrapod/"
+    root_dir = "logs/walknet_curve-walking_final_results/"  # "logs/widowX-final_results/"
+    # "logs/original_walknet_straightwalking/tetrapod/"
     #"logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
     # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
     trials = [
-        {"name": root_dir + "all_aep_xy_average_tuned_decre/", "length": True, "aep_y": True, "aep_x": True,
-         "decrease": True},
+        # {"name": root_dir + "all_aep_xy_average_tuned_decre/", "length": True, "aep_y": True, "aep_x": True,
+        #  "decrease": True},
         # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": True, "aep_x": True,
         #  "decrease": False}
         # {"name": root_dir + "original/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
+        {"name": root_dir + "step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": False}
     ]
 
     # direction = [0.0]
     # direction = [1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
