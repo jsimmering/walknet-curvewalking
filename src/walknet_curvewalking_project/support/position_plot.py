@@ -5,6 +5,7 @@ import re
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy
 import numpy as np
 import argparse
 from scipy.constants import g
@@ -253,12 +254,16 @@ if len(sys.argv) >= 2:
         #
         ## -----
 
-        plt.tick_params(labelsize=20)
+        plt.tick_params(labelsize=30)
         plt.grid(which='both')
         plt.axis('scaled')
 
-        # axs.set_xlim(-1.5, 3)
-        # axs.set_ylim(-0.5, 4.0)
+        axs.set_xlim(-2.25, 4)
+        axs.set_ylim(-1, 6)
+        plt.xticks(numpy.arange(-2, 4 + 0.5, 1))
+        # plt.xticks(numpy.arange(-2.5, 1 + 0.5, 0.5))
+        plt.yticks(numpy.arange(-1, 6 + 0.25, 1))
+        # plt.yticks(numpy.arange(-1, 3 + 0.25, 0.5))
 
         # lf_shoulder = np.matrix([0.1248, 0.06164]).T
         # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
@@ -324,7 +329,7 @@ if len(sys.argv) >= 2:
             plt.tick_params(labelsize=20)
             plt.grid(which='both')
             # plt.axis('scaled')
-            plt.ylim(0.0, 0.1)
+            plt.ylim(0.0, 0.12)
             plt.ylabel("body height [m]", fontsize=20)
             plt.xlabel("time [s]", fontsize=20)
             # plt.axis('scaled')

@@ -37,8 +37,8 @@ def plot_workspace_data():
             plt.xlim(-0.35, 0.3)
             plt.ylim(-0.4, 0.4)
 
-            #img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
-            #axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
+            img = mpimg.imread('/home/jsimmering/plots_masterthesis/images/forPlots/body.png')
+            axs.imshow(img, alpha=1.0, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
         legs = [[[]], [[]], [[]], [[]], [[]], [[]]]
         steps = [0, 0, 0, 0, 0, 0]
@@ -213,8 +213,11 @@ def plot_workspace_data():
     print("workspace_" + name + ".png")
 
     print("**average step length over all runs:**")
-    for i in [0, 1, 2, 5, 4, 3]:
-        print("{} leg = {}".format(leg_names[i], round(average_step_length_overall[i] / len(files), 5)))
+    for i in [0, 5, 1, 4, 2, 3]:
+        # print("{} leg = {}".format(leg_names[i], round(average_step_length_overall[i] / len(files), 5)))
+        print(str(round(average_step_length_overall[i] / len(files), 3)) + " & ", end="")
+    print("")
+    print("")
 
 
 if __name__ == '__main__':

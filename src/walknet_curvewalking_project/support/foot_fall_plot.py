@@ -121,6 +121,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 60  # 150 #90  # 60
-        end_time = 75  # 200 # 120  # 90
+        start_time = 45 # 45 # 60  #  60  # 150 #90  # 60
+        end_time = 75 # 75 # 90  # 90  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)

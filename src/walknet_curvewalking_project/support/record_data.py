@@ -18,8 +18,8 @@ def record(speed, trials, direction, repetitions_per_speed, duration, pull_at_ba
     start_time = datetime.datetime.now()
 
     for d in direction:
-        for i in range(0, repetitions_per_speed):
-            for s in speed:
+        for s in speed:
+            for i in range(0, repetitions_per_speed):
                 for j in range(0, len(trials)):
                     # for i in range(0, repetitions_per_speed):
                     # s = trials[j]["speed"]
@@ -588,12 +588,12 @@ def main():
     #
     # record(speed, trials, direction, repetitions_per_speed, duration, pull_at_back, first_straight, circles, distance)
 
-    repetitions_per_speed = 6 # 6
+    repetitions_per_speed = 6
     duration = 2  # 0.83
-    circles = None
+    circles = None # 7
     distance = None
 
-    pull_at_back = False
+    pull_at_back = True
     first_straight = False
     if first_straight:
         duration += 0.5
@@ -608,18 +608,22 @@ def main():
         # {"name": root_dir + "new_all_aep_xy_average_decre_0.0cm/", "length": True, "aep_y": True, "aep_x": True,
         #  "decrease": False}
         # {"name": root_dir + "original/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
-        {"name": root_dir + "step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": False}
+        {"name": root_dir + "original_with_pull_at_back/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
+        # {"name": root_dir + "step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": False}
+        # {"name": root_dir + "aep_shift/", "length": False, "aep_y": True, "aep_x": True, "decrease": False}
+        # {"name": root_dir + "decrease/", "length": False, "aep_y": False, "aep_x": False, "decrease": True}
     ]
 
-    # direction = [0.0]
+    direction = [0.0]
+    # direction = [0.6]
     # direction = [1.57]
     # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
-    direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
     # direction = [0.0, 0.5, 1.0, pi/2]
 
-    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06] # 0.007
+    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]  # 0.007
     # speed = [0.03, 0.04, 0.05]  # , 0.04, 0.03]
     # speed = [0.03]  # , 0.025, 0.015]
 

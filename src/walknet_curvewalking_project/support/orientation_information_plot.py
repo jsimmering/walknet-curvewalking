@@ -43,12 +43,12 @@ def plot_orientation_data(ax0, ax1, ax2, start_time, stop_time):
         last_yaw_orientation = None
         initial_yaw_orientation = None
 
-        max_y_roll = 0
-        min_y_roll = 0
-        max_y_pitch = 0
-        min_y_pitch = 0
-        max_y_yaw = 0
-        min_y_yaw = 0
+        max_y_roll = -3.14
+        min_y_roll = 3.14
+        max_y_pitch = -3.14
+        min_y_pitch = 3.14
+        max_y_yaw = -3.14
+        min_y_yaw = 3.14
 
         line_number = 0
         used_lines = 0
@@ -241,11 +241,8 @@ def plot_stability_data_to_footfall_pattern(ax0, ax1, ax2, ax3, start_time, stop
 
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
-        # marked_step = [6, 5, 4, 1, 2, 3]
-        # marked_step = [2, 2, 2, 0, 1, 1]
-        # marked_step = [1, 1, 1, 0, 0, 0]  # 0.007s 0.0 dir
-        marked_step = [3, 3, 2, 1, 1, 1]  # 0.007s 0.3 dir
-        # marked_step = [2, 2, 2, 0, 0, 1]  # 0.02s 0.3dir
+        # marked_step = [3, 3, 2, 1, 1, 1]
+        marked_step = [2, 1, 1, 0, 0, 0]
         show_steps = True
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
         for leg in stance_times:
@@ -267,6 +264,21 @@ def plot_stability_data_to_footfall_pattern(ax0, ax1, ax2, ax3, start_time, stop
                 # ax3.plot([step[0], step[1]],
                 #         [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                 #         linestyle='-', linewidth=12.0, color='black', marker='', solid_capstyle="butt")
+        marked_step = [3, 2, 2, 4, 4, 4]
+        for leg in stance_times:
+            for step in leg:
+                if show_steps:
+                    # if stance_times.index(leg) == 3 and leg.index(step) == 1:
+                    if leg.index(step) == marked_step[stance_times.index(leg)]:
+                        ax0.axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                        ax1.axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                        ax2.axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                        ax3.axvline(x=step[1], color=leg_color[stance_times.index(leg)])
+                    if leg.index(step) == (marked_step[stance_times.index(leg)] + 1):
+                        ax0.axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                        ax1.axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                        ax2.axvline(x=step[0], color=leg_color[stance_times.index(leg)])
+                        ax3.axvline(x=step[0], color=leg_color[stance_times.index(leg)])
         for leg in stance_times:
             for i in range(0, len(leg) - 1):
                 plt.plot([leg[i][1], leg[i + 1][0]],
@@ -287,11 +299,11 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:
         # start_duration = 115
         # start_duration = 70
-        start_duration = 15
+        start_duration = 45  # 0 # 30  # 15  # 40
         # stop_duration = 60
         # stop_duration = 100
         # stop_duration = 145
-        stop_duration = 45  # 60
+        stop_duration = 75  # 120 # 60  # 45  # 70 # 60
         # stop_duration = 45  # 0.05s 0.5dir
         # roll = False
         # pitch = True
@@ -319,10 +331,13 @@ if __name__ == '__main__':
         max_range, min_y_yaw, max_y_yaw = plot_orientation_data(ax0, ax1, ax2, start_duration, stop_duration)
         max_time = plot_stability_data_to_footfall_pattern(ax0, ax1, ax2, ax3, start_duration, stop_duration)
         print("max_time = " + str(max_time))
+        print("min y yaw = {}, max y yaw = {}".format(min_y_yaw, max_y_yaw))
 
         zero_diff = max_range / 2
         ax0.set_ylim(-zero_diff / 2, zero_diff / 2)
+        # ax0.set_ylim(-(zero_diff *2) / 3, zero_diff / 3)
         ax1.set_ylim(-zero_diff / 2, zero_diff / 2)
+        # ax1.set_ylim(-zero_diff / 5, (zero_diff *4) / 5)
         ax2.set_ylim(min_y_yaw, max_y_yaw)
         #ax3.set_xlim(start_duration, stop_duration)
 

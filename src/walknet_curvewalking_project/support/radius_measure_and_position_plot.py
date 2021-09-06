@@ -6,6 +6,7 @@ import sys
 
 import PyKDL
 import matplotlib.pyplot as plt
+import numpy
 import numpy as np
 from matplotlib import ticker
 
@@ -48,7 +49,7 @@ def handle_line(configuration, run, line, last_position, last_time, distance, ve
     if start is None:
         # save start position of this run to be able to use relative positions
         start = [values[1], values[2], values[3]]
-        print("configuration {} run {} start position = {}".format(configuration, run, start))
+        # print("configuration {} run {} start position = {}".format(configuration, run, start))
 
     # save current relative position for position plot
     # X[configuration][run].append(round(values[1] - start[0], 4))
@@ -97,7 +98,7 @@ def calculate_radii(radii_number, quaternions, positions, radii, centroids, angl
 def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
     split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
     # print("split lable = " + str(split_label))
-    boxplot_label = [label[label.index("walknet") + 2:] for label in split_label]
+    boxplot_label = [label[-6:-4] for label in split_label]
     # print("boxplot_label = " + str(boxplot_label))
     if plot_relative_radius:
         relative_radii = []
@@ -108,7 +109,7 @@ def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
         axis_radius.boxplot(relative_radii, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
     else:
         # axis_radius.boxplot(radii, labels=['radii line ' + str(j) for j in range(0, len(files))])
-        axis_radius.boxplot(radii, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
+        axis_radius.boxplot(radii, labels=["_".join(boxplot_label[j]).replace('dir', 'rad').replace('s_', 'm/s_') for j in range(0, len(files))])
         # control y axis limits, not working!
         # axis_radius.set_ylim(-0.4, 0.4)
         # axis_radius.set(ylim=(-0.4, 0.4))
@@ -118,14 +119,14 @@ def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
 def plot_angle_boxplot(files, mean_angle, angles, axis_angle):
     split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
     # print("split lable = " + str(split_label))
-    boxplot_label = [label[label.index("walknet") + 2:] for label in split_label]
+    boxplot_label = [label[-6:-4] for label in split_label]
     # print("boxplot_label = " + str(boxplot_label))
     relative_angle = []
     for i in range(0, len(files)):
         # todo test
         relative_angle.append([(angle - mean_angle[i]) / mean_angle[i] for angle in angles[i]])
     # axis_radius.boxplot(relative_angle, labels=['radii line ' + str(j) for j in range(0, len(files))])
-    axis_angle.boxplot(relative_angle, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
+    axis_angle.boxplot(relative_angle, labels=["_".join(boxplot_label[j]).replace('dir', 'rad').replace('s_', 'm/s_') for j in range(0, len(files))])
 
 
 def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_angle=None):
@@ -171,10 +172,10 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
     current_color = 0
 
     for configuration_number in range(0, len(files)):
-        print("configuration = " + str(configuration_number))
+        # print("configuration = " + str(configuration_number))
 
         for run_number in range(0, len(files[configuration_number])):
-            print("run " + str(run_number) + " in configuration " + str(configuration_number))
+            # print("run " + str(run_number) + " in configuration " + str(configuration_number))
             first_line = True
             start = None
             last_position = None
@@ -182,6 +183,7 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
             line_number = 0
             used_lines = 0
 
+            # print("file_name = " + str(files[configuration_number][run_number]))
             for line in open(files[configuration_number][run_number], 'r'):
                 if first_line:
                     first_line = False
@@ -197,15 +199,15 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
                         used_lines += 1
 
                     line_number += 1
-            print("effective lines = " + str(used_lines))
-            print("#of quaternions[{}] = {}".format(configuration_number,
-                    len(quaternions[configuration_number][run_number])))
+            # print("effective lines = " + str(used_lines))
+            # print("#of quaternions[{}] = {}".format(configuration_number,
+            #       len(quaternions[configuration_number][run_number])))
 
         radii_label = False
-        print("quaternions len = " + str(len(quaternions)))
+        # print("quaternions len = " + str(len(quaternions)))
         for i in range(0, len(quaternions[configuration_number])):
-            print("quaternions[{}] len = {}".format(configuration_number, len(quaternions[configuration_number])))
-            print("i = {}".format(i))
+            # print("quaternions[{}] len = {}".format(configuration_number, len(quaternions[configuration_number])))
+            # print("i = {}".format(i))
             for run_number in range(0, len(quaternions[configuration_number][i]) - 1):
                 centroid_x, centroid_y = calculate_radii(run_number, quaternions[configuration_number][i],
                         positions[configuration_number][i], radii[configuration_number],
@@ -218,12 +220,17 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
                     if not radii_label:
                         plot_lines_position.append(line)
                         radii_label = True
-        print("#of angles[{}] = {}".format(configuration_number, len(angles[configuration_number])))
-        print("#of radii[{}] = {}".format(configuration_number, len(radii[configuration_number])))
+        #print("#of angles[{}] = {}".format(configuration_number, len(angles[configuration_number])))
+        #print("#of radii[{}] = {}".format(configuration_number, len(radii[configuration_number])))
 
         if plot and plot_position:
             mean_x = float(np.mean([centroid[0] for centroid in centroids[configuration_number]]))
             mean_y = float(np.mean([centroid[1] for centroid in centroids[configuration_number]]))
+            # std_x = float(round(np.std([centroid[0] for centroid in centroids[configuration_number]]), 3))
+            # std_y = float(round(np.std([centroid[1] for centroid in centroids[configuration_number]]), 3))
+            dis = sum([numpy.linalg.norm(numpy.array([mean_x - centroid[0], mean_y - centroid[1]])) for centroid in centroids[configuration_number]])
+            average_dis = dis/len(centroids[configuration_number])
+            print("mean circle center position = x: {}, y : {}, a_dist: {}".format(round(mean_x, 4), round(mean_y, 4), round(average_dis, 4)))
             if plot_mean_circles:
                 circle1 = plt.Circle((mean_x, mean_y), np.mean(radii[configuration_number]),
                         color=circle_colors[circle_count % len(circle_colors)],
@@ -272,7 +279,7 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
                 legend = axis_position.legend(handles=plot_lines_position, bbox_to_anchor=(0.5, -0.1),
                         loc='upper center', ncol=len(files))  # , ncol=1, mode="expand", borderaxespad=0.)
                 axis_position.add_artist(legend)
-                print("")
+                # print("")
 
     print("")
     print("**average velocity** = " + str(
@@ -286,16 +293,20 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
     mean_angles = [np.mean(i) for i in angles]
     if len(files[0]) > 1:
         print("**mean of radii per configuration** = " + str([round(i, 3) for i in mean_radii]))
+        # print("**average mean of radii per configuration** = " + str(np.average(np.array([round(i, 3) for i in mean_radii]))))
         print("**std of radii per configuration** = " + str([round(np.std(i), 3) for i in radii]))
         print("**mean of angles per configuration** = " + str([round(i, 3) for i in mean_angles]))
+        # print("**average mean of angles per configuration** = " + str(np.average(np.array([round(i, 3) for i in mean_angles]))))
         print("**std of angles per configuration** = " + str([round(np.std(i), 3) for i in angles]))
         print("")
         print("distance traveled = " + str([round(i, 3) for i in distance]))
         print("")
     else:
         print("**mean of radii** = " + str([round(i, 3) for i in mean_radii]))
+        print("**average mean of radii** = " + str(np.average(np.array([round(i, 3) for i in mean_radii]))))
         print("**std of radii** = " + str([round(np.std(i), 3) for i in radii]))
         print("**mean of angles** = " + str([round(i, 3) for i in mean_angles]))
+        print("**average mean of angles** = " + str(np.average(np.array([round(i, 3) for i in mean_angles]))))
         print("**std of angles** = " + str([round(np.std(i), 3) for i in angles]))
         print("")
         print("distance traveled (all runs per configuration together) = " + str([round(i, 3) for i in distance]))
@@ -325,15 +336,16 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
 
 def save_plot():
     if plot_position:
-        pos_plot_path = "/home/jsimmering/plots_masterthesis/path/" + name + ".svg"
+        pos_plot_path = "/home/jsimmering/plots_masterthesis/path/path_w_radius_" + name + ".svg"
         print("file path: " + pos_plot_path)
-        fig_pos.savefig(pos_plot_path, bbox_inches='tight', bbox_extra_artists=(pos_plot_legend,), pad_inches=0, format='svg')
+        fig_pos.savefig(pos_plot_path, bbox_inches='tight', bbox_extra_artists=(pos_plot_legend,), pad_inches=0,
+                format='svg')
     if plot_radius:
-        rad_plot_path = "/home/jsimmering/plots_masterthesis/radius/" + name + ".svg"
+        rad_plot_path = "/home/jsimmering/plots_masterthesis/radius/radius_" + name + ".svg"
         print("file path: " + rad_plot_path)
         fig_rad.savefig(rad_plot_path, bbox_inches='tight', pad_inches=0, format='svg')
     if plot_radius:
-        angle_plot_path = "/home/jsimmering/plots_masterthesis/angle/" + name + ".svg"
+        angle_plot_path = "/home/jsimmering/plots_masterthesis/angle/angle_" + name + ".svg"
         print("file path: " + angle_plot_path)
         fig_angle.savefig(angle_plot_path, bbox_inches='tight', pad_inches=0, format='svg')
 
@@ -357,13 +369,13 @@ if __name__ == '__main__':
             [file_names[i].sort(key=lambda x: os.path.getmtime(x), reverse=False) for i in range(0, len(file_names))]
             print(file_names)
         elif sys.argv[1] == "-c":
-            dirs = os.listdir(sys.argv[2])
+            dirs = os.listdir(sys.argv[2] + "/")
             dirs = sorted(dirs)
             if '0.0dir' in dirs:
                 dirs.remove('0.0dir')
             # dirs.sort(key=lambda x: os.path.getmtime(sys.argv[2] + "/" + x), reverse=False)
             print(dirs)
-            file_names = [[sys.argv[2] + path + "/position/" + x for x in os.listdir(sys.argv[2] + path + "/position/")]
+            file_names = [[sys.argv[2] + "/" + path + "/position/" + x for x in os.listdir(sys.argv[2] + "/" + path + "/position/")]
                           for path in dirs]
             # print(file_names)
             full_paths = [[re.findall(r"[^/_,]+", file_names[j][i], re.ASCII) for i in range(0, len(file_names[j]))] for
@@ -384,7 +396,7 @@ if __name__ == '__main__':
             axs_pos.grid()
             axs_pos.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_pos.tick_params(labelsize=12)
-            #plt.subplots_adjust(top=0.9, bottom=0.1, left=-0.15, hspace=1, wspace=1)
+            # plt.subplots_adjust(top=0.9, bottom=0.1, left=-0.15, hspace=1, wspace=1)
         else:
             axs_pos = None
             fig_pos = None
@@ -394,12 +406,14 @@ if __name__ == '__main__':
             axs_rad.set_title(
                     'relative radius of curvature boxplot for positions' + str(radius_measure_time_step) + ' sec apart')
             axs_rad.grid()
+            axs_rad.set_ylabel('relative radius', fontsize=14)
             axs_rad.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_rad.tick_params(labelsize=12)
             if sys.argv[1] == "-dir":
-                axs_rad.set_ylim(-1.0, 1.0)
+                # axs_rad.set_ylim(-1.0, 1.0)
+                pass
             else:
-                # axs_rad.set_ylim(-0.7, 0.9)
+                # axs_rad.set_ylim(-35, 15)
                 pass
         else:
             axs_rad = None
@@ -407,14 +421,17 @@ if __name__ == '__main__':
 
         if plot_angle:
             fig_angle, axs_angle = plt.subplots()
-            axs_angle.set_title('relative angle boxplot for consecutive points')
+            # axs_angle.set_title('relative angle boxplot for consecutive points')
             axs_angle.grid()
+            axs_angle.set_ylabel('relation of angle difference and mean angle', fontsize=16)
             axs_angle.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_angle.tick_params(labelsize=12)
             if sys.argv[1] == "-dir":
-                axs_angle.set_ylim(-1.25, 1.25)
+                # axs_angle.set_ylim(-1.25, 1.25)
+                pass
             else:
                 # axs_angle.set_ylim(-4.5, 2.25)
+                # axs_angle.set_ylim(-35, 15)
                 pass
         else:
             axs_angle = None
@@ -436,7 +453,7 @@ if __name__ == '__main__':
             if len(file_names) == 1:
                 split = re.findall(r"[^/_,]+", file_names[0][0], re.ASCII)
                 print("split = " + str(split))
-                name = "radius_"
+                name = ""
                 name += "_".join(split[split.index("walknet"):])
                 print("single file: ")
                 save_plot()
@@ -444,7 +461,7 @@ if __name__ == '__main__':
                 split = [i.split("_") for i in file_names[0]]
                 speeds = [float(split[i][split[i].index("position") + 1][:-1]) for i in range(0, len(split))]
                 directions = [float(split[i][split[i].index("position") + 2][:-3]) for i in range(0, len(split))]
-                name = "radius1_"
+                name = ""
                 if min(speeds) != max(speeds):
                     name += str(min(speeds)) + "-to-" + str(max(speeds)) + "speed"
                 else:
