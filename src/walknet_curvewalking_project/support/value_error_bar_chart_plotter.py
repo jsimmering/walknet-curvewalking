@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import itertools
 import os
 import sys
 import operator
@@ -10,24 +11,29 @@ import matplotlib.pyplot as plt
 
 
 def plot_bar_chart(title, max_y, data):
-    X = numpy.arange(7)
+    X = numpy.arange(len(data[0]))
     fig, axs = plt.subplots()
     axs.set_title(title, fontsize=18)
     axs.grid()
     axs.tick_params(labelsize=16)
     axs.set_ylim(0, max_y)
     axs.set_ylabel('unreachable positions [%]', fontsize=18)
-    plt.xticks([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5],
-            ['0.0rad', '0.2rad', '0.4rad', '0.6rad', '0.8rad', '1.0rad', '1.2rad'])
+    axs.set_xlabel('walking direction [rad]', fontsize=18)
+    plt.xticks([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5],
+            ['0.0', '0.2', '0.4', '0.6', '0.8', '1.0', '1.2', '1.4', '1.57'])
+            #['0.0rad', '0.2rad', '0.4rad', '0.6rad', '0.8rad', '1.0rad', '1.2rad', '1.4rad', '1.57rad'])
+    print("X = {}\nlen(X) = {}".format(X, len(X)))
+    print("data = {}\nlen(data) = {}".format(data, len(data)))
+    print("data[0] = {}\nlen(data[0]) = {}".format(data[0], len(data[0])))
     axs.bar(X + 0.00, data[0], color='b', width=0.15)
     axs.bar(X + 0.15, data[1], color='g', width=0.15)
     axs.bar(X + 0.3, data[2], color='r', width=0.15)
     axs.bar(X + 0.45, data[3], color='c', width=0.15)
     axs.bar(X + 0.6, data[4], color='y', width=0.15)
     axs.bar(X + 0.75, data[5], color='m', width=0.15)
-    axs.legend(labels=['0.01m/s', '0.02m/s', '0.03m/s', '0.04m/s', '0.05m/s', '0.06m/s'], loc='upper left', fontsize=18)
+    # axs.legend(labels=['0.01m/s', '0.02m/s', '0.03m/s', '0.04m/s', '0.05m/s', '0.06m/s'], loc='upper left', fontsize=18, bbox_to_anchor=(0.5, -0.5))
 
-    fig.autofmt_xdate()
+    # fig.autofmt_xdate()
 
     if save_plot:
         split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
@@ -211,16 +217,31 @@ if __name__ == '__main__':
 
         print("")
         print("unstable = ")  # + str(max_unstable_percent))
+        max_unstable_percent = [list(i) for i in zip(*max_unstable_percent)]
         for speed in max_unstable_percent:
-            print(speed)
+            print(" & ".join([str(s) for s in speed]))
+            # print([str(s) + " & " for s in speed])
         print("")
+        keys = ['lf', 'rf', 'lm', 'rm', 'lr', 'rr']
         print("delays = ")  # + str(max_delays_percent))
         for speed in max_delays_percent:
-            print(speed)
+            print("speed number " + str(max_delays_percent.index(speed)))
+            for k in keys:
+                for values in speed:
+                    print(" & " + str(values[k]), end="")
+                print(" \\")
+            #print(speed)
+            print("")
         print("")
         print("valueError = ")  # + str(max_valueError_percent))
         for speed in max_valueError_percent:
-            print(speed)
+            print("speed number " + str(max_valueError_percent.index(speed)))
+            for k in keys:
+                for values in speed:
+                    print(" & " + str(values[k]), end="")
+                print(" \\")
+            # print(speed)
+            print("")
         print("")
         print("swingCount = ")  # + str(max_valueError_percent))
         for speed in average_swing_counts:

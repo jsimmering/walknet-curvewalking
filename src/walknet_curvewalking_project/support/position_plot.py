@@ -5,6 +5,7 @@ import re
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.cm as cm
 import numpy
 import numpy as np
 import argparse
@@ -101,6 +102,7 @@ if len(sys.argv) >= 2:
         else:
             file_name = str(files[j])
         for line in open(file_name, 'r'):
+            # if line_number % 100 == 0:
             if line_number % 1000 == 0:
                 line = line.rstrip("\n")
                 try:
@@ -177,12 +179,14 @@ if len(sys.argv) >= 2:
                 axs.plot(X[j], Y[j], colors[current_color % len(colors)])
             else:
                 axs.plot(X[j], Y[j])
+                # cmap = cm.viridis
+                # c = np.linspace(0, 10, len(X[j]))
+                # axs.scatter(X[j], Y[j], c=c, cmap=cmap, marker='.', s=4)
             split = [i.split("_") for i in files]
             # axs.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
-            axs.legend([str(n+1) for n in range(0, len(files))],
+            #axs.legend([str(n+1) for n in range(0, len(files))], loc='lower right')
                     # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                     #  range(0, len(split))],
-                    loc='lower right')
 
     if calculate_cot:
         total_power_command = []
@@ -259,10 +263,12 @@ if len(sys.argv) >= 2:
         plt.axis('scaled')
 
         axs.set_xlim(-2.25, 4)
-        axs.set_ylim(-1, 6)
         plt.xticks(numpy.arange(-2, 4 + 0.5, 1))
         # plt.xticks(numpy.arange(-2.5, 1 + 0.5, 0.5))
+        axs.set_ylim(-1, 6)
+        #axs.set_ylim(-1, 5) # 1.57dir
         plt.yticks(numpy.arange(-1, 6 + 0.25, 1))
+        #plt.yticks(numpy.arange(-2, 5 + 0.25, 1))
         # plt.yticks(numpy.arange(-1, 3 + 0.25, 0.5))
 
         # lf_shoulder = np.matrix([0.1248, 0.06164]).T

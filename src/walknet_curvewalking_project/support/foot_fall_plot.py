@@ -44,6 +44,8 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
             column_idx = 1
             while column_idx < 19:
+                if column_idx == 1:
+                    print("lf values = " + str(values[column_idx:column_idx+1]))
                 if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
                     if last_state_swing[column_idx // 3]:
                         last_state_swing[column_idx // 3] = False
@@ -65,11 +67,14 @@ def plot_stability_data_to_footfall_pattern(start, end):
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         for leg in stance_times:
+            # for step in leg:
+            #     # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
+            #     # plot stance phases:
+            #     plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
+            #         linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
             for i in range(0, len(leg) - 1):
-                # for step in leg:
-                # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
-                # plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
-                #     linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
+                print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
+                # plot swing phases: end from step i to start from step i+1 of leg
                 plt.plot([leg[i][1], leg[i + 1][0]],
                         [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                         linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
@@ -94,12 +99,12 @@ def plot_stability_data_to_footfall_pattern(start, end):
         plt.yticks([0, 1, 2, 3, 4, 5], ['RR', 'RM', 'RF', 'LR', 'LM', 'LF'])
         # plt.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
         # self.ax_footfall.set_yticklabels(['FL', 'ML','HL','FR', 'MR','HR'], size= 18)
-        plt.xlabel('time [s]', fontsize=40)
+        plt.xlabel('time [s]', fontsize=45)
 
         # plt.rc('xtick', labelsize=20)
         # plt.rc('ytick', labelsize=20)
         # plt.rcParams.update({'font.size': 40})
-        plt.tick_params(labelsize=40)
+        plt.tick_params(labelsize=45)
 
         plt.grid(which='both')
 

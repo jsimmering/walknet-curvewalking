@@ -242,7 +242,7 @@ def plot_stability_data_to_footfall_pattern(ax0, ax1, ax2, ax3, start_time, stop
     if plot:
         leg_order = [5, 4, 3, 0, 1, 2]
         # marked_step = [3, 3, 2, 1, 1, 1]
-        marked_step = [2, 1, 1, 0, 0, 0]
+        marked_step = [2, 1, 1, 1, 1, 1]
         show_steps = True
         leg_color = ['r', 'g', 'b', 'c', 'm', 'y']
         for leg in stance_times:
@@ -264,7 +264,7 @@ def plot_stability_data_to_footfall_pattern(ax0, ax1, ax2, ax3, start_time, stop
                 # ax3.plot([step[0], step[1]],
                 #         [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
                 #         linestyle='-', linewidth=12.0, color='black', marker='', solid_capstyle="butt")
-        marked_step = [3, 2, 2, 4, 4, 4]
+        marked_step = [1, 0, 0, 0, 0, 0]
         for leg in stance_times:
             for step in leg:
                 if show_steps:

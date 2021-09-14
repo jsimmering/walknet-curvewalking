@@ -98,18 +98,18 @@ def calculate_radii(radii_number, quaternions, positions, radii, centroids, angl
 def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
     split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
     # print("split lable = " + str(split_label))
-    boxplot_label = [label[-6:-4] for label in split_label]
-    # print("boxplot_label = " + str(boxplot_label))
+    boxplot_label = [label[-5:-4] for label in split_label]
+    print("boxplot_label = " + str(boxplot_label))
     if plot_relative_radius:
         relative_radii = []
         for i in range(0, len(files)):
             # todo test
             relative_radii.append([(radius - mean_radii[i]) / mean_radii[i] for radius in radii[i]])
         # axis_radius.boxplot(relative_radii, labels=['radii line ' + str(j) for j in range(0, len(files))])
-        axis_radius.boxplot(relative_radii, labels=["_".join(boxplot_label[j]) for j in range(0, len(files))])
+        axis_radius.boxplot(relative_radii, labels=[" ".join(boxplot_label[j]) for j in range(0, len(files))])
     else:
         # axis_radius.boxplot(radii, labels=['radii line ' + str(j) for j in range(0, len(files))])
-        axis_radius.boxplot(radii, labels=["_".join(boxplot_label[j]).replace('dir', 'rad').replace('s_', 'm/s_') for j in range(0, len(files))])
+        axis_radius.boxplot(radii, labels=[" ".join(boxplot_label[j]).replace('dir', '').replace('s', '') for j in range(0, len(files))])
         # control y axis limits, not working!
         # axis_radius.set_ylim(-0.4, 0.4)
         # axis_radius.set(ylim=(-0.4, 0.4))
@@ -119,14 +119,14 @@ def plot_radius_boxplot(files, mean_radii, radii, axis_radius):
 def plot_angle_boxplot(files, mean_angle, angles, axis_angle):
     split_label = [re.findall(r"[^/_,]+", files[j][0], re.ASCII) for j in range(0, len(files))]
     # print("split lable = " + str(split_label))
-    boxplot_label = [label[-6:-4] for label in split_label]
+    boxplot_label = [label[-5:-4] for label in split_label]
     # print("boxplot_label = " + str(boxplot_label))
     relative_angle = []
     for i in range(0, len(files)):
         # todo test
         relative_angle.append([(angle - mean_angle[i]) / mean_angle[i] for angle in angles[i]])
     # axis_radius.boxplot(relative_angle, labels=['radii line ' + str(j) for j in range(0, len(files))])
-    axis_angle.boxplot(relative_angle, labels=["_".join(boxplot_label[j]).replace('dir', 'rad').replace('s_', 'm/s_') for j in range(0, len(files))])
+    axis_angle.boxplot(relative_angle, labels=[" ".join(boxplot_label[j]).replace('dir', '').replace('s', '') for j in range(0, len(files))])
 
 
 def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_angle=None):
@@ -226,11 +226,9 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
         if plot and plot_position:
             mean_x = float(np.mean([centroid[0] for centroid in centroids[configuration_number]]))
             mean_y = float(np.mean([centroid[1] for centroid in centroids[configuration_number]]))
-            # std_x = float(round(np.std([centroid[0] for centroid in centroids[configuration_number]]), 3))
-            # std_y = float(round(np.std([centroid[1] for centroid in centroids[configuration_number]]), 3))
-            dis = sum([numpy.linalg.norm(numpy.array([mean_x - centroid[0], mean_y - centroid[1]])) for centroid in centroids[configuration_number]])
-            average_dis = dis/len(centroids[configuration_number])
-            print("mean circle center position = x: {}, y : {}, a_dist: {}".format(round(mean_x, 4), round(mean_y, 4), round(average_dis, 4)))
+            # dis = sum([numpy.linalg.norm(numpy.array([mean_x - centroid[0], mean_y - centroid[1]])) for centroid in centroids[configuration_number]])
+            # average_dis = dis/len(centroids[configuration_number])
+            # print("mean circle center position = x: {}, y : {}, a_dist: {}".format(round(mean_x, 3), round(mean_y, 3), round(average_dis, 3)))
             if plot_mean_circles:
                 circle1 = plt.Circle((mean_x, mean_y), np.mean(radii[configuration_number]),
                         color=circle_colors[circle_count % len(circle_colors)],
@@ -261,8 +259,9 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
                         current_color += 1
                         current_dir = direction
 
-                label = split_control[split_control.index("position") + 3] + "_" + split_control[
-                    split_control.index("position") + 4]
+                # label = split_control[split_control.index("position") + 3] + "_" + split_control[
+                #     split_control.index("position") + 4]
+                label = split_control[split_control.index("position") + 4][:-1]
                 # print("label = " + str(label))
 
                 x_positions = [points[0] for points in positions[configuration_number][run_number]]
@@ -301,6 +300,9 @@ def plot_position_and_radius(files, axis_position=None, axis_radius=None, axis_a
         print("")
         print("distance traveled = " + str([round(i, 3) for i in distance]))
         print("")
+
+        for i in range(0, len(mean_radii)):
+            print("{rad} & {rad_std} & {angle} & {angle_std}".format(rad=round(mean_radii[i],3), rad_std=round(np.std(radii[i]),3), angle=round(mean_angles[i],3), angle_std=round(np.std(angles[i]),3)))
     else:
         print("**mean of radii** = " + str([round(i, 3) for i in mean_radii]))
         print("**average mean of radii** = " + str(np.average(np.array([round(i, 3) for i in mean_radii]))))
@@ -423,7 +425,8 @@ if __name__ == '__main__':
             fig_angle, axs_angle = plt.subplots()
             # axs_angle.set_title('relative angle boxplot for consecutive points')
             axs_angle.grid()
-            axs_angle.set_ylabel('relation of angle difference and mean angle', fontsize=16)
+            # axs_angle.set_ylabel('relation of angle difference and mean angle', fontsize=16)
+            axs_angle.set_xlabel('walking direction [rad]', fontsize=16)
             axs_angle.xaxis.set_major_locator(ticker.MultipleLocator(base=0.5))
             axs_angle.tick_params(labelsize=12)
             if sys.argv[1] == "-dir":
@@ -432,6 +435,17 @@ if __name__ == '__main__':
             else:
                 # axs_angle.set_ylim(-4.5, 2.25)
                 # axs_angle.set_ylim(-35, 15)
+
+                # axs_angle.set_ylim(-12, 7)
+                # axs_angle.set_ylim(-4.25, 4)
+                #axs_angle.set_ylim(-10, 8.25)
+                #axs_angle.set_ylim(-11, 9)
+                # axs_angle.set_ylim(-12, 7)
+                # axs_angle.set_ylim(-18, 13)
+                # axs_angle.set_ylim(-8.25, 6)
+                # axs_angle.set_ylim(-35, 45)
+                # axs_angle.set_ylim(-12, 7.5)
+                axs_angle.set_ylim(-6.25, 4.5)
                 pass
         else:
             axs_angle = None
@@ -443,11 +457,11 @@ if __name__ == '__main__':
             axs_pos.set_xlim(-1.5, 2.5)
             axs_pos.set_ylim(-0.5, 4.0)
 
-        if plot_radius:
-            fig_rad.autofmt_xdate()
-
-        if plot_angle:
-            fig_angle.autofmt_xdate()
+        # if plot_radius:
+        #     fig_rad.autofmt_xdate()
+        #
+        # if plot_angle:
+        #     fig_angle.autofmt_xdate()
 
         if safe_plot:
             if len(file_names) == 1:

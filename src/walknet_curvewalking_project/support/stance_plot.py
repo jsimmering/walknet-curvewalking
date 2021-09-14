@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import operator
 import os
 import re
@@ -26,6 +27,17 @@ def plot_step(leg_aeps, leg_peps, axs, lines=None):
     if len(leg_aeps) < 7:
         axs.plot([10, 10], [10, 10])
     return lines
+
+def plot_pull_vector(robot_front, pull_vector, axs, color):
+    directions = ['0.0rad', '0.2rad', '0.4rad', '0.6rad', '0.8rad', '1.0rad', '1.2rad', '1.4rad', '1.57rad']
+    # for i in range(0, len(pull_vectors)):
+    #axs.plot([robot_front[0], robot_front[0] + pull_vectors[i][0]], [robot_front[1], robot_front[1] + pull_vectors[i][1]])
+    print("color = " + str(color))
+    arrow = plt.arrow(robot_front[0], robot_front[1], pull_vector[0], pull_vector[1], color=color, head_width=0.01, overhang=0.25)
+    axs.add_patch(arrow)
+    # print("leng_aeps = " + str(len(pull_vectors)))
+    # if len(pull_vectors) < 7:
+    #     axs.plot([10, 10], [10, 10])
 
 
 def plot_workspace_data():
@@ -163,7 +175,15 @@ def plot_workspace_data():
         fig, axs = plt.subplots()
         # axs.set_prop_cycle(color=['#b2babb', '#99a3a4', '#7f8c8d', '#707b7c', '#616a6b', '#515a5a', '#424949'])
         # hell lila '#9400D3' blue '#0000FF' green '#00FF00' yellow '#FFFF00' red '#FF0000'
-        axs.set_prop_cycle(color=['m', '#4B0082', 'b', 'c', 'g', '#FF7F00', 'r'])
+        if len(file_names) == 7:
+            colors = ['m', 'indigo', 'b', 'c', 'g', '#FF7F00', 'r']
+        elif len(file_names) == 8:
+            colors = ['m', 'indigo', 'b', 'c', 'g', '#FF7F00', 'r', 'firebrick']
+        elif len(file_names) == 9:
+            colors = ['m', 'indigo', 'b', 'c', 'g', 'y', '#FF7F00', 'r', 'firebrick']
+        else:
+            raise IndexError('number of directions does not match number of colors')
+        axs.set_prop_cycle(color=colors)
         plot_lines = []
         plt.xlim(-0.35, 0.3)
         plt.ylim(-0.4, 0.4)
@@ -206,6 +226,19 @@ def plot_workspace_data():
             # axs.axvline(x=0.05 - 0.08, color='g', lw=1)
             # axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
 
+            split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
+            print(split)
+            #velocity = float(split[-1][:-1])
+            #counter_damping_fact = (-141.5 * velocity) + 35.5
+            #stance_speed = (velocity * counter_damping_fact)/35
+            stance_speed = 0.045
+            print("stance speed = " + str(stance_speed))
+            # arrow = plt.arrow(0.111, 0.0, 0.046, 0.0)
+            # axs.add_patch(arrow)
+            directions = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+            for i in directions[:len(file_names)]:
+                plot_pull_vector([0.111, 0.0], [stance_speed * math.cos(i), stance_speed * math.sin(i)], axs, colors[directions.index(i)])
+
             plt.tick_params(labelsize=20)
             # plt.grid()
             plt.axis('scaled')
@@ -215,8 +248,8 @@ def plot_workspace_data():
                 plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
                 plt.margins(1, 1)
 
-                split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
-                print(split)
+                # split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
+                # print(split)
                 name = ""
                 name += "_".join(split[split.index("walknet"):])
                 plot_path = "/home/jsimmering/plots_masterthesis/workspace/static_speed_workspace" + "_" + name + ".svg"

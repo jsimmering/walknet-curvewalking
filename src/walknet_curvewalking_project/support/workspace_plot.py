@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import operator
 import os
 import re
@@ -28,6 +29,7 @@ def plot_workspace_data():
         exit()
 
     average_step_length_overall = [0, 0, 0, 0, 0, 0]
+    average_step_length_overall_counter = [0, 0, 0, 0, 0, 0]
     leg_names = ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']
     leg_step_length = [[], [], [], [], [], []]
     run = 0
@@ -74,21 +76,22 @@ def plot_workspace_data():
 
         if plot:
             lf_shoulder = np.matrix([0.1248, 0.06164]).T
-            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
+            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'x', color='gray')
             lm_shoulder = np.matrix([0, 0.1034]).T
-            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
+            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'x', color='gray')
             lr_shoulder = np.matrix([-0.1248, 0.06164]).T
-            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
+            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'x', color='gray')
             rf_shoulder = np.matrix([0.1248, -0.06164]).T
-            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
+            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'x', color='gray')
             rm_shoulder = np.matrix([0, -0.1034]).T
-            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
+            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'x', color='gray')
             rr_shoulder = np.matrix([-0.1248, -0.06164]).T
-            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'x', color='gray')
 
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
         for leg in legs:
+            print("leg = " + str(leg_names[legs.index(leg)]))
             step_length = []
             first_step = True
             for stance in leg:
@@ -98,7 +101,15 @@ def plot_workspace_data():
                     # print("stance = " + str(stance))
                     # print("beginning = stance[0] = " + str(stance[0]))
                     # print("end = stance[len(stance) - 1] = " + str(stance[len(stance) - 1]))
-                    step_length.append(np.linalg.norm(np.array(stance[len(stance) - 1]) - np.array(stance[0])))
+                    # step_length.append(np.linalg.norm(np.array(stance[len(stance) - 1]) - np.array(stance[0])))
+                    length = 0
+                    start_pos_x = None
+                    start_pos_y = None
+                    for i in range(1, len(stance)):
+                        length += np.linalg.norm(np.array(stance[i]) - np.array(stance[i - 1]))
+                    # step_length.append(np.linalg.norm(np.array(stance[len(stance) - 1]) - np.array(stance[0])))
+                    step_length.append(length)
+                    print("step length = " + str(length))
                 if first_step:
                     first_step = False
                 if plot:
@@ -107,7 +118,7 @@ def plot_workspace_data():
                 leg.remove([])
 
             if print_aep_median:
-                print("{} leg".format(leg_names[counter]))
+                #print("{} leg".format(leg_names[counter]))
                 aeps = [stance[0] for stance in leg]
                 # aeps.sort(key=operator.itemgetter(0, 1))
                 # print("aeps = " + str(aeps))
@@ -128,11 +139,15 @@ def plot_workspace_data():
                     print("aep y lower middle value {} = {}".format(len(aeps) // 2, aeps[len(aeps) // 2]))
                     print("aep y upper middle value {} = {}".format(len(aeps) // 2 + 1, aeps[len(aeps) // 2 + 1]))
 
-            average_step_length = np.sum(step_length) / len(step_length)
-            # print("average_step_length = " + str(average_step_length))
-            average_step_length_overall[counter] += average_step_length
-            if average_step_length:
-                leg_step_length[counter].append(average_step_length)
+            if len(step_length) > 0:
+                average_step_length = np.sum(step_length) / len(step_length)
+                if average_step_length:
+                    #print("no average_step_length")
+                    leg_step_length[counter].append(average_step_length)
+                    average_step_length_overall[counter] += average_step_length
+                    average_step_length_overall_counter[counter] += 1
+            else:
+                leg_step_length[counter].append(float('nan'))
             counter += 1
 
         if plot:
@@ -150,18 +165,62 @@ def plot_workspace_data():
             # axs.axvline(x=0.25, color='b', lw=1)
             # axs.axvline(x=0.05, color='b', lw=1)
             # axs.axvline(x=-0.17, color='b', lw=1)
-            axs.plot((0.25), (0.24), 'x', color='b')
-            axs.plot((0.05), (0.24 + 0.04176), 'x', color='b')
-            axs.plot((-0.17), (0.24), 'x', color='b')
-            axs.plot((0.25), -(0.24), 'x', color='b')
-            axs.plot((0.05), -(0.24 + 0.04176), 'x', color='b')
-            axs.plot((-0.17), -(0.24), 'x', color='b')
+            axs.plot(0.25, 0.24, 'x', color='b', markersize=16)
+            axs.plot(0.05, (0.24 + 0.04176), 'x', color='b', markersize=16)
+            axs.plot((-0.17), 0.24, 'x', color='b', markersize=16)
+            axs.plot(0.25, -0.24, 'x', color='b', markersize=16)
+            axs.plot(0.05, -(0.24 + 0.04176), 'x', color='b', markersize=16)
+            axs.plot(-0.17, -0.24, 'x', color='b', markersize=16)
 
-            axs.axvline(x=0.25 - 0.08, color='g', lw=1)
-            axs.axvline(x=0.05 - 0.08, color='g', lw=1)
-            axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
+            # circle = plt.Circle((0.25, 0.24), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, 0.24 + 0.04176), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, 0.24), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.25, -0.24), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, -(0.24 + 0.04176)), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, -0.24), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
 
-            plt.tick_params(labelsize=20)
+            axs.axvline(x=0.25 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+            axs.axvline(x=0.05 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+            axs.axvline(x=-0.17 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+
+
+            # walk direction
+            split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
+            # print(split)
+            # velocity = float(split[-1][:-1])
+            # counter_damping_fact = (-141.5 * velocity) + 35.5
+            # stance_speed = (velocity * counter_damping_fact)/35
+            stance_speed = 0.045
+            # print("stance speed = " + str(stance_speed))
+            direction = 0.0
+            for s in split:
+                if 'dir' in s:
+                    direction = float(s.replace('dir', ''))
+            print("direction = " + str(direction))
+            # arrow = plt.arrow(0.111, 0.0, 0.046, 0.0)
+            # axs.add_patch(arrow)
+            # plot_pull_vector([0.111, 0.0], [stance_speed * math.cos(i), stance_speed * math.sin(i)], axs, colors[directions.index(i)])
+            arrow = plt.arrow(0.111, 0.0, stance_speed * math.cos(direction), stance_speed * math.sin(direction), color='r', head_width=0.01, overhang=0.25)
+            # print("arrow length = " + str(math.sqrt(pow(stance_speed * math.cos(direction), 2) + pow(stance_speed * math.sin(direction), 2))))
+            axs.add_patch(arrow)
+
+            stance_diff = -pow(0.28 * (direction - 0.9), 2) + 0.02
+            print("stance diff = " + str(stance_diff))
+            if stance_diff < 0:
+                stance_diff = 0
+            print("stance diff = " + str(stance_diff))
+
+            axs.axvline(x=(0.25 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            axs.axvline(x=(0.05 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            axs.axvline(x=(-0.17 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+
+            plt.tick_params(labelsize=35)
             plt.grid()
             plt.axis('scaled')
             # plt.gca().set_aspect('equal', adjustable='box')
@@ -192,13 +251,24 @@ def plot_workspace_data():
 
     # print("length collected = " + str(leg_step_length))
     sqrt_errors = []
+    #print("leg_step_length = " + str(leg_step_length))
+    print("average_step_length_overall = " + str([average_step_length_overall[i]/average_step_length_overall_counter[i] for i in range(0, len(average_step_length_overall))]))
     for i in range(0, len(files)):
+        # for each run
         sqrt_error = 0
+        error_counter = 0
         for j in range(0, 6):
-            sqrt_error += pow(leg_step_length[j][i] - average_step_length_overall[j], 2)
-        sqrt_errors.append(sqrt_error / 6)
+            # for each leg
+            #print("sqrt_error += ({} - {})^2 = {}".format(leg_step_length[j][i], average_step_length_overall[j]/average_step_length_overall_counter[j], pow(leg_step_length[j][i] - average_step_length_overall[j]/average_step_length_overall_counter[j], 2)))
+            if average_step_length_overall_counter[j] != 0:
+                error = pow(leg_step_length[j][i] - average_step_length_overall[j]/average_step_length_overall_counter[j], 2)
+                if not math.isnan(error):
+                    sqrt_error += error
+                    error_counter += 1
+        #print("sqrt_errors.append {}/{} = {}".format(sqrt_error, error_counter, sqrt_error / error_counter))
+        sqrt_errors.append(sqrt_error / error_counter)
     min_idx = sqrt_errors.index(min(sqrt_errors))
-    print("errors = " + str(sqrt_errors) + " idx of min (1-3) = " + str(min_idx + 1))
+    print("errors = " + str(sqrt_errors) + " idx of min (starting at idx 1) = " + str(min_idx + 1))
     print("\n\n")
     print("**workspace:** run " + str(min_idx + 1))
     print("")
@@ -213,9 +283,26 @@ def plot_workspace_data():
     print("workspace_" + name + ".png")
 
     print("**average step length over all runs:**")
+    #print("average_step_length_overall = " + str(average_step_length_overall))
     for i in [0, 5, 1, 4, 2, 3]:
         # print("{} leg = {}".format(leg_names[i], round(average_step_length_overall[i] / len(files), 5)))
-        print(str(round(average_step_length_overall[i] / len(files), 3)) + " & ", end="")
+        try:
+            print(str(round(average_step_length_overall[i] / average_step_length_overall_counter[i], 3)) + " & ", end="")
+        except ZeroDivisionError:
+            print(" nan & ", end="")
+    print("")
+    print("")
+
+    for i in [0, 5, 1, 4, 2, 3]:
+        # print("{} leg = {}".format(leg_names[i], round(average_step_length_overall[i] / len(files), 5)))
+        try:
+            print(str(average_step_length_overall[i] / average_step_length_overall_counter[i]) + " ", end="")
+        except ZeroDivisionError:
+            print(" nan ", end="")
+    print("")
+    print("")
+
+    print([round(average_step_length_overall[i] / average_step_length_overall_counter[i], 3) for i in [0, 5, 1, 4, 2, 3]])
     print("")
     print("")
 
