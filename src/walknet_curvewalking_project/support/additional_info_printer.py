@@ -22,6 +22,7 @@ if len(sys.argv) >= 2:
 
     durations = []
     unstable_percent = []
+    stability_enforcement = []
     delays_percent = []
     valueError_percent = []
     average_swing_duration = []
@@ -55,6 +56,8 @@ if len(sys.argv) >= 2:
                     durations.append(float(split[-1]))
                 if split[0] == "unstable_percent":  # line_number == 16:
                     unstable_percent.append(round(float(split[split.index("=") + 1]), 2))
+                if split[0] == "cs" and split[1] == "with" and split[2] == "delay" and split[3] == "and" and split[6] == "[%]":  # line_number == 16:
+                    stability_enforcement.append(round(float(split[split.index("=") + 1]), 2))
                 elif split[0] == "value_error_count:":
                     is_error_line = True
                 elif split[0] == "swing_delay_count:":
@@ -143,6 +146,25 @@ if len(sys.argv) >= 2:
             unstable_str += ", "
     print("**unstable:**")
     print(unstable_str)
+    print("")
+
+    max_enforcement = max(stability_enforcement)
+    enforcement_str = "* "
+    for value in stability_enforcement:
+        if value >= 3.0:
+            if value == max_enforcement:
+                enforcement_str += "**_" + str(value) + "_**"
+            else:
+                enforcement_str += "**" + str(value) + "**"
+        else:
+            if value == max_enforcement:
+                enforcement_str += "_" + str(value) + "_"
+            else:
+                enforcement_str += str(value)
+        if not stability_enforcement.index(value) == len(stability_enforcement) - 1:
+            enforcement_str += ", "
+    print("**stability enforcement:**")
+    print(enforcement_str)
     print("")
 
     # try:

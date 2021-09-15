@@ -91,7 +91,7 @@ def plot_workspace_data():
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
         for leg in legs:
-            print("leg = " + str(leg_names[legs.index(leg)]))
+            #print("leg = " + str(leg_names[legs.index(leg)]))
             step_length = []
             first_step = True
             for stance in leg:
@@ -109,7 +109,7 @@ def plot_workspace_data():
                         length += np.linalg.norm(np.array(stance[i]) - np.array(stance[i - 1]))
                     # step_length.append(np.linalg.norm(np.array(stance[len(stance) - 1]) - np.array(stance[0])))
                     step_length.append(length)
-                    print("step length = " + str(length))
+                    #print("step length = " + str(length))
                 if first_step:
                     first_step = False
                 if plot:

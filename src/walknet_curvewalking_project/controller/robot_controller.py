@@ -346,9 +346,7 @@ if __name__ == '__main__':
     # if the same vector should be applied to the back of the body model to turn on the spot
     pull_at_back_param = rospy.get_param('~back', True)
 
-    duration = 0
-    if rospy.has_param('~duration'):
-        duration = rospy.get_param('~duration')
+    duration = rospy.get_param('~duration', 0)
 
     step_length_param = rospy.get_param('~stepLength', True)
     shift_aep_param = rospy.get_param('~aepShift', True)

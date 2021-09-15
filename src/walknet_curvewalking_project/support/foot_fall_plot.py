@@ -44,8 +44,8 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
             column_idx = 1
             while column_idx < 19:
-                if column_idx == 1:
-                    print("lf values = " + str(values[column_idx:column_idx+1]))
+                # if column_idx == 1:
+                #     print("lf values = " + str(values[column_idx:column_idx+1]))
                 if values[column_idx] != 0.0 and values[column_idx + 1] != 0.0:
                     if last_state_swing[column_idx // 3]:
                         last_state_swing[column_idx // 3] = False
@@ -73,7 +73,7 @@ def plot_stability_data_to_footfall_pattern(start, end):
             #     plt.plot([step[0], step[1]], [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
             #         linestyle='-', linewidth=20.0, color='black', marker='', solid_capstyle="butt")
             for i in range(0, len(leg) - 1):
-                print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
+                # print("leg index = {} ['lf', 'lm', 'lr', 'rr', 'rm', 'rf']".format(stance_times.index(leg)))
                 # plot swing phases: end from step i to start from step i+1 of leg
                 plt.plot([leg[i][1], leg[i + 1][0]],
                         [leg_order[stance_times.index(leg)], leg_order[stance_times.index(leg)]],
@@ -114,7 +114,8 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
             split = re.findall(r"[^/_,]+", str(sys.argv[1]), re.ASCII)
             print("split = " + str(split))
-            name = "_".join(split[split.index("50hz") + 1:])
+            # name = "_".join(split[split.index("50hz") + 1:])
+            name = "_".join(split[split.index("35hz") + 1:])
             print("name = " + name)
             print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg")
 
@@ -126,6 +127,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 45 # 45 # 60  #  60  # 150 #90  # 60
-        end_time = 75 # 75 # 90  # 90  # 200 # 120  # 90
+        start_time = 0 # 45 # 60  #  60  # 150 #90  # 60
+        end_time = 30 # 30 # 75 # 90  # 90  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)
