@@ -1,13 +1,13 @@
 <launch>
     <arg name="robot_model" default="wxmark4"/>
     <arg name="robot_name" default="$(arg robot_model)"/>
-    <arg name="use_rviz" default="true"/>
+    <arg name="use_rviz" default="false"/>
     <arg name="mode_configs" default="$(find walknet_curvewalking)/config/modes.yaml"/>
     <arg name="load_configs" default="true"/>
     <arg name="use_pixels" default="true"/>
     <arg name="launch_driver" default="true"/>
 
-    <include if="$(arg launch_driver)" file="$(find interbotix_xshexapod_control)/launch/xshexapod_control.launch">
+    <include if="$(arg launch_driver)" file="$(find walknet_curvewalking)/launch/xshexapod_control.launch">
         <arg name="robot_model" value="$(arg robot_model)"/>
         <arg name="robot_name" value="$(arg robot_name)"/>
         <arg name="use_rviz" value="$(arg use_rviz)"/>
