@@ -1,0 +1,53 @@
+<launch>
+    <arg name="robot_model" default="wxmark4"/>
+    <arg name="robot_name" default="$(arg robot_model)"/>
+    <arg name="use_rviz" default="true"/>
+    <arg name="mode_configs" default="$(find walknet_curvewalking)/config/modes.yaml"/>
+    <arg name="load_configs" default="true"/>
+    <arg name="use_pixels" default="true"/>
+    <arg name="launch_driver" default="true"/>
+
+    <include if="$(arg launch_driver)" file="$(find interbotix_xshexapod_control)/launch/xshexapod_control.launch">
+        <arg name="robot_model" value="$(arg robot_model)"/>
+        <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="use_rviz" value="$(arg use_rviz)"/>
+        <arg name="rviz_frame" value="$(arg robot_name)/odom"/>
+        <arg name="mode_configs" value="$(arg mode_configs)"/>
+        <arg name="load_configs" value="$(arg load_configs)"/>
+        <arg name="use_pixels" value="$(arg use_pixels)"/>
+    </include>
+
+    <node
+            pkg="joy"
+            type="joy_node"
+            name="joy_node"
+            output="screen"
+            ns="$(arg robot_name)">
+        <param name="dev" value="/dev/input/js0"/>
+    </node>
+
+    <node
+            pkg="walknet_curvewalking"
+            type="joy_control.py"
+            name="joy_controller"
+            output="screen"
+            ns="$(arg robot_name)">
+    </node>
+
+    <node
+            pkg="walknet_curvewalking"
+            type="robot_controller.py"
+            name="robot_controller"
+            output="screen"
+            ns="$(arg robot_name)">
+        <param name="walk" value="True"/>
+        <param name="back" value="True"/>
+        <param name="stepLength" value="True"/>
+        <param name="aepShift" value="True"/>
+        <param name="aepShiftX" value="True"/>
+        <param name="innerStep" value="True"/>
+        <param name="name" value="logs/test/"/>
+    </node>
+
+
+</launch>
