@@ -147,7 +147,8 @@ class Robot:
                 if self.write_at_end:
                     self.str_list.extend(str_list)
                 else:
-                    self.write_stability_data_to_file(''.join(str_list))
+                    #self.write_stability_data_to_file(''.join(str_list))
+                    pass
                 self.unstable_count += 1
                 return False
 
@@ -162,7 +163,8 @@ class Robot:
                 if self.write_at_end:
                     self.str_list.extend(str_list)
                 else:
-                    self.write_stability_data_to_file(''.join(str_list))
+                    #self.write_stability_data_to_file(''.join(str_list))
+                    pass
                 self.unstable_count += 1
                 return False
             # If the center of mass lies inside the support polygon
@@ -173,7 +175,8 @@ class Robot:
         if self.write_at_end:
             self.str_list.extend(str_list)
         else:
-            self.write_stability_data_to_file(''.join(str_list))
+            #self.write_stability_data_to_file(''.join(str_list))
+            pass
         return True
 
     def check_stability_if_leg_lifted(self, gc, leg_name):

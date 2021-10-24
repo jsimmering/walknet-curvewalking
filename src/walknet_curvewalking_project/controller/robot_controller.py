@@ -123,7 +123,7 @@ class RobotController:
                 leg.set_pull_dependent_parameter(self.velocity, self.pull_angle)
             self.robot.stance_speed = self.velocity
             self.robot.direction = self.pull_angle
-            self.robot.initialize_stability_data_file()
+            #self.robot.initialize_stability_data_file()
             self.walk_start_time = rospy.Time.now()
             rospy.loginfo("COUNTER_DAMPING_FACTOR = " + str(self.counter_damping_fact))
             rospy.loginfo("DEFAULT_SWING_VELOCITY = " + str(CONST.DEFAULT_SWING_VELOCITY))
@@ -182,9 +182,9 @@ class RobotController:
             self.update_stance_body_model()
             gc = self.robot.body_model.gc.copy()
             legs_in_swing = self.robot.body_model.gc.count(False)
-            if self.stop and legs_in_swing == 0:
-                talker()
-                self.robot.running = False
+            # if self.stop and legs_in_swing == 0:
+            #     talker()
+            #     self.robot.running = False
             delayed = False
             for leg in reversed(self.robot.legs):
                 if rospy.is_shutdown():
@@ -354,6 +354,7 @@ if __name__ == '__main__':
     duration = 0
     if rospy.has_param('~duration'):
         duration = rospy.get_param('~duration')
+    rospy.loginfo("duration = " + str(duration))
 
     step_length_param = rospy.get_param('~stepLength', True)
     shift_aep_param = rospy.get_param('~aepShift', True)
@@ -388,11 +389,11 @@ if __name__ == '__main__':
         robot_controller.initialize_body_model()
         while not rospy.is_shutdown() and robot_controller.robot.running and walk:
             robot_controller.walk_body_model()
-        if robot_controller.robot.write_at_end:
-            robot_controller.robot.write_all_stability_data_to_file()
+        # if robot_controller.robot.write_at_end:
+        #     robot_controller.robot.write_all_stability_data_to_file()
         if robot_controller.walk_start_time:
-            robot_controller.record_additional_data()
-            robot_controller.record_swing_stance_durations()
+            #robot_controller.record_additional_data()
+            #robot_controller.record_swing_stance_durations()
             rospy.loginfo("DURATION = " + str((rospy.Time.now() - robot_controller.walk_start_time).to_sec()))
         else:
             rospy.loginfo("DURATION = 0. No walk command received")
