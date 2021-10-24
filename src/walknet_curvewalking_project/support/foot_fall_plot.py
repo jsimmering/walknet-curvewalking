@@ -114,8 +114,8 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
             split = re.findall(r"[^/_,]+", str(sys.argv[1]), re.ASCII)
             print("split = " + str(split))
-            # name = "_".join(split[split.index("50hz") + 1:])
-            name = "_".join(split[split.index("35hz") + 1:])
+            name = "_".join(split[split.index("50hz") + 1:])
+            # name = "_".join(split[split.index("35hz") + 1:])
             print("name = " + name)
             print("single file: " + "/home/jsimmering/plots_masterthesis/footfall/foot_fall_" + name + ".svg")
 
@@ -127,6 +127,6 @@ def plot_stability_data_to_footfall_pattern(start, end):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        start_time = 0 # 45 # 60  #  60  # 150 #90  # 60
-        end_time = 30 # 30 # 75 # 90  # 90  # 200 # 120  # 90
+        start_time = 15 # 45 # 60  #  60  # 150 #90  # 60
+        end_time = 45 # 30 # 75 # 90  # 90  # 200 # 120  # 90
         plot_stability_data_to_footfall_pattern(start_time, end_time)

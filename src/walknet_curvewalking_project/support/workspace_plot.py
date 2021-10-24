@@ -39,6 +39,7 @@ def plot_workspace_data():
             plt.xlim(-0.35, 0.3)
             plt.ylim(-0.4, 0.4)
 
+            # img = mpimg.imread('/home/jsimmering/plots_masterthesis/images/forPlots/widowX-body.png')
             img = mpimg.imread('/home/jsimmering/plots_masterthesis/images/forPlots/body.png')
             axs.imshow(img, alpha=1.0, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
 
@@ -185,14 +186,34 @@ def plot_workspace_data():
             # circle = plt.Circle((-0.17, -0.24), 0.08, color='g', fill=False)
             # axs.add_patch(circle)
 
-            axs.axvline(x=0.25 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
-            axs.axvline(x=0.05 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
-            axs.axvline(x=-0.17 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+            # WIDOWX
+            # axs.plot(0.27, 0.18, 'x', color='b', markersize=16)
+            # axs.plot(0.055, (0.18 + 0.035), 'x', color='b', markersize=16)
+            # axs.plot((-0.17), 0.18, 'x', color='b', markersize=16)
+            # axs.plot(0.27, -0.18, 'x', color='b', markersize=16)
+            # axs.plot(0.055, -(0.18 + 0.035), 'x', color='b', markersize=16)
+            # axs.plot(-0.17, -0.18, 'x', color='b', markersize=16)
+            # circle = plt.Circle((0.27, 0.18), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.055, 0.18 + 0.035), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, 0.18), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.27, -0.18), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.055, -(0.18 + 0.035)), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, -0.18), 0.08, color='g', fill=False)
+            # axs.add_patch(circle)
+
+            # axs.axvline(x=0.25 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+            # axs.axvline(x=0.05 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
+            # axs.axvline(x=-0.17 - 0.08, ymin=0, ymax=0.5, color='g', lw=1)
 
 
             # walk direction
             split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
-            # print(split)
+            print(split)
             # velocity = float(split[-1][:-1])
             # counter_damping_fact = (-141.5 * velocity) + 35.5
             # stance_speed = (velocity * counter_damping_fact)/35
@@ -202,6 +223,11 @@ def plot_workspace_data():
             for s in split:
                 if 'dir' in s:
                     direction = float(s.replace('dir', ''))
+            # WidowX
+            # if direction == 0.0:
+            #     for s in split:
+            #         if 'rad' in s and 'radii' != s:
+            #             direction = float(s.replace('rad', ''))
             print("direction = " + str(direction))
             # arrow = plt.arrow(0.111, 0.0, 0.046, 0.0)
             # axs.add_patch(arrow)
@@ -216,9 +242,22 @@ def plot_workspace_data():
                 stance_diff = 0
             print("stance diff = " + str(stance_diff))
 
-            axs.axvline(x=(0.25 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
-            axs.axvline(x=(0.05 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
-            axs.axvline(x=(-0.17 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            # axs.axvline(x=(0.25 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            # axs.axvline(x=(0.05 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            # axs.axvline(x=(-0.17 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+
+            circle = plt.Circle((0.25, 0.24), 0.08 - stance_diff, color='g', fill=False)
+            axs.add_patch(circle)
+            circle = plt.Circle((0.05, 0.24 + 0.04176), 0.08 - stance_diff, color='g', fill=False)
+            axs.add_patch(circle)
+            circle = plt.Circle((-0.17, 0.24), 0.08 - stance_diff, color='g', fill=False)
+            axs.add_patch(circle)
+            circle = plt.Circle((0.25, -0.24), 0.08, color='g', fill=False)
+            axs.add_patch(circle)
+            circle = plt.Circle((0.05, -(0.24 + 0.04176)), 0.08, color='g', fill=False)
+            axs.add_patch(circle)
+            circle = plt.Circle((-0.17, -0.24), 0.08, color='g', fill=False)
+            axs.add_patch(circle)
 
             plt.tick_params(labelsize=35)
             plt.grid()

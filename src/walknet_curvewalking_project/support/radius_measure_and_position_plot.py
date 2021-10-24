@@ -445,7 +445,9 @@ if __name__ == '__main__':
                 # axs_angle.set_ylim(-8.25, 6)
                 # axs_angle.set_ylim(-35, 45)
                 # axs_angle.set_ylim(-12, 7.5)
-                axs_angle.set_ylim(-6.25, 4.5)
+                # axs_angle.set_ylim(-6.25, 4.5)
+                # axs_angle.set_ylim(-4.5, 5)
+                # axs_angle.set_ylim(-7.5, 5)
                 pass
         else:
             axs_angle = None

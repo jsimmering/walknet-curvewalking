@@ -58,7 +58,7 @@ if len(sys.argv) >= 2:
                     unstable_percent.append(round(float(split[split.index("=") + 1]), 2))
                 if split[0] == "cs" and split[1] == "with" and split[2] == "delay" and split[3] == "and" and split[6] == "[%]":  # line_number == 16:
                     stability_enforcement.append(round(float(split[split.index("=") + 1]), 2))
-                elif split[0] == "value_error_count:":
+                if split[0] == "value_error_count:":
                     is_error_line = True
                 elif split[0] == "swing_delay_count:":
                     is_delay_line = True
@@ -70,6 +70,7 @@ if len(sys.argv) >= 2:
                 elif split[0] == "stance_count:":
                     is_swing_duration_line = False
                     is_stance_step_line = True
+                    print("---------------------------- stance step line = " + str(is_stance_step_line))
                 elif split[0] == "average_stance_duration:":
                     is_stance_duration_line = True
                     is_stance_step_line = False
@@ -86,19 +87,20 @@ if len(sys.argv) >= 2:
                     if delay != 0.0:
                         delays_dict[split[0]] = delay
                 elif is_swing_duration_line:
-                    split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    #split[len(split) - 1] = split[len(split) - 1][0:-1]
                     try:
                         swing_duration_dict[split[0]] = float(split[len(split) - 1])
                     except ValueError:
                         swing_duration_dict[split[0]] = float('nan')
                 elif is_stance_duration_line:
-                    split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    #split[len(split) - 1] = split[len(split) - 1][0:-1]
                     try:
                         stance_duration_dict[split[0]] = float(split[len(split) - 1])
                     except ValueError:
                         stance_duration_dict[split[0]] = float('nan')
                 elif is_stance_step_line:
-                    split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    #split[len(split) - 1] = split[len(split) - 1][0:-1]
+                    print(split)
                     try:
                         stance_step_dict[split[0]] = float(split[len(split) - 1])
                     except ValueError:
@@ -113,6 +115,7 @@ if len(sys.argv) >= 2:
             # delays_dict = {}
             average_swing_duration.append(swing_duration_dict)
             average_stance_duration.append(stance_duration_dict)
+            print(stance_step_dict)
             average_stance_steps.append(stance_step_dict)
         except IsADirectoryError:
             pass
@@ -148,24 +151,25 @@ if len(sys.argv) >= 2:
     print(unstable_str)
     print("")
 
-    max_enforcement = max(stability_enforcement)
-    enforcement_str = "* "
-    for value in stability_enforcement:
-        if value >= 3.0:
-            if value == max_enforcement:
-                enforcement_str += "**_" + str(value) + "_**"
+    if len(stability_enforcement) > 0:
+        max_enforcement = max(stability_enforcement)
+        enforcement_str = "* "
+        for value in stability_enforcement:
+            if value >= 3.0:
+                if value == max_enforcement:
+                    enforcement_str += "**_" + str(value) + "_**"
+                else:
+                    enforcement_str += "**" + str(value) + "**"
             else:
-                enforcement_str += "**" + str(value) + "**"
-        else:
-            if value == max_enforcement:
-                enforcement_str += "_" + str(value) + "_"
-            else:
-                enforcement_str += str(value)
-        if not stability_enforcement.index(value) == len(stability_enforcement) - 1:
-            enforcement_str += ", "
-    print("**stability enforcement:**")
-    print(enforcement_str)
-    print("")
+                if value == max_enforcement:
+                    enforcement_str += "_" + str(value) + "_"
+                else:
+                    enforcement_str += str(value)
+            if not stability_enforcement.index(value) == len(stability_enforcement) - 1:
+                enforcement_str += ", "
+        print("**stability enforcement:**")
+        print(enforcement_str)
+        print("")
 
     # try:
     #     max_delays = [max(dict.items(), key=operator.itemgetter(1)) for dict in delays_percent]
@@ -345,6 +349,7 @@ if len(sys.argv) >= 2:
     #         stance_str += "\n* "
     #print(stance_str)
     print("")
+    print("")
 
     print("**average swing stance ratio (all runs):**")
     for k in keys:
@@ -352,10 +357,14 @@ if len(sys.argv) >= 2:
         average_stance = sum(stances[k] for stances in average_stance_duration) / len(average_stance_duration)
         average_cycle = average_stance + average_swing
         stance_ratio = (average_stance * 100)/average_cycle
-        print(" & " + str(round(stance_ratio)) + "%", end="")
+        try:
+            print(" & " + str(round(stance_ratio)), end="")
+        except ValueError:
+            print(" & nan ", end="")
+    print("")
     print("")
 
-    print("**average stance steps (all runs):**")
+    print("**average stance steps (all runs):** " + str(average_stance_steps))
     # stance_str = "* "
     #average = [round(sum(stances[k] for stances in average_stance_steps) / len(average_stance_steps), 2) for k in keys]
 

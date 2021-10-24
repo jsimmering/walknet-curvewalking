@@ -118,7 +118,7 @@ if __name__ == '__main__':
                         for line in open(files[speed][direction][run_number], 'r'):
                             line = line.rstrip("\n")
                             split = line.split(" ")
-                            print("split = " + str(split))
+                            # print("split = " + str(split))
                             if split[0] == "unstable_percent":  # line_number == 16:
                                 unstable_percent.append(round(float(split[split.index("=") + 1]), 2))
                             elif split[0] == "value_error_count:":
@@ -129,10 +129,10 @@ if __name__ == '__main__':
                             elif split[0] == "swing_count:":
                                 is_delay_line = False
                                 is_swing_count_line = True
-                                print("swing count line = " + str(is_swing_count_line))
+                                #print("swing count line = " + str(is_swing_count_line))
                             elif split[0] == 'average_swing_duration:':
                                 is_swing_count_line = False
-                                print("swing count line = " + str(is_swing_count_line))
+                                #print("swing count line = " + str(is_swing_count_line))
                             elif split[0] == "stance_count":
                                 is_stance_count_line = True
                             elif split[0] == "average_stance_duration":
@@ -150,12 +150,12 @@ if __name__ == '__main__':
                                 if delay != 0.0:
                                     delays_dict[split[0]] = delay
                             elif is_swing_count_line:
-                                print(split)
+                                #print(split)
                                 count = float(split[-1])
                                 if count != 0.0:
                                     swing_count_dict[split[0]] = count
                             elif is_stance_count_line:
-                                print(split)
+                                #print(split)
                                 count = float(split[-1])
                                 if count != 0.0:
                                     stance_count_dict[split[0]] = count
@@ -227,9 +227,10 @@ if __name__ == '__main__':
         for speed in max_delays_percent:
             print("speed number " + str(max_delays_percent.index(speed)))
             for k in keys:
+                print("& " + str(k).upper(), end="")
                 for values in speed:
                     print(" & " + str(values[k]), end="")
-                print(" \\")
+                print(" \\\ ")
             #print(speed)
             print("")
         print("")
@@ -237,9 +238,10 @@ if __name__ == '__main__':
         for speed in max_valueError_percent:
             print("speed number " + str(max_valueError_percent.index(speed)))
             for k in keys:
+                print("& " + str(k).upper(), end="")
                 for values in speed:
                     print(" & " + str(values[k]), end="")
-                print(" \\")
+                print(" \\\ ")
             # print(speed)
             print("")
         print("")

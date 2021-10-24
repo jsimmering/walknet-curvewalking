@@ -119,7 +119,7 @@ def record(speed, trials, direction, repetitions_per_speed, duration, first_stra
 
 def main():
 
-    repetitions_per_speed = 3
+    repetitions_per_speed = 6
     duration = 2  # 0.83
     circles = None # 7
     distance = None
@@ -129,7 +129,7 @@ def main():
     if first_straight:
         duration += 0.5
     aep_param = True  # float('nan')  # 0.025
-    root_dir = "test/" #"logs/walknet_curve-walking_final_results/"  # "logs/widowX-final_results/"
+    root_dir = "logs/walknet_curve-walking_final_results/"  # "logs/widowX-final_results/"
     # "logs/original_walknet_straightwalking/tetrapod/"
     #"logs/test/" # "logs/new_pull_vector/"  # "logs/test_stopping/"
     # "logs/check_stability_enforcement/0.06s_1.0s/" # "logs/tuning/tuned_for_1.2dir/"  # "logs/check_rules/fixed_rules/"
@@ -142,20 +142,20 @@ def main():
         # {"name": root_dir + "original_with_pull_at_back/", "length": False, "aep_y": False, "aep_x": False, "decrease": False}
         # {"name": root_dir + "step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": False}
         # {"name": root_dir + "aep_shift/", "length": False, "aep_y": True, "aep_x": True, "decrease": False}
-        {"name": root_dir + "decrease/", "length": False, "aep_y": False, "aep_x": False, "decrease": True, "pull_at_back": False}
+        {"name": root_dir + "decrease_step_length/", "length": True, "aep_y": False, "aep_x": False, "decrease": True, "pull_at_back": False}
     ]
 
     #direction = [0.0]
     # direction = [0.6]
-    direction = [1.4]
-    # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
+    # direction = [1.4]
+    direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.57]
     # direction = [1.2, 1.4, pi / 2]
     # direction = [1.0]  # , 0.4, 0.8, 1.2, pi/2]
     # direction = [0.0, 0.5, 1.0, pi/2]
 
-    # speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]  # 0.007
-    speed = [0.06]  # , 0.04, 0.03]
+    speed = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06]  # 0.007
+    # speed = [0.06]  # , 0.04, 0.03]
     # speed = [0.03]  # , 0.025, 0.015]
 
     for s in speed:
