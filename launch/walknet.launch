@@ -11,7 +11,6 @@
         <arg name="robot_model" value="$(arg robot_model)"/>
         <arg name="robot_name" value="$(arg robot_name)"/>
         <arg name="use_rviz" value="$(arg use_rviz)"/>
-        <arg name="rviz_frame" value="$(arg robot_name)/odom"/>
         <arg name="mode_configs" value="$(arg mode_configs)"/>
         <arg name="load_configs" value="$(arg load_configs)"/>
         <arg name="use_pixels" value="$(arg use_pixels)"/>
