@@ -140,7 +140,7 @@ class SingleLegController:
                 (angle < 0.0 and (self.name == "rf" or self.name == "rm" or self.name == "rr")) or (
                 angle > 0.0 and (self.name == "lf" or self.name == "lm" or self.name == "lr"))):
             rospy.loginfo(self.name + ": STANCE DIFF = -" + str(self.stance_diff))
-            self.default_step_length -= self.stance_diff
+            self.default_step_length = RSTATIC.default_stance_distance - self.stance_diff
             rospy.loginfo(self.name + ":  default_step_length = " + str(self.default_step_length))
             if self.step_length:
                 self.leg.set_default_step_length(self.default_step_length)

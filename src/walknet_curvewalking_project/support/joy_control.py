@@ -85,6 +85,6 @@ if __name__ == '__main__':
 
     joy_controller = JoyController()
 
-    rospy.Subscriber('/joy', Joy, joy_controller.control_callback)
+    rospy.Subscriber('/wxmark4/joy', Joy, joy_controller.control_callback)
 
     rospy.spin()
