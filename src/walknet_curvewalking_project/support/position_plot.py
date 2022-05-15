@@ -16,7 +16,7 @@ if len(sys.argv) >= 2:
 
     plot = True
     safe_plot = True
-    plot_heigth = True
+    plot_heigth = False
     calculate_cot = True
     controll_colors = False
     controll_colors_dir = False
@@ -160,7 +160,7 @@ if len(sys.argv) >= 2:
                 if current_speed != speed:
                     current_color += 1
                     current_speed = speed
-                axs.plot(X[j], Y[j], colors[current_color % len(colors)])
+                axs.plot(X[j], Y[j], colors[current_color % len(colors)], lw=5)
             elif controll_colors_dir:
                 if not current_dir:
                     split = re.findall(r"[^/_,]+", files[j], re.ASCII)
@@ -172,15 +172,16 @@ if len(sys.argv) >= 2:
                 if current_dir != dir:
                     current_color += 1
                     current_dir = dir
-                axs.plot(X[j], Y[j], colors[current_color % len(colors)])
+                axs.plot(X[j], Y[j], colors[current_color % len(colors)], lw=3)
             else:
-                axs.plot(X[j], Y[j])
+                axs.plot(X[j], Y[j], lw=5)
             split = [i.split("_") for i in files]
             # axs.legend([i.split("_")[2] + "_" + i.split("_")[3] for i in files], loc='lower right')
-            axs.legend([str(n+1) for n in range(0, len(files))],
+            axs.legend([str(n + 1) for n in range(0, len(files))],
                     # [split[i][split[i].index("position") + 1] + "_" + split[i][split[i].index("position") + 2] for i in
                     #  range(0, len(split))],
-                    loc='lower right')
+                    loc='lower left', fontsize=30)
+                    #loc='lower right', fontsize=30)
 
     if calculate_cot:
         total_power_command = []
@@ -252,13 +253,22 @@ if len(sys.argv) >= 2:
         #
         ## -----
 
-        plt.tick_params(labelsize=20)
+        plt.tick_params(labelsize=30)
         plt.grid(which='both')
         plt.axis('scaled')
 
         # axs.set_xlim(-1.5, 2.5)
         # axs.set_ylim(-0.5, 4.0)
         # axs.set_ylim(-0.55, 0.9)
+
+        #axs.set_xlim(-2, 1)
+        #axs.set_ylim(-1, 2)
+        # original paper
+        #axs.set_xlim(-3, 3)
+        #axs.set_ylim(-1.25, 5.5)
+        # final paper
+        axs.set_xlim(-2, 2)
+        axs.set_ylim(-0.25, 4.5)
 
         # lf_shoulder = np.matrix([0.1248, 0.06164]).T
         # axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
@@ -334,6 +344,7 @@ if len(sys.argv) >= 2:
             # print(sorted(Z, key=float, reverse=True))
             # print(type(Z[0]))
             import itertools
+
             heights = list(itertools.chain.from_iterable(Z[1:len(Z)]))
             last = heights[0]
             idx = 0
@@ -343,7 +354,7 @@ if len(sys.argv) >= 2:
                 else:
                     break
             print("idx = " + str(idx))
-            #z_pos = heights[5: len(heights)]
+            # z_pos = heights[5: len(heights)]
 
             print(sorted(heights, key=float, reverse=True))
             print("init height = " + str(Z[0][1]))

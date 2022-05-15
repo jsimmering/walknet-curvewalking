@@ -3,6 +3,7 @@ import operator
 import os
 import re
 import sys
+import math
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -34,8 +35,8 @@ def plot_workspace_data():
     for file in files:
         if plot:
             fig, axs = plt.subplots()
-            plt.xlim(-0.35, 0.3)
-            plt.ylim(-0.4, 0.4)
+            # plt.xlim(-0.35, 0.3)
+            # plt.ylim(-0.4, 0.4)
 
             #img = mpimg.imread('/home/jsimmering/plots_masterthesis/phantomXBody_turned.png')
             #axs.imshow(img, alpha=0.5, aspect='equal', extent=(-0.1378, 0.1378, -0.1164, 0.1164))
@@ -74,17 +75,17 @@ def plot_workspace_data():
 
         if plot:
             lf_shoulder = np.matrix([0.1248, 0.06164]).T
-            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb')
+            axs.plot(lf_shoulder.T[:, 0], lf_shoulder.T[:, 1], 'xb', mew=3, ms=10)
             lm_shoulder = np.matrix([0, 0.1034]).T
-            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb')
+            axs.plot(lm_shoulder.T[:, 0], lm_shoulder.T[:, 1], 'xb', mew=3, ms=10)
             lr_shoulder = np.matrix([-0.1248, 0.06164]).T
-            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb')
+            axs.plot(lr_shoulder.T[:, 0], lr_shoulder.T[:, 1], 'xb', mew=3, ms=10)
             rf_shoulder = np.matrix([0.1248, -0.06164]).T
-            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb')
+            axs.plot(rf_shoulder.T[:, 0], rf_shoulder.T[:, 1], 'xb', mew=3, ms=10)
             rm_shoulder = np.matrix([0, -0.1034]).T
-            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb')
+            axs.plot(rm_shoulder.T[:, 0], rm_shoulder.T[:, 1], 'xb', mew=3, ms=10)
             rr_shoulder = np.matrix([-0.1248, -0.06164]).T
-            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb')
+            axs.plot(rr_shoulder.T[:, 0], rr_shoulder.T[:, 1], 'xb', mew=3, ms=10)
 
         # leg value mapping: ([0, 1, 2, 3, 4, 5], ['lf', 'lm', 'lr', 'rr', 'rm', 'rf'])
         counter = 0
@@ -102,7 +103,7 @@ def plot_workspace_data():
                 if first_step:
                     first_step = False
                 if plot:
-                    axs.plot(X, Y)
+                    axs.plot(X, Y, linewidth=5)
             if [] in leg:
                 leg.remove([])
 
@@ -150,20 +151,89 @@ def plot_workspace_data():
             # axs.axvline(x=0.25, color='b', lw=1)
             # axs.axvline(x=0.05, color='b', lw=1)
             # axs.axvline(x=-0.17, color='b', lw=1)
-            axs.plot((0.25), (0.24), 'x', color='b')
-            axs.plot((0.05), (0.24 + 0.04176), 'x', color='b')
-            axs.plot((-0.17), (0.24), 'x', color='b')
-            axs.plot((0.25), -(0.24), 'x', color='b')
-            axs.plot((0.05), -(0.24 + 0.04176), 'x', color='b')
-            axs.plot((-0.17), -(0.24), 'x', color='b')
+            axs.plot((0.25), (0.24), marker='x', color='b', mew=3, ms=10)
+            axs.plot((0.05), (0.24 + 0.04176), marker='x', color='b', mew=3, ms=10)
+            axs.plot((-0.17), (0.24), marker='x', color='b', mew=3, ms=10)
+            axs.plot((0.25), -(0.24), marker='x', color='b', mew=3, ms=10)
+            axs.plot((0.05), -(0.24 + 0.04176), marker='x', color='b', mew=3, ms=10)
+            axs.plot((-0.17), -(0.24), marker='x', color='b', mew=3, ms=10)
 
-            axs.axvline(x=0.25 - 0.08, color='g', lw=1)
-            axs.axvline(x=0.05 - 0.08, color='g', lw=1)
-            axs.axvline(x=-0.17 - 0.08, color='g', lw=1)
+            # circle = plt.Circle((0.25, 0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, 0.24 + 0.04176), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, 0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.25, -0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, -(0.24 + 0.04176)), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, -0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+
+            axs.axvline(x=0.25 - 0.08, color='g', lw=3)
+            axs.axvline(x=0.05 - 0.08, color='g', lw=3)
+            axs.axvline(x=-0.17 - 0.08, color='g', lw=3)
+
+            # -----------------------------------------------------------------------------------------
+            # walk direction
+            # if (len(sys.argv) > 3):
+            #     split = re.findall(r"[^/_,]+", sys.argv[2], re.ASCII)
+            # else:
+            #     split = re.findall(r"[^/_,]+", sys.argv[1], re.ASCII)
+            # print(split)
+            # # velocity = float(split[-1][:-1])
+            # # counter_damping_fact = (-141.5 * velocity) + 35.5
+            # # stance_speed = (velocity * counter_damping_fact)/35
+            # stance_speed = 0.045
+            # # print("stance speed = " + str(stance_speed))
+            # direction = 0.0
+            # for s in split:
+            #     if 'dir' in s:
+            #         direction = float(s.replace('dir', ''))
+            # # WidowX
+            # # if direction == 0.0:
+            # #     for s in split:
+            # #         if 'rad' in s and 'radii' != s:
+            # #             direction = float(s.replace('rad', ''))
+            # print("direction = " + str(direction))
+            # # arrow = plt.arrow(0.111, 0.0, 0.046, 0.0)
+            # # axs.add_patch(arrow)
+            # # plot_pull_vector([0.111, 0.0], [stance_speed * math.cos(i), stance_speed * math.sin(i)], axs, colors[directions.index(i)])
+            # arrow = plt.arrow(0.111, 0.0, stance_speed * math.cos(direction), stance_speed * math.sin(direction),
+            #         color='r', head_width=0.01, overhang=0.25)
+            # # print("arrow length = " + str(math.sqrt(pow(stance_speed * math.cos(direction), 2) + pow(stance_speed * math.sin(direction), 2))))
+            # axs.add_patch(arrow)
+            #
+            # stance_diff = -pow(0.28 * (direction - 0.9), 2) + 0.02
+            # print("stance diff = " + str(stance_diff))
+            # if stance_diff < 0:
+            #     stance_diff = 0
+            # print("stance diff = " + str(stance_diff))
+            #
+            # # axs.axvline(x=(0.25 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            # # axs.axvline(x=(0.05 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            # # axs.axvline(x=(-0.17 - 0.08) + stance_diff, ymin=0.5, ymax=1, color='g', lw=1)
+            #
+            # circle = plt.Circle((0.25, 0.24), 0.08 - stance_diff, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, 0.24 + 0.04176), 0.08 - stance_diff, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, 0.24), 0.08 - stance_diff, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.25, -0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((0.05, -(0.24 + 0.04176)), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # circle = plt.Circle((-0.17, -0.24), 0.08, color='g', fill=False, lw=3)
+            # axs.add_patch(circle)
+            # -------------------------------------------------------------------------------------------
 
             plt.tick_params(labelsize=20)
             plt.grid()
             plt.axis('scaled')
+            plt.xlim(-0.31, 0.41)
+            plt.ylim(-0.4, 0.4)
             # plt.gca().set_aspect('equal', adjustable='box')
             if safe_plot:
                 plt.subplots_adjust(top=2, bottom=0, right=2, left=0, hspace=1, wspace=1)
@@ -178,9 +248,11 @@ def plot_workspace_data():
                 plt.savefig("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg",
                         bbox_inches='tight', pad_inches=0, format='svg', transparent=True)
 
-                sc.Figure("13.9cm", "15.75cm",
+                # sc.Figure("13.9cm", "15.75cm",
+                sc.Figure("15.1cm", "15.9cm",
                         # plt.rcParams["figure.figsize"][0], plt.rcParams["figure.figsize"][1],
-                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.03175).move(4.35, 5.1)),
+                        # sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.03175).move(4.35, 5.1)),
+                        sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/body.svg").scale(0.0265).move(4.45, 5.5)),
                         sc.Panel(sc.SVG("/home/jsimmering/plots_masterthesis/workspace/workspace_" + name + ".svg").scale(0.022))
                 ).save("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
                 SVG("/home/jsimmering/plots_masterthesis/workspace/robot_workspace_" + name + ".svg")
