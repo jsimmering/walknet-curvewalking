@@ -6,7 +6,7 @@ The simulation with which this code was developed can be found here:
 <https://github.com/kkonen/phantomx_gazebo>.
 
 It requires the robot description which can be found here:
-<https://github.com/kkonen/phantomx_description>.
+<https://github.com/jsimmering/phantomx_description>.
 
 And to control the robot the ROS controller from HumanRobotics:
 <https://github.com/HumaRobotics/phantomx_control>.
